@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>URIorSafeCURIE.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">URIorSafeCURIE.java</span></div><h1>URIorSafeCURIE.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.net.URI;
+import java.util.regex.Pattern;
+
+/**
+ * This class represents the in OpenDocument format used data type {@odf.datatype URIorSafeCURIE}
+ * This value type stores either an anyURI or a SafeCURIE
+ */
+public class URIorSafeCURIE implements OdfDataType {
+
+  private String mURIorSafeCURIE;
+  private Object mValue;
+<span class="nc" id="L32">  private static final Pattern uRIorSafeCURIEPattern =</span>
+<span class="nc" id="L33">      Pattern.compile(&quot;^\\[(([\\i-[:]][\\c-[:]]*)?:)?.+\\]$&quot;);</span>
+
+  /** Construct URIorSafeCURIE without the initialized value */
+<span class="nc" id="L36">  public URIorSafeCURIE() {</span>
+<span class="nc" id="L37">    mValue = null;</span>
+<span class="nc" id="L38">  }</span>
+
+  /**
+   * Copy Construct URIorSafeCURIE with the same value of val
+   *
+   * @param val the copied URIorSafeCURIE object
+   * @throws IllegalArgumentException if the given argument is not a valid URIorSaveCURIE
+   */
+<span class="nc" id="L46">  public URIorSafeCURIE(URIorSafeCURIE val) {</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">    if (val == null) {</span>
+<span class="nc" id="L48">      throw new IllegalArgumentException(&quot;parameter can not be null for URIorSafeCURIE&quot;);</span>
+    }
+
+<span class="nc bnc" id="L51" title="All 2 branches missed.">    if (val.isSafeCURIE()) {</span>
+<span class="nc" id="L52">      mURIorSafeCURIE = val.getSafeCURIE();</span>
+    } else {
+<span class="nc" id="L54">      mURIorSafeCURIE = (new AnyURI(val.getAnyURI())).toString();</span>
+    }
+<span class="nc" id="L56">  }</span>
+
+  /**
+   * set uri value for URIorSafeCURIE Object
+   *
+   * @param uri the anyURI value which is set to URIorSafeCURIE Object
+   */
+  public void setAnyURI(URI uri) {
+<span class="nc" id="L64">    mValue = new AnyURI(uri);</span>
+<span class="nc" id="L65">  }</span>
+
+  /**
+   * set String value for URIorSafeCURIE Object
+   *
+   * @param curie the SafeCURIE value which is set to URIorSafeCURIE Object
+   */
+  public void setSafeCURIE(String curie) {
+<span class="nc" id="L73">    mValue = new SafeCURIE(curie);</span>
+<span class="nc" id="L74">  }</span>
+
+  /**
+   * get the internal value type of URIorSafeCURIE Object
+   *
+   * @return true if the internal value type is anyURI false if the internal value type is SafeCURIE
+   */
+  public boolean isSafeCURIE() {
+<span class="nc bnc" id="L82" title="All 4 branches missed.">    return (mValue != null) &amp;&amp; mValue instanceof SafeCURIE;</span>
+  }
+
+  /**
+   * get the anyURI value of this URIorSafeCURIE Object
+   *
+   * @return the anyURI value of this URIorSafeCURIE Object
+   */
+  public URI getAnyURI() {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">    if (isSafeCURIE()) {</span>
+<span class="nc" id="L92">      throw new IllegalArgumentException(&quot;I do not have a AnyURI value&quot;);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    } else if (mValue != null) {</span>
+<span class="nc" id="L94">      return ((AnyURI) mValue).getURI();</span>
+    } else {
+<span class="nc" id="L96">      return null;</span>
+    }
+  }
+
+  /**
+   * get the SafeCURIE value of this URIorSafeCURIE Object
+   *
+   * @return the SafeCURIE value of this URIorSafeCURIE Object
+   */
+  public String getSafeCURIE() {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">    if (isSafeCURIE()) {</span>
+<span class="nc" id="L107">      return ((SafeCURIE) mValue).toString();</span>
+    } else {
+<span class="nc" id="L109">      throw new IllegalArgumentException(&quot;I do not have a SafeCURIE value&quot;);</span>
+    }
+  }
+
+  /**
+   * Returns a String Object representing this URIorSafeCURIE's value
+   *
+   * @return return a string representation of the value of this URIorSafeCURIE object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L120">    return mURIorSafeCURIE;</span>
+  }
+
+  /**
+   * Returns an URIorSafeCURIE instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return an URIorSafeCURIE instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid URIorSaveCURIE
+   */
+  public static URIorSafeCURIE valueOf(String stringValue) throws IllegalArgumentException {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L132">      throw new IllegalArgumentException(&quot;parameter can not be null for URIorSafeCURIE&quot;);</span>
+    }
+<span class="nc" id="L134">    URIorSafeCURIE aRet = new URIorSafeCURIE();</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">    if ((uRIorSafeCURIEPattern.matcher(stringValue).matches()) &amp;&amp; (stringValue.length() &gt;= 3)) {</span>
+<span class="nc" id="L136">      aRet.setSafeCURIE(stringValue);</span>
+    } else {
+<span class="nc" id="L138">      AnyURI aAnyURI = AnyURI.valueOf(stringValue);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">      if (aAnyURI != null) {</span>
+<span class="nc" id="L140">        aRet.setAnyURI(aAnyURI.getURI());</span>
+      } else {
+<span class="nc" id="L142">        throw new IllegalArgumentException(&quot;parameter is invalid for datatype URIorSafeCURIE&quot;);</span>
+      }
+    }
+<span class="nc" id="L145">    return aRet;</span>
+  }
+
+  /**
+   * check if the specified XMLGregorianCalendar {@odf.datatype URIorSafeCURIE} is a valid
+   * URIorSafeCURIE data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype URIorSafeCURIE} data type
+   *     false otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L157" title="All 2 branches missed.">    if (SafeCURIE.isValid(stringValue)) {</span>
+<span class="nc" id="L158">      return true;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    } else if (AnyURI.valueOf(stringValue) != null) {</span>
+<span class="nc" id="L160">      return true;</span>
+    } else {
+<span class="nc" id="L162">      return false;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

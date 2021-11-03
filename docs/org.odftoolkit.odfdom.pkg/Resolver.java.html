@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Resolver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">Resolver.java</span></div><h1>Resolver.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.JarURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.transform.Source;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.URIResolver;
+import javax.xml.transform.stream.StreamSource;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+/** resolve external entities */
+class Resolver implements EntityResolver, URIResolver {
+
+  private final OdfPackage mPackage;
+
+  /** Resolver constructor. */
+  public Resolver(OdfPackage pkg) {
+<span class="nc" id="L51">    super();</span>
+<span class="nc" id="L52">    mPackage = pkg;</span>
+<span class="nc" id="L53">  }</span>
+
+  /**
+   * Allow the application to resolve external entities.
+   *
+   * &lt;p&gt;The Parser will call this method before opening any external entity except the top-level
+   * document entity (including the external DTD subset, external entities referenced within the
+   * DTD, and external entities referenced within the document element): the application may request
+   * that the parser resolve the entity itself, that it use an alternative URI, or that it use an
+   * entirely different input source.
+   */
+  public InputSource resolveEntity(String publicId, String systemId)
+      throws SAXException, IOException {
+    // this deactivates the attempt to load the none existent Math DTD once referenced from OOo
+    // files
+<span class="nc bnc" id="L68" title="All 4 branches missed.">    if (publicId != null &amp;&amp; publicId.startsWith(&quot;-//OpenOffice.org//DTD Modified W3C MathML&quot;)) {</span>
+<span class="nc" id="L69">      return new InputSource(</span>
+<span class="nc" id="L70">          new ByteArrayInputStream(&quot;&lt;?xml version='1.0' encoding='UTF-8'?&gt;&quot;.getBytes()));</span>
+    }
+<span class="nc bnc" id="L72" title="All 2 branches missed.">    if (systemId != null) {</span>
+      // if the entity to be resolved is the base URI return the package
+<span class="nc bnc" id="L74" title="All 4 branches missed.">      if ((mPackage.getBaseURI() != null) &amp;&amp; systemId.startsWith(mPackage.getBaseURI())) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (systemId.equals(mPackage.getBaseURI())) {</span>
+<span class="nc" id="L76">          InputStream in = null;</span>
+          try {
+<span class="nc" id="L78">            in = mPackage.getInputStream();</span>
+<span class="nc" id="L79">          } catch (Exception e) {</span>
+<span class="nc" id="L80">            throw new SAXException(e);</span>
+<span class="nc" id="L81">          }</span>
+          InputSource ins;
+<span class="nc" id="L83">          ins = new InputSource(in);</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">          if (ins == null) {</span>
+<span class="nc" id="L86">            return null;</span>
+          }
+<span class="nc" id="L88">          ins.setSystemId(systemId);</span>
+<span class="nc" id="L89">          return ins;</span>
+        } else {
+          // if the reference points into the package (is larger than the base URI)
+<span class="nc bnc" id="L92" title="All 2 branches missed.">          if (systemId.length() &gt; mPackage.getBaseURI().length() + 1) {</span>
+<span class="nc" id="L93">            InputStream in = null;</span>
+            try {
+<span class="nc" id="L95">              String path = systemId.substring(mPackage.getBaseURI().length() + 1);</span>
+<span class="nc" id="L96">              in = mPackage.getInputStream(path);</span>
+<span class="nc" id="L97">              InputSource ins = new InputSource(in);</span>
+<span class="nc" id="L98">              ins.setSystemId(systemId);</span>
+<span class="nc" id="L99">              return ins;</span>
+<span class="nc" id="L100">            } catch (Exception ex) {</span>
+<span class="nc" id="L101">              Logger.getLogger(Resolver.class.getName()).log(Level.SEVERE, null, ex);</span>
+            } finally {
+              try {
+<span class="nc" id="L104">                in.close();</span>
+<span class="nc" id="L105">              } catch (IOException ex) {</span>
+<span class="nc" id="L106">                Logger.getLogger(Resolver.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L107">              }</span>
+            }
+          }
+<span class="nc" id="L110">          return null;</span>
+        }
+<span class="nc bnc" id="L112" title="All 2 branches missed.">      } else if (systemId.startsWith(&quot;resource:/&quot;)) {</span>
+<span class="nc" id="L113">        int i = systemId.indexOf('/');</span>
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        if ((i &gt; 0) &amp;&amp; systemId.length() &gt; i + 1) {</span>
+<span class="nc" id="L115">          String res = systemId.substring(i + 1);</span>
+<span class="nc" id="L116">          ClassLoader cl = OdfPackage.class.getClassLoader();</span>
+<span class="nc" id="L117">          InputStream in = cl.getResourceAsStream(res);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">          if (in != null) {</span>
+<span class="nc" id="L119">            InputSource ins = new InputSource(in);</span>
+<span class="nc" id="L120">            ins.setSystemId(systemId);</span>
+<span class="nc" id="L121">            return ins;</span>
+          }
+        }
+<span class="nc" id="L124">        return null;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">      } else if (systemId.startsWith(&quot;jar:&quot;)) {</span>
+        try {
+<span class="nc" id="L127">          URL url = new URL(systemId);</span>
+<span class="nc" id="L128">          JarURLConnection jarConn = (JarURLConnection) url.openConnection();</span>
+<span class="nc" id="L129">          InputSource ins = new InputSource(jarConn.getInputStream());</span>
+<span class="nc" id="L130">          ins.setSystemId(systemId);</span>
+<span class="nc" id="L131">          return ins;</span>
+<span class="nc" id="L132">        } catch (MalformedURLException ex) {</span>
+<span class="nc" id="L133">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+        }
+      }
+    }
+<span class="nc" id="L137">    return null;</span>
+  }
+
+  public Source resolve(String href, String base) throws TransformerException {
+    try {
+<span class="nc" id="L142">      URI uri = null;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">      if (base != null) {</span>
+<span class="nc" id="L144">        URI baseuri = new URI(base);</span>
+<span class="nc" id="L145">        uri = baseuri.resolve(href);</span>
+<span class="nc" id="L146">      } else {</span>
+<span class="nc" id="L147">        uri = new URI(href);</span>
+      }
+
+<span class="nc" id="L150">      InputSource ins = null;</span>
+      try {
+<span class="nc" id="L152">        ins = resolveEntity(null, uri.toString());</span>
+<span class="nc" id="L153">      } catch (Exception e) {</span>
+<span class="nc" id="L154">        throw new TransformerException(e);</span>
+<span class="nc" id="L155">      }</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">      if (ins == null) {</span>
+<span class="nc" id="L157">        return null;</span>
+      }
+<span class="nc" id="L159">      InputStream in = ins.getByteStream();</span>
+<span class="nc" id="L160">      StreamSource src = new StreamSource(in);</span>
+<span class="nc" id="L161">      src.setSystemId(uri.toString());</span>
+<span class="nc" id="L162">      return src;</span>
+<span class="nc" id="L163">    } catch (URISyntaxException use) {</span>
+<span class="nc" id="L164">      return null;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

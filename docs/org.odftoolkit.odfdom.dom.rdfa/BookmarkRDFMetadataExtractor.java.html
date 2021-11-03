@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BookmarkRDFMetadataExtractor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom.rdfa</a> &gt; <span class="el_source">BookmarkRDFMetadataExtractor.java</span></div><h1>BookmarkRDFMetadataExtractor.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom.rdfa;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import javax.xml.stream.XMLEventFactory;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.StartElement;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.odftoolkit.odfdom.dom.DefaultElementVisitor;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.text.TextBookmarkEndElement;
+import org.odftoolkit.odfdom.dom.element.text.TextBookmarkStartElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.rdfa.DOMAttributes;
+import org.odftoolkit.odfdom.pkg.rdfa.JenaSink;
+import org.w3c.dom.Node;
+import org.xml.sax.Attributes;
+
+/**
+ * This is a sub class of &lt;code&gt;DefaultElementVisitor&lt;/code&gt;, which is used to extract metadata from
+ * {@odf.element text:bookmark-start} to {@odf.element text:bookmark-end} pair.
+ */
+public class BookmarkRDFMetadataExtractor extends DefaultElementVisitor {
+
+  protected static final char NewLineChar = '\n';
+  protected static final char TabChar = '\t';
+  private TextBookmarkStartElement bookmarkstart;
+  private boolean found;
+  protected final Map&lt;TextBookmarkStartElement, ExtractorStringBuilder&gt; builderMap;
+  protected final Map&lt;TextBookmarkStartElement, String&gt; stringMap;
+
+<span class="nc" id="L63">  private XMLEventFactory eventFactory = XMLEventFactory.newInstance();</span>
+
+  private JenaSink sink;
+
+  /**
+   * This class is used to provide the string builder functions to extractor. It will automatically
+   * process the last NewLineChar.
+   *
+   * @since 0.3.5
+   */
+  protected static class ExtractorStringBuilder {
+    private StringBuilder mBuilder;
+    private boolean lastAppendNewLine;
+
+<span class="nc" id="L77">    ExtractorStringBuilder() {</span>
+<span class="nc" id="L78">      mBuilder = new StringBuilder();</span>
+<span class="nc" id="L79">      lastAppendNewLine = false;</span>
+<span class="nc" id="L80">    }</span>
+
+    /**
+     * Append a string
+     *
+     * @param str - the string
+     */
+    public void append(String str) {
+<span class="nc" id="L88">      mBuilder.append(str);</span>
+<span class="nc" id="L89">    }</span>
+
+    /**
+     * Append a character
+     *
+     * @param ch - the character
+     */
+    public void append(char ch) {
+<span class="nc" id="L97">      mBuilder.append(ch);</span>
+<span class="nc" id="L98">    }</span>
+
+    /** Append a new line character at the end */
+    public void appendLine() {
+<span class="nc" id="L102">      mBuilder.append(NewLineChar);</span>
+<span class="nc" id="L103">      lastAppendNewLine = true;</span>
+<span class="nc" id="L104">    }</span>
+
+    /**
+     * Return the string value.
+     *
+     * &lt;p&gt;If the last character is a new line character and is appended with appendLine(), the last
+     * new line character will be removed.
+     */
+    public String toString() {
+<span class="nc bnc" id="L113" title="All 2 branches missed.">      if (lastAppendNewLine) {</span>
+<span class="nc" id="L114">        mBuilder.deleteCharAt(mBuilder.length() - 1);</span>
+      }
+<span class="nc" id="L116">      return mBuilder.toString();</span>
+    }
+  }
+
+  /**
+   * Create a BookmarkRDFMetadataExtractor instance, which RDF metadata content of bookmarks can be
+   * extracted by &lt;code&gt;getBookmarkRDFMetadata()&lt;/code&gt;.
+   *
+   * @param element the ODF element whose text will be extracted.
+   * @return an instance of BookmarkRDFMetadataExtractor
+   */
+  public static BookmarkRDFMetadataExtractor newBookmarkTextExtractor() {
+<span class="nc" id="L128">    return new BookmarkRDFMetadataExtractor();</span>
+  }
+
+  /**
+   * Return the RDF metadata of specified ODF element as a Jena Model.
+   *
+   * @return the text content as a string
+   */
+  public Model getBookmarkRDFMetadata(OdfFileDom dom) {
+<span class="nc" id="L137">    this.bookmarkstart = null;</span>
+<span class="nc" id="L138">    this.found = false;</span>
+<span class="nc" id="L139">    this.sink = dom.getSink();</span>
+<span class="nc" id="L140">    visit(dom.getRootElement());</span>
+<span class="nc" id="L141">    return getModel();</span>
+  }
+
+  public Model getBookmarkRDFMetadata(TextBookmarkStartElement bookmarkstart) {
+<span class="nc" id="L145">    this.bookmarkstart = bookmarkstart;</span>
+<span class="nc" id="L146">    this.found = false;</span>
+<span class="nc" id="L147">    this.sink = ((OdfFileDom) bookmarkstart.getOwnerDocument()).getSink();</span>
+<span class="nc" id="L148">    visit(((OdfFileDom) bookmarkstart.getOwnerDocument()).getRootElement());</span>
+<span class="nc" id="L149">    return getModel();</span>
+  }
+
+  private Model getModel() {
+<span class="nc" id="L153">    Model m = ModelFactory.createDefaultModel();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    for (Entry&lt;TextBookmarkStartElement, String&gt; entry : stringMap.entrySet()) {</span>
+<span class="nc" id="L155">      String xhtmlAbout = entry.getKey().getXhtmlAboutAttribute();</span>
+<span class="nc" id="L156">      String xhtmlProperty = entry.getKey().getXhtmlPropertyAttribute();</span>
+<span class="nc" id="L157">      String xhtmlContent = entry.getKey().getXhtmlContentAttribute();</span>
+<span class="nc bnc" id="L158" title="All 4 branches missed.">      if (xhtmlAbout != null &amp;&amp; xhtmlProperty != null) {</span>
+<span class="nc" id="L159">        String qname = entry.getKey().getNodeName();</span>
+<span class="nc" id="L160">        String namespaceURI = entry.getKey().getNamespaceURI();</span>
+<span class="nc" id="L161">        String localname = entry.getKey().getLocalName();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        String prefix = (qname.indexOf(':') == -1) ? &quot;&quot; : qname.substring(0, qname.indexOf(':'));</span>
+
+<span class="nc" id="L164">        StartElement e =</span>
+<span class="nc" id="L165">            eventFactory.createStartElement(</span>
+                prefix,
+                namespaceURI,
+                localname,
+<span class="nc" id="L169">                fromAttributes(new DOMAttributes(entry.getKey().getAttributes())),</span>
+                null,
+<span class="nc" id="L171">                sink.getContext());</span>
+
+<span class="nc" id="L173">        xhtmlAbout = sink.getExtractor().expandSafeCURIE(e, xhtmlAbout, sink.getContext());</span>
+<span class="nc" id="L174">        xhtmlProperty = sink.getExtractor().expandCURIE(e, xhtmlProperty, sink.getContext());</span>
+<span class="nc" id="L175">        Resource s = m.createResource(xhtmlAbout);</span>
+<span class="nc" id="L176">        Property p = m.createProperty(xhtmlProperty);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (xhtmlContent != null) {</span>
+<span class="nc" id="L178">          s.addLiteral(p, xhtmlContent);</span>
+        } else {
+<span class="nc" id="L180">          s.addLiteral(p, entry.getValue());</span>
+        }
+      }
+<span class="nc" id="L183">    }</span>
+<span class="nc" id="L184">    return m;</span>
+  }
+
+  private Iterator fromAttributes(Attributes attributes) {
+<span class="nc" id="L188">    List toReturn = new LinkedList();</span>
+
+<span class="nc bnc" id="L190" title="All 2 branches missed.">    for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L191">      String qname = attributes.getQName(i);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">      String prefix = qname.contains(&quot;:&quot;) ? qname.substring(0, qname.indexOf(&quot;:&quot;)) : &quot;&quot;;</span>
+<span class="nc" id="L193">      Attribute attr =</span>
+<span class="nc" id="L194">          eventFactory.createAttribute(</span>
+<span class="nc" id="L195">              prefix, attributes.getURI(i), attributes.getLocalName(i), attributes.getValue(i));</span>
+
+<span class="nc bnc" id="L197" title="All 4 branches missed.">      if (!qname.equals(&quot;xmlns&quot;) &amp;&amp; !qname.startsWith(&quot;xmlns:&quot;)) toReturn.add(attr);</span>
+    }
+
+<span class="nc" id="L200">    return toReturn.iterator();</span>
+  }
+
+  /**
+   * Constructor with an ODF element as parameter
+   *
+   * @param element the ODF element whose text would be extracted.
+   */
+<span class="nc" id="L208">  private BookmarkRDFMetadataExtractor() {</span>
+<span class="nc" id="L209">    builderMap = new HashMap&lt;TextBookmarkStartElement, ExtractorStringBuilder&gt;();</span>
+<span class="nc" id="L210">    stringMap = new HashMap&lt;TextBookmarkStartElement, String&gt;();</span>
+<span class="nc" id="L211">  }</span>
+
+  /**
+   * The end users needn't to care of this method, if you don't want to override the text content
+   * handling strategy of &lt;code&gt;OdfElement&lt;/code&gt;.
+   *
+   * @see
+   *     org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.pkg.OdfElement)
+   */
+  @Override
+  public void visit(OdfElement element) {
+<span class="nc bnc" id="L222" title="All 4 branches missed.">    if (bookmarkstart != null &amp;&amp; found) {</span>
+<span class="nc" id="L223">      return;</span>
+    }
+<span class="nc bnc" id="L225" title="All 2 branches missed.">    if (this.bookmarkstart == null) {</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">      if (element instanceof TextBookmarkStartElement) {</span>
+<span class="nc" id="L227">        builderMap.put((TextBookmarkStartElement) element, new ExtractorStringBuilder());</span>
+      }
+
+    } else {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">      if (element == bookmarkstart) {</span>
+<span class="nc" id="L232">        builderMap.put((TextBookmarkStartElement) element, new ExtractorStringBuilder());</span>
+      }
+    }
+<span class="nc" id="L235">    appendElementText(element);</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">    if (element.getNamespaceURI().equals(OdfDocumentNamespace.META.getUri())</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">        || element.getNamespaceURI().equals(OdfDocumentNamespace.DC.getUri())) {</span>
+      // textBuilderAppendLine();
+    }
+<span class="nc" id="L240">  }</span>
+
+  /**
+   * Append the text content of this element to string buffer.
+   *
+   * @param ele the ODF element whose text will be appended.
+   */
+  private void appendElementText(OdfElement ele) {
+<span class="nc" id="L248">    Node node = ele.getFirstChild();</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc" id="L251">        textBuilderAppend(node.getNodeValue());</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (node instanceof TextBookmarkEndElement) {</span>
+<span class="nc" id="L254">          TextBookmarkEndElement end = (TextBookmarkEndElement) node;</span>
+<span class="nc" id="L255">          endBookmark(end);</span>
+        }
+
+<span class="nc" id="L258">        OdfElement element = (OdfElement) node;</span>
+<span class="nc" id="L259">        element.accept(this);</span>
+      }
+<span class="nc" id="L261">      node = node.getNextSibling();</span>
+    }
+<span class="nc" id="L263">  }</span>
+
+  private void textBuilderAppendLine() {
+<span class="nc bnc" id="L266" title="All 2 branches missed.">    for (Entry&lt;TextBookmarkStartElement, ExtractorStringBuilder&gt; entry : builderMap.entrySet()) {</span>
+<span class="nc" id="L267">      entry.getValue().appendLine();</span>
+<span class="nc" id="L268">    }</span>
+<span class="nc" id="L269">  }</span>
+
+  private void textBuilderAppend(char ch) {
+<span class="nc bnc" id="L272" title="All 2 branches missed.">    for (Entry&lt;TextBookmarkStartElement, ExtractorStringBuilder&gt; entry : builderMap.entrySet()) {</span>
+<span class="nc" id="L273">      entry.getValue().append(ch);</span>
+<span class="nc" id="L274">    }</span>
+<span class="nc" id="L275">  }</span>
+
+  private void textBuilderAppend(String str) {
+<span class="nc bnc" id="L278" title="All 2 branches missed.">    for (Entry&lt;TextBookmarkStartElement, ExtractorStringBuilder&gt; entry : builderMap.entrySet()) {</span>
+<span class="nc" id="L279">      entry.getValue().append(str);</span>
+<span class="nc" id="L280">    }</span>
+<span class="nc" id="L281">  }</span>
+
+  private void endBookmark(TextBookmarkEndElement end) {
+<span class="nc" id="L284">    TextBookmarkStartElement start = null;</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">    for (Entry&lt;TextBookmarkStartElement, ExtractorStringBuilder&gt; entry : builderMap.entrySet()) {</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">      if (entry.getKey().getTextNameAttribute().equals(end.getTextNameAttribute())) {</span>
+<span class="nc" id="L287">        start = entry.getKey();</span>
+<span class="nc" id="L288">        break;</span>
+      }
+<span class="nc" id="L290">    }</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">    if (start != null) {</span>
+<span class="nc" id="L292">      stringMap.put(start, builderMap.get(start).toString());</span>
+<span class="nc" id="L293">      builderMap.remove(start);</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">      if (bookmarkstart != null) {</span>
+<span class="nc" id="L295">        found = true;</span>
+      }
+    }
+<span class="nc" id="L298">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

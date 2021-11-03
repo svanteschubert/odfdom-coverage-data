@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTableColumn.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc.table</a> &gt; <span class="el_source">OdfTableColumn.java</span></div><h1>OdfTableColumn.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc.table;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableHeaderColumnsElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfTableColumnProperties;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfXMLFactory;
+import org.odftoolkit.odfdom.type.Length.Unit;
+import org.odftoolkit.odfdom.type.PositiveLength;
+import org.w3c.dom.Node;
+
+/**
+ * OdfTableColumn represents table column feature in ODF document.
+ *
+ * &lt;p&gt;OdfTableColumn provides methods to get table cells that belong to this table column.
+ */
+public class OdfTableColumn {
+
+  TableTableColumnElement maColumnElement;
+  int mnRepeatedIndex;
+  private static final String DEFAULT_WIDTH = &quot;0in&quot;;
+  private OdfDocument mDocument;
+
+  /**
+   * Construct the &lt;code&gt;OdfTableColumn&lt;/code&gt; feature.
+   *
+   * @param odfElement the element that can construct this table column
+   * @param repeatedIndex the index in the repeated columns
+   */
+<span class="nc" id="L61">  OdfTableColumn(TableTableColumnElement colElement, int repeatedIndex) {</span>
+<span class="nc" id="L62">    maColumnElement = colElement;</span>
+<span class="nc" id="L63">    mnRepeatedIndex = repeatedIndex;</span>
+<span class="nc" id="L64">    mDocument = (OdfDocument) ((OdfFileDom) maColumnElement.getOwnerDocument()).getDocument();</span>
+<span class="nc" id="L65">  }</span>
+
+  /**
+   * Get the &lt;code&gt;OdfTableColumn&lt;/code&gt; instance from the &lt;code&gt;TableTableColumnElement&lt;/code&gt;
+   * instance.
+   *
+   * &lt;p&gt;Each &lt;code&gt;TableTableColumnElement&lt;/code&gt; instance has a one-to-one relationship to the a
+   * &lt;code&gt;OdfTableColumn&lt;/code&gt; instance.
+   *
+   * @param colElement the column element that need to get the corresponding &lt;code&gt;OdfTableColumn
+   *     &lt;/code&gt; instance
+   * @return the &lt;code&gt;OdfTableColumn&lt;/code&gt; instance represent the specified column element
+   */
+  public static OdfTableColumn getInstance(TableTableColumnElement colElement) {
+<span class="nc" id="L79">    TableTableElement tableElement = null;</span>
+<span class="nc" id="L80">    Node node = colElement.getParentNode();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">      if (node instanceof TableTableElement) {</span>
+<span class="nc" id="L83">        tableElement = (TableTableElement) node;</span>
+      }
+<span class="nc" id="L85">      node = node.getParentNode();</span>
+    }
+<span class="nc" id="L87">    OdfTable table = null;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">    if (tableElement != null) {</span>
+<span class="nc" id="L89">      table = OdfTable.getInstance(tableElement);</span>
+    } else {
+<span class="nc" id="L91">      throw new IllegalArgumentException(&quot;the colElement is not in the table dom tree&quot;);</span>
+    }
+
+<span class="nc" id="L94">    OdfTableColumn column = table.getColumnInstance(colElement, 0);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    if (column.getColumnsRepeatedNumber() &gt; 1) {</span>
+<span class="nc" id="L96">      Logger.getLogger(OdfTableColumn.class.getName())</span>
+<span class="nc" id="L97">          .log(</span>
+              Level.WARNING,
+              &quot;the column has the repeated column number, and puzzled about get which repeated index of the column,&quot;
+                  + &quot;here just return the first column of the repeated columns.&quot;);
+    }
+<span class="nc" id="L102">    return column;</span>
+  }
+
+  /**
+   * Get the &lt;code&gt;TableTableElement&lt;/code&gt; who contains this cell.
+   *
+   * @return the table that contains the cell.
+   */
+  private TableTableElement getTableElement() {
+<span class="nc" id="L111">    Node node = maColumnElement.getParentNode();</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">      if (node instanceof TableTableElement) {</span>
+<span class="nc" id="L114">        return (TableTableElement) node;</span>
+      }
+<span class="nc" id="L116">      node = node.getParentNode();</span>
+    }
+<span class="nc" id="L118">    return null;</span>
+  }
+
+  /**
+   * Get owner table of the current column.
+   *
+   * @return the parent table of this column
+   */
+  public OdfTable getTable() {
+<span class="nc" id="L127">    TableTableElement tableElement = getTableElement();</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">    if (tableElement != null) {</span>
+<span class="nc" id="L129">      return OdfTable.getInstance(tableElement);</span>
+    }
+<span class="nc" id="L131">    return null;</span>
+  }
+
+  /**
+   * Get the width of the column (in Millimeter).
+   *
+   * @return the width of the current column (in Millimeter).
+   */
+  public long getWidth() {
+<span class="nc" id="L140">    String sWidth = maColumnElement.getProperty(OdfTableColumnProperties.ColumnWidth);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    if (sWidth == null) {</span>
+<span class="nc" id="L142">      sWidth = DEFAULT_WIDTH;</span>
+    }
+<span class="nc" id="L144">    return PositiveLength.parseLong(sWidth, Unit.MILLIMETER);</span>
+  }
+
+  /**
+   * Set the width of the column (in Millimeter).
+   *
+   * @param width the width that will be set to the column (in Millimeter).
+   */
+  public void setWidth(long width) {
+<span class="nc" id="L153">    String sWidthMM = String.valueOf(width) + Unit.MILLIMETER.abbr();</span>
+<span class="nc" id="L154">    String sWidthIN = PositiveLength.mapToUnit(sWidthMM, Unit.INCH);</span>
+
+<span class="nc" id="L156">    splitRepeatedColumns();</span>
+<span class="nc" id="L157">    maColumnElement.setProperty(OdfTableColumnProperties.ColumnWidth, sWidthIN);</span>
+
+    // check if need set relative width
+<span class="nc" id="L160">    int index = getColumnIndex();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">    if (index &gt;= 1) {</span>
+<span class="nc" id="L162">      index = index - 1;</span>
+    } else {
+<span class="nc" id="L164">      index = index + 1;</span>
+    }
+<span class="nc" id="L166">    OdfTableColumn column = null;</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">    if (index &lt; getTable().getColumnCount()) {</span>
+<span class="nc" id="L168">      column = getTable().getColumnByIndex(index);</span>
+    }
+<span class="nc bnc" id="L170" title="All 2 branches missed.">    if (column != null) {</span>
+<span class="nc" id="L171">      long prevColumnRelWidth = column.getRelativeWidth();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">      if (prevColumnRelWidth != 0) {</span>
+<span class="nc" id="L173">        long prevColumnWidth = column.getWidth();</span>
+<span class="nc" id="L174">        setRelativeWidth(prevColumnRelWidth / prevColumnWidth * width);</span>
+      }
+    }
+<span class="nc" id="L177">  }</span>
+
+  // if one of the repeated column want to change something
+  // then this repeated column have to split to repeated number columns
+  // the maColumnElement should also be updated according to the original index in the repeated
+  // column
+  void splitRepeatedColumns() {
+<span class="nc" id="L184">    OdfTable table = getTable();</span>
+<span class="nc" id="L185">    TableTableElement tableEle = table.getOdfElement();</span>
+<span class="nc" id="L186">    int repeateNum = getColumnsRepeatedNumber();</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">    if (repeateNum &gt; 1) {</span>
+      // change this repeated column to several single columns
+<span class="nc" id="L189">      TableTableColumnElement ownerColumnElement = null;</span>
+<span class="nc" id="L190">      int repeatedColumnIndex = mnRepeatedIndex;</span>
+<span class="nc" id="L191">      Node refElement = maColumnElement;</span>
+<span class="nc" id="L192">      maColumnElement.removeAttributeNS(</span>
+<span class="nc" id="L193">          OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;);</span>
+<span class="nc" id="L194">      String originalWidth = maColumnElement.getProperty(OdfTableColumnProperties.ColumnWidth);</span>
+<span class="nc" id="L195">      String originalRelWidth =</span>
+<span class="nc" id="L196">          maColumnElement.getProperty(OdfTableColumnProperties.RelColumnWidth);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">      for (int i = repeateNum - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L198">        TableTableColumnElement newColumn =</span>
+            (TableTableColumnElement)
+<span class="nc" id="L200">                OdfXMLFactory.newOdfElement(</span>
+<span class="nc" id="L201">                    (OdfFileDom) maColumnElement.getOwnerDocument(),</span>
+<span class="nc" id="L202">                    OdfName.newName(OdfDocumentNamespace.TABLE, &quot;table-column&quot;));</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">        if (originalWidth != null &amp;&amp; originalWidth.length() &gt; 0) {</span>
+<span class="nc" id="L204">          newColumn.setProperty(OdfTableColumnProperties.ColumnWidth, originalWidth);</span>
+        }
+<span class="nc bnc" id="L206" title="All 4 branches missed.">        if (originalRelWidth != null &amp;&amp; originalRelWidth.length() &gt; 0) {</span>
+<span class="nc" id="L207">          newColumn.setProperty(OdfTableColumnProperties.RelColumnWidth, originalRelWidth);</span>
+        }
+<span class="nc" id="L209">        tableEle.insertBefore(newColumn, refElement);</span>
+<span class="nc" id="L210">        refElement = newColumn;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (repeatedColumnIndex == i) {</span>
+<span class="nc" id="L212">          ownerColumnElement = newColumn;</span>
+        } else {
+<span class="nc" id="L214">          table.updateColumnRepository(maColumnElement, i, newColumn, 0);</span>
+        }
+      }
+      // remove this column element
+<span class="nc" id="L218">      tableEle.removeChild(maColumnElement);</span>
+
+<span class="nc bnc" id="L220" title="All 2 branches missed.">      if (ownerColumnElement != null) {</span>
+<span class="nc" id="L221">        table.updateColumnRepository(maColumnElement, mnRepeatedIndex, ownerColumnElement, 0);</span>
+      }
+    }
+<span class="nc" id="L224">  }</span>
+
+  private long getRelativeWidth() {
+<span class="nc" id="L227">    String sRelWidth = maColumnElement.getProperty(OdfTableColumnProperties.RelColumnWidth);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">    if (sRelWidth != null) {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">      if (sRelWidth.contains(&quot;*&quot;)) {</span>
+<span class="nc" id="L230">        Long value = Long.valueOf(sRelWidth.substring(0, sRelWidth.indexOf(&quot;*&quot;)));</span>
+<span class="nc" id="L231">        return value.longValue();</span>
+      }
+    }
+<span class="nc" id="L234">    return 0;</span>
+  }
+
+  private void setRelativeWidth(long relWidth) {
+<span class="nc" id="L238">    maColumnElement.setProperty(</span>
+<span class="nc" id="L239">        OdfTableColumnProperties.RelColumnWidth, String.valueOf(relWidth) + &quot;*&quot;);</span>
+<span class="nc" id="L240">  }</span>
+
+  /**
+   * Returns if the column always keeps its optimal width.
+   *
+   * @return true if the column always keeps its optimal width; vice versa
+   */
+  public boolean isOptimalWidth() {
+<span class="nc" id="L248">    return Boolean.parseBoolean(</span>
+<span class="nc" id="L249">        maColumnElement.getProperty(OdfTableColumnProperties.UseOptimalColumnWidth));</span>
+  }
+
+  /**
+   * Set if the column always keeps its optimal width.
+   *
+   * @param isUseOptimalWidth the flag that indicate column should keep its optimal width or not
+   */
+  public void setUseOptimalWidth(boolean isUseOptimalWidth) {
+<span class="nc" id="L258">    maColumnElement.setProperty(</span>
+<span class="nc" id="L259">        OdfTableColumnProperties.UseOptimalColumnWidth, String.valueOf(isUseOptimalWidth));</span>
+<span class="nc" id="L260">  }</span>
+
+  /**
+   * Return an instance of &lt;code&gt;TableTableColumnElement&lt;/code&gt; which represents this feature.
+   *
+   * @return an instance of &lt;code&gt;TableTableColumnElement&lt;/code&gt;
+   */
+  public TableTableColumnElement getOdfElement() {
+<span class="nc" id="L268">    return maColumnElement;</span>
+  }
+
+  /**
+   * Get the count of cells in this column.
+   *
+   * @return the cells count in the current column
+   */
+  public int getCellCount() {
+<span class="nc" id="L277">    return getTable().getRowCount();</span>
+  }
+
+  /**
+   * Get a cell with a specific index. The table will be automatically expanded, when the given
+   * index is outside of the original table.
+   *
+   * @param index the cell index in this column
+   * @return the cell object in the given cell index
+   */
+  public OdfTableCell getCellByIndex(int index) {
+<span class="nc" id="L288">    return getTable().getCellByPosition(getColumnIndex(), index);</span>
+  }
+
+  /**
+   * Get the previous column of the current column.
+   *
+   * @return the previous column before this column in the owner table
+   */
+  public OdfTableColumn getPreviousColumn() {
+<span class="nc" id="L297">    OdfTable table = getTable();</span>
+    // the column has repeated column number &gt; 1
+<span class="nc bnc" id="L299" title="All 2 branches missed.">    if (maColumnElement.getTableNumberColumnsRepeatedAttribute().intValue() &gt; 1) {</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">      if (mnRepeatedIndex &gt; 0) {</span>
+<span class="nc" id="L301">        return table.getColumnInstance(maColumnElement, mnRepeatedIndex - 1);</span>
+      }
+    }
+    // the column has repeated column number &gt; 1 &amp;&amp; the index is 0
+    // or the column has repeated column num = 1
+<span class="nc" id="L306">    Node aPrevNode = maColumnElement.getPreviousSibling();</span>
+<span class="nc" id="L307">    Node aCurNode = maColumnElement;</span>
+    while (true) {
+<span class="nc bnc" id="L309" title="All 2 branches missed.">      if (aPrevNode == null) {</span>
+        // does not have previous sibling, then get the parent
+        // because aCurNode might be the child element of table-header-columns, table-columns,
+        // table-column-group
+<span class="nc" id="L313">        Node parentNode = aCurNode.getParentNode();</span>
+        // if the parent is table, then it means that this column is the first column in this table
+        // it has no previous column
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (parentNode instanceof TableTableElement) {</span>
+<span class="nc" id="L317">          return null;</span>
+        }
+<span class="nc" id="L319">        aPrevNode = parentNode.getPreviousSibling();</span>
+      }
+      // else the parent node might be table-header-columns, table-columns, table-column-group
+<span class="nc bnc" id="L322" title="All 2 branches missed.">      if (aPrevNode != null) {</span>
+        try {
+<span class="nc bnc" id="L324" title="All 2 branches missed.">          if (aPrevNode instanceof TableTableColumnElement) {</span>
+<span class="nc" id="L325">            return table.getColumnInstance(</span>
+                (TableTableColumnElement) aPrevNode,
+                ((TableTableColumnElement) aPrevNode)
+<span class="nc" id="L328">                        .getTableNumberColumnsRepeatedAttribute()</span>
+<span class="nc" id="L329">                        .intValue()</span>
+                    - 1);
+<span class="nc bnc" id="L331" title="All 6 branches missed.">          } else if (aPrevNode instanceof TableTableColumnsElement</span>
+              || aPrevNode instanceof TableTableHeaderColumnsElement
+              || aPrevNode instanceof TableTableColumnGroupElement) {
+<span class="nc" id="L334">            XPath xpath = ((OdfFileDom) maColumnElement.getOwnerDocument()).getXPath();</span>
+<span class="nc" id="L335">            TableTableColumnElement lastCol =</span>
+                (TableTableColumnElement)
+<span class="nc" id="L337">                    xpath.evaluate(&quot;//table:table-column[last()]&quot;, aPrevNode, XPathConstants.NODE);</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            if (lastCol != null) {</span>
+<span class="nc" id="L339">              return table.getColumnInstance(</span>
+<span class="nc" id="L340">                  lastCol, lastCol.getTableNumberColumnsRepeatedAttribute().intValue() - 1);</span>
+            }
+<span class="nc" id="L342">          } else {</span>
+<span class="nc" id="L343">            aCurNode = aPrevNode;</span>
+<span class="nc" id="L344">            aPrevNode = aPrevNode.getPreviousSibling();</span>
+          }
+<span class="nc" id="L346">        } catch (XPathExpressionException e) {</span>
+<span class="nc" id="L347">          Logger.getLogger(OdfTableColumn.class.getName()).log(Level.SEVERE, e.getMessage(), e);</span>
+<span class="nc" id="L348">        }</span>
+      }
+    }
+  }
+
+  /**
+   * Get the next column of the current column.
+   *
+   * @return the next column after this column in the owner table
+   */
+  public OdfTableColumn getNextColumn() {
+<span class="nc" id="L359">    OdfTable table = getTable();</span>
+    // the column has repeated column number &gt; 1
+<span class="nc bnc" id="L361" title="All 2 branches missed.">    if (getColumnsRepeatedNumber() &gt; 1) {</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">      if (mnRepeatedIndex &lt; (getColumnsRepeatedNumber() - 1)) {</span>
+<span class="nc" id="L363">        return table.getColumnInstance(maColumnElement, mnRepeatedIndex + 1);</span>
+      }
+    }
+<span class="nc" id="L366">    Node aNextNode = maColumnElement.getNextSibling();</span>
+<span class="nc" id="L367">    Node aCurNode = maColumnElement;</span>
+    while (true) {
+<span class="nc bnc" id="L369" title="All 2 branches missed.">      if (aNextNode == null) {</span>
+        // does not have next sibling, then get the parent
+        // because aCurNode might be the child element of table-header-columns, table-columns,
+        // table-column-group
+<span class="nc" id="L373">        Node parentNode = aCurNode.getParentNode();</span>
+        // if the parent is table, then it means that this column is the last column in this table
+        // it has no next column
+<span class="nc bnc" id="L376" title="All 2 branches missed.">        if (parentNode instanceof TableTableElement) {</span>
+<span class="nc" id="L377">          return null;</span>
+        }
+<span class="nc" id="L379">        aNextNode = parentNode.getNextSibling();</span>
+      }
+      // else the parent node might be table-header-columns, table-columns, table-column-group
+<span class="nc bnc" id="L382" title="All 2 branches missed.">      if (aNextNode != null) {</span>
+        try {
+<span class="nc bnc" id="L384" title="All 2 branches missed.">          if (aNextNode instanceof TableTableColumnElement) {</span>
+<span class="nc" id="L385">            return table.getColumnInstance((TableTableColumnElement) aNextNode, 0);</span>
+<span class="nc bnc" id="L386" title="All 6 branches missed.">          } else if (aNextNode instanceof TableTableColumnsElement</span>
+              || aNextNode instanceof TableTableHeaderColumnsElement
+              || aNextNode instanceof TableTableColumnGroupElement) {
+<span class="nc" id="L389">            XPath xpath = ((OdfFileDom) maColumnElement.getOwnerDocument()).getXPath();</span>
+<span class="nc" id="L390">            TableTableColumnElement firstCol =</span>
+                (TableTableColumnElement)
+<span class="nc" id="L392">                    xpath.evaluate(&quot;//table:table-column[first()]&quot;, aNextNode, XPathConstants.NODE);</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">            if (firstCol != null) {</span>
+<span class="nc" id="L394">              return table.getColumnInstance(firstCol, 0);</span>
+            }
+<span class="nc" id="L396">          } else {</span>
+<span class="nc" id="L397">            aCurNode = aNextNode;</span>
+<span class="nc" id="L398">            aNextNode = aNextNode.getNextSibling();</span>
+          }
+<span class="nc" id="L400">        } catch (XPathExpressionException e) {</span>
+<span class="nc" id="L401">          Logger.getLogger(OdfTableColumn.class.getName()).log(Level.SEVERE, e.getMessage(), e);</span>
+<span class="nc" id="L402">        }</span>
+      }
+    }
+  }
+
+  /**
+   * Get the index of this column in the owner table.
+   *
+   * @return the index of the column
+   */
+  public int getColumnIndex() {
+<span class="nc" id="L413">    int result = 0;</span>
+<span class="nc" id="L414">    OdfTable table = getTable();</span>
+    TableTableColumnElement columnEle;
+<span class="nc" id="L416">    TableTableElement mTableElement = table.getOdfElement();</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">    for (Node n : new DomNodeList(mTableElement.getChildNodes())) {</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">      if (n instanceof TableTableHeaderColumnsElement) {</span>
+<span class="nc" id="L419">        TableTableHeaderColumnsElement headers = (TableTableHeaderColumnsElement) n;</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">        for (Node m : new DomNodeList(headers.getChildNodes())) {</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">          if (m instanceof TableTableColumnElement) {</span>
+<span class="nc" id="L422">            columnEle = (TableTableColumnElement) m;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            if (columnEle == getOdfElement()) {</span>
+<span class="nc" id="L424">              return result + mnRepeatedIndex;</span>
+            }
+<span class="nc bnc" id="L426" title="All 2 branches missed.">            if (columnEle.getTableNumberColumnsRepeatedAttribute() == null) {</span>
+<span class="nc" id="L427">              result += 1;</span>
+            } else {
+<span class="nc" id="L429">              result += columnEle.getTableNumberColumnsRepeatedAttribute();</span>
+            }
+          }
+<span class="nc" id="L432">        }</span>
+      }
+<span class="nc bnc" id="L434" title="All 2 branches missed.">      if (n instanceof TableTableColumnElement) {</span>
+<span class="nc" id="L435">        columnEle = (TableTableColumnElement) n;</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        if (columnEle == getOdfElement()) {</span>
+<span class="nc" id="L437">          break;</span>
+        }
+<span class="nc bnc" id="L439" title="All 2 branches missed.">        if (columnEle.getTableNumberColumnsRepeatedAttribute() == null) {</span>
+<span class="nc" id="L440">          result += 1;</span>
+        } else {
+<span class="nc" id="L442">          result += columnEle.getTableNumberColumnsRepeatedAttribute();</span>
+        }
+      }
+<span class="nc" id="L445">    }</span>
+<span class="nc" id="L446">    return result + mnRepeatedIndex;</span>
+  }
+
+  /**
+   * Set the default cell style to this column.
+   *
+   * &lt;p&gt;The style should already exist in this document.
+   *
+   * &lt;p&gt;This method is not recommended for text document cases. These is a style assigned to each
+   * cell in tables under text documents. So setting the default cell style to a column may not
+   * work.
+   *
+   * @param style the cell style of the document
+   */
+  public void setDefaultCellStyle(OdfStyle style) {
+<span class="nc" id="L461">    splitRepeatedColumns();</span>
+<span class="nc" id="L462">    OdfStyle defaultStyle = getDefaultCellStyle();</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">    if (defaultStyle != null) {</span>
+<span class="nc" id="L464">      defaultStyle.removeStyleUser(maColumnElement);</span>
+    }
+
+<span class="nc bnc" id="L467" title="All 2 branches missed.">    if (style != null) {</span>
+<span class="nc" id="L468">      style.addStyleUser(maColumnElement);</span>
+<span class="nc" id="L469">      maColumnElement.setTableDefaultCellStyleNameAttribute(style.getStyleNameAttribute());</span>
+    }
+<span class="nc" id="L471">  }</span>
+
+  /**
+   * Get the default cell style of this column.
+   *
+   * @return the default cell style of this column
+   */
+  public OdfStyle getDefaultCellStyle() {
+<span class="nc" id="L479">    String styleName = maColumnElement.getTableDefaultCellStyleNameAttribute();</span>
+<span class="nc" id="L480">    OdfStyle style =</span>
+<span class="nc" id="L481">        maColumnElement.getOrCreateAutomaticStyles().getStyle(styleName, OdfStyleFamily.TableCell);</span>
+
+<span class="nc bnc" id="L483" title="All 2 branches missed.">    if (style == null) {</span>
+<span class="nc" id="L484">      style = mDocument.getDocumentStyles().getStyle(styleName, OdfStyleFamily.TableCell);</span>
+    }
+<span class="nc" id="L486">    return style;</span>
+  }
+
+  // note: we have to use this method to modify the column repeated number
+  // in order to update mnRepeatedIndex of the each column
+  void setColumnsRepeatedNumber(int num) {
+    // update the mnRepeatedIndex for the ever repeated column
+<span class="nc" id="L493">    maColumnElement.setTableNumberColumnsRepeatedAttribute(Integer.valueOf(num));</span>
+<span class="nc" id="L494">  }</span>
+
+  int getColumnsRepeatedNumber() {
+<span class="nc" id="L497">    Integer count = maColumnElement.getTableNumberColumnsRepeatedAttribute();</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">    if (count == null) {</span>
+<span class="nc" id="L499">      return 1;</span>
+    } else {
+<span class="nc" id="L501">      return count.intValue();</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

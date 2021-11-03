@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfNamespace.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfNamespace.java</span></div><h1>OdfNamespace.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+
+/**
+ * Class wrapping the XML Namespace URI and XML Namespace prefix (used by default) as a single
+ * entity For instance, the ODF paragraph element &lt;text:p&gt; uses by default in the ODF specification
+ * the prefix &quot;text&quot; and is bound to this prefix heres
+ */
+public class OdfNamespace implements Comparable&lt;OdfNamespace&gt;, NamespaceName {
+
+<span class="nc" id="L37">  private static Map&lt;String, OdfNamespace&gt; mNamespacesByURI = new HashMap&lt;String, OdfNamespace&gt;();</span>
+  private String mUri;
+  private String mPrefix;
+  /**
+   * In case of a default namespace no prefix is given, but we require the prefix for our class
+   * loader
+   */
+  private static Map&lt;String, String&gt; mUrlToPrefix;
+
+  private OdfNamespace() {}
+
+<span class="nc" id="L48">  private OdfNamespace(String prefix, String uri) {</span>
+<span class="nc" id="L49">    mUri = uri;</span>
+<span class="nc" id="L50">    mPrefix = prefix;</span>
+<span class="nc" id="L51">  }</span>
+
+  /**
+   * Returns the OdfNamespace for the given name. Creates a new one, if the name was not asked
+   * before.
+   *
+   * @param name represents a W3C Namespace Name. The interface &lt;code&gt;NamespaceName&lt;/code&gt; is often
+   *     implemented by an enum.
+   * @return the OdfNamespace for the given name.
+   */
+  public static OdfNamespace newNamespace(NamespaceName name) {
+<span class="nc" id="L62">    OdfNamespace ns = null;</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    if (name != null) {</span>
+<span class="nc" id="L64">      ns = newNamespace(name.getPrefix(), name.getUri());</span>
+    }
+<span class="nc" id="L66">    return ns;</span>
+  }
+
+  /**
+   * Returns the OdfNamespace for the given name. Creates a new one, if the name was not asked
+   * before.
+   *
+   * @param prefix abbreviation for the URL, might be null when a default namespace was set
+   * @param uri identifying the namespace.
+   * @return the namespace.
+   */
+  public static OdfNamespace newNamespace(String prefix, String uri) {
+<span class="nc" id="L78">    OdfNamespace odfNamespace = null;</span>
+<span class="nc bnc" id="L79" title="All 4 branches missed.">    if (prefix == null || prefix.isEmpty()) {</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">      if (mUrlToPrefix == null) {</span>
+<span class="nc" id="L81">        initializeUrl2DefaultPrefixMap();</span>
+      }
+<span class="nc" id="L83">      prefix = mUrlToPrefix.get(uri);</span>
+    }
+<span class="nc bnc" id="L85" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.length() &gt; 0) {</span>
+<span class="nc" id="L86">      odfNamespace = mNamespacesByURI.get(uri);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">      if (odfNamespace == null) {</span>
+<span class="nc" id="L88">        odfNamespace = new OdfNamespace(prefix, uri);</span>
+<span class="nc" id="L89">        mNamespacesByURI.put(uri, odfNamespace);</span>
+      } else {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (prefix != null) {</span>
+          // prefix will be adapted for all OdfNamespaces (last wins)
+<span class="nc" id="L93">          odfNamespace.mPrefix = prefix;</span>
+        }
+      }
+    }
+<span class="nc" id="L97">    return odfNamespace;</span>
+  }
+
+  /**
+   * In case of a default namespace no prefix is given, but we require the prefix for our class
+   * loader
+   */
+  public static void initializeUrl2DefaultPrefixMap() {
+<span class="nc" id="L105">    mUrlToPrefix = new HashMap(32);</span>
+    // add all namespaces from the ODF package specification
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    for (OdfPackageNamespace packageNamespace : OdfPackageNamespace.values()) {</span>
+<span class="nc" id="L108">      mUrlToPrefix.put(packageNamespace.getUri(), packageNamespace.getPrefix());</span>
+    }
+    // add all namespaces from the ODF schema specification
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    for (OdfDocumentNamespace schemaNamespace : OdfDocumentNamespace.values()) {</span>
+<span class="nc" id="L112">      mUrlToPrefix.put(schemaNamespace.getUri(), schemaNamespace.getPrefix());</span>
+    }
+<span class="nc" id="L114">  }</span>
+
+  /**
+   * Returns the namespace for the given uri.
+   *
+   * @param uri identifying the namespace.
+   * @return the namespace identified by the given uri.
+   */
+  public static OdfNamespace getNamespace(String uri) {
+<span class="nc" id="L123">    OdfNamespace ns = null;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">    if (uri != null) {</span>
+<span class="nc" id="L125">      ns = mNamespacesByURI.get(uri);</span>
+    }
+<span class="nc" id="L127">    return ns;</span>
+  }
+
+  public String getPrefix() {
+<span class="nc" id="L131">    return mPrefix;</span>
+  }
+
+  public String getUri() {
+<span class="nc" id="L135">    return mUri;</span>
+  }
+
+  @Override
+  @SuppressWarnings(&quot;EqualsWhichDoesntCheckParameterClass&quot;)
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    if (mUri != null) {</span>
+<span class="nc" id="L142">      return mUri.equals(obj.toString());</span>
+    } else {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">      return mUri == obj;</span>
+    }
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc bnc" id="L150" title="All 2 branches missed.">    if (mUri != null) {</span>
+<span class="nc" id="L151">      return mUri.hashCode();</span>
+    } else {
+<span class="nc" id="L153">      return 0;</span>
+    }
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L159">    return mUri;</span>
+  }
+
+  /**
+   * Splits the XML Qname into the local name and the prefix.
+   *
+   * @param qname is the qualified name to be split.
+   * @return an array of two strings containing first the prefix and the second the local part.
+   * @throws IllegalArgumentException if no qualified name was given.
+   */
+  public static String[] splitQName(String qname) throws IllegalArgumentException {
+<span class="nc" id="L170">    String localpart = qname;</span>
+<span class="nc" id="L171">    String prefix = null;</span>
+<span class="nc" id="L172">    int colon = qname.indexOf(':');</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">    if (colon &gt; 0) {</span>
+<span class="nc" id="L174">      localpart = qname.substring(colon + 1);</span>
+<span class="nc" id="L175">      prefix = qname.substring(0, colon);</span>
+    } else {
+<span class="nc" id="L177">      throw new IllegalArgumentException(</span>
+          &quot;A qualified name was required, but '&quot; + qname + &quot;' was given!&quot;);
+    }
+<span class="nc" id="L180">    return new String[] {prefix, localpart};</span>
+  }
+
+  /**
+   * @param qname is the qualified name to be splitted.
+   * @return the local name of the XML Qname.
+   * @throws IllegalArgumentException if no qualified name was given.
+   */
+  public static String getPrefixPart(String qname) {
+<span class="nc" id="L189">    return splitQName(qname)[0];</span>
+  }
+
+  /**
+   * @param qname is the qualified name to be splitted.
+   * @return the prefix of the XML Qname.
+   * @throws IllegalArgumentException if no qualified name was given.
+   */
+  public static String getLocalPart(String qname) {
+<span class="nc" id="L198">    return splitQName(qname)[1];</span>
+  }
+
+  public int compareTo(OdfNamespace namespace) {
+<span class="nc" id="L202">    return toString().compareTo(namespace.toString());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

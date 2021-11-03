@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Util.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.rdfa</a> &gt; <span class="el_source">Util.java</span></div><h1>Util.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.rdfa;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
+
+<span class="nc" id="L33">public class Util {</span>
+
+  private static final String SLASH = &quot;/&quot;;
+  private static final String EMPTY_BASE_URI = &quot;&quot;;
+  /**
+   * Test whether two QNames are equal to each other. This is a bug fix for java-rdfa library.
+   * &quot;xhtml:about&quot; and &quot;about&quot; should be considered as RDFa, while java-rdfa recognizes only the
+   * later one.
+   *
+   * @param at , the QName of an Attribute
+   * @param name , the QName to be compared
+   * @return
+   */
+  public static boolean qNameEquals(QName at, QName name) {
+<span class="nc bnc" id="L47" title="All 2 branches missed.">    if (!name.getNamespaceURI().equals(XMLConstants.DEFAULT_NS_PREFIX)) {</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">      if (at.equals(name)) {</span>
+<span class="nc" id="L49">        return true;</span>
+      }
+<span class="nc bnc" id="L51" title="All 2 branches missed.">    } else if (at.getLocalPart().equals(name.getLocalPart())) {</span>
+<span class="nc" id="L52">      return true;</span>
+    }
+<span class="nc" id="L54">    return false;</span>
+  }
+
+  /**
+   * Get the RDF base uri of the given internalPath. Note that there would be a SLASH at the end of
+   * the RDF base uri
+   *
+   * @param pkgBaseUri , the base uri of the package
+   * @param internalPath , the internalPath relative to the root document
+   * @return
+   */
+  public static String getRDFBaseUri(String pkgBaseUri, String internalPath) {
+<span class="nc" id="L66">    String baseUri = null;</span>
+    String subDirectory =
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        internalPath.lastIndexOf(SLASH) == -1</span>
+<span class="nc" id="L69">            ? &quot;&quot;</span>
+<span class="nc" id="L70">            : &quot;&quot; + SLASH + internalPath.substring(0, internalPath.lastIndexOf(SLASH));</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    if (pkgBaseUri != null) {</span>
+<span class="nc" id="L72">      baseUri = pkgBaseUri + subDirectory + SLASH;</span>
+    } else {
+<span class="nc" id="L74">      baseUri = subDirectory + SLASH;</span>
+    }
+<span class="nc" id="L76">    return baseUri;</span>
+  }
+
+  /**
+   * To test whether the subPath is a sut path of superPath
+   *
+   * @param subPath , an internal path in the ODF package
+   * @param superPath , an internal path in the ODF package
+   * @return
+   */
+  public static boolean isSubPathOf(String subPath, String superPath) {
+<span class="nc bnc" id="L87" title="All 4 branches missed.">    if (superPath == null || subPath == null) {</span>
+<span class="nc" id="L88">      return false;</span>
+    }
+<span class="nc bnc" id="L90" title="All 2 branches missed.">    return SLASH.equals(superPath)</span>
+<span class="nc bnc" id="L91" title="All 4 branches missed.">        || (subPath.length() &gt; superPath.length() &amp;&amp; subPath.startsWith(superPath));</span>
+  }
+
+  /**
+   * To fix the 3 slashes bug for File URI: For example: file:/C:/work/test.txt -&gt;
+   * file:///C:/work/test.txt
+   *
+   * @param u - the File URI
+   * @return the String of the URI
+   */
+  public static String toExternalForm(URI u) {
+<span class="nc" id="L102">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">    if (u.getScheme() != null) {</span>
+<span class="nc" id="L104">      sb.append(u.getScheme());</span>
+<span class="nc" id="L105">      sb.append(':');</span>
+    }
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (u.isOpaque()) {</span>
+<span class="nc" id="L108">      sb.append(u.getSchemeSpecificPart());</span>
+    } else {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">      if (u.getHost() != null) {</span>
+<span class="nc" id="L111">        sb.append(&quot;//&quot;);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (u.getUserInfo() != null) {</span>
+<span class="nc" id="L113">          sb.append(u.getUserInfo());</span>
+<span class="nc" id="L114">          sb.append('@');</span>
+        }
+<span class="nc" id="L116">        boolean needBrackets =</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            ((u.getHost().indexOf(':') &gt;= 0)</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                &amp;&amp; !u.getHost().startsWith(&quot;[&quot;)</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                &amp;&amp; !u.getHost().endsWith(&quot;]&quot;));</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (needBrackets) sb.append('[');</span>
+<span class="nc" id="L121">        sb.append(u.getHost());</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (needBrackets) sb.append(']');</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (u.getPort() != -1) {</span>
+<span class="nc" id="L124">          sb.append(':');</span>
+<span class="nc" id="L125">          sb.append(u.getPort());</span>
+        }
+<span class="nc bnc" id="L127" title="All 2 branches missed.">      } else if (u.getRawAuthority() != null) {</span>
+<span class="nc" id="L128">        sb.append(&quot;//&quot;);</span>
+<span class="nc" id="L129">        sb.append(u.getRawAuthority());</span>
+      } else {
+<span class="nc" id="L131">        sb.append(&quot;//&quot;);</span>
+      }
+<span class="nc bnc" id="L133" title="All 2 branches missed.">      if (u.getRawPath() != null) sb.append(u.getRawPath());</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">      if (u.getRawQuery() != null) {</span>
+<span class="nc" id="L135">        sb.append('?');</span>
+<span class="nc" id="L136">        sb.append(u.getRawQuery());</span>
+      }
+    }
+<span class="nc bnc" id="L139" title="All 2 branches missed.">    if (u.getFragment() != null) {</span>
+<span class="nc" id="L140">      sb.append('#');</span>
+<span class="nc" id="L141">      sb.append(u.getFragment());</span>
+    }
+<span class="nc" id="L143">    String ret = null;</span>
+    try {
+<span class="nc" id="L145">      ret = new URI(sb.toString()).toASCIIString();</span>
+<span class="nc" id="L146">    } catch (URISyntaxException ex) {</span>
+<span class="nc" id="L147">      Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L148">    }</span>
+<span class="nc" id="L149">    return ret;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

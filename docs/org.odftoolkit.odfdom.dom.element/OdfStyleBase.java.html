@@ -1,0 +1,553 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStyleBase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom.element</a> &gt; <span class="el_source">OdfStyleBase.java</span></div><h1>OdfStyleBase.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom.element;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.style.StyleChartPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleDrawingPagePropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleGraphicPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHeaderFooterPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleListLevelPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StylePageLayoutPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleParagraphPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleRubyPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleSectionPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTableCellPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTableColumnPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTablePropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTableRowPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.OdfStylePropertySet;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.pkg.OdfAttribute;
+import org.odftoolkit.odfdom.pkg.OdfContainerElementBase;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.w3c.dom.Attr;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * A placeholder for multiple style incarnation, for instance &lt;style:style&gt; from either the
+ * automatic or the template styles parent, e.g. StyleStyleElement is inheriting from it
+ */
+public abstract class OdfStyleBase extends OdfContainerElementBase
+    implements OdfStylePropertySet, Comparable {
+
+  /** */
+  private static final long serialVersionUID = 8271282184913774000L;
+
+  private HashMap&lt;OdfStylePropertiesSet, OdfStylePropertiesBase&gt; mPropertySetElementMap;
+  private ArrayList&lt;OdfStylableElement&gt; mStyleUser;
+  static HashMap&lt;OdfName, OdfStylePropertiesSet&gt; mStylePropertiesElementToSetMap;
+
+  static {
+<span class="nc" id="L79">    mStylePropertiesElementToSetMap = new HashMap&lt;OdfName, OdfStylePropertiesSet&gt;();</span>
+<span class="nc" id="L80">    mStylePropertiesElementToSetMap.put(</span>
+        StyleChartPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.ChartProperties);
+<span class="nc" id="L82">    mStylePropertiesElementToSetMap.put(</span>
+        StyleDrawingPagePropertiesElement.ELEMENT_NAME,
+        OdfStylePropertiesSet.DrawingPageProperties);
+<span class="nc" id="L85">    mStylePropertiesElementToSetMap.put(</span>
+        StyleGraphicPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.GraphicProperties);
+<span class="nc" id="L87">    mStylePropertiesElementToSetMap.put(</span>
+        StyleHeaderFooterPropertiesElement.ELEMENT_NAME,
+        OdfStylePropertiesSet.HeaderFooterProperties);
+<span class="nc" id="L90">    mStylePropertiesElementToSetMap.put(</span>
+        StyleListLevelPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.ListLevelProperties);
+<span class="nc" id="L92">    mStylePropertiesElementToSetMap.put(</span>
+        StylePageLayoutPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.PageLayoutProperties);
+<span class="nc" id="L94">    mStylePropertiesElementToSetMap.put(</span>
+        StyleParagraphPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.ParagraphProperties);
+<span class="nc" id="L96">    mStylePropertiesElementToSetMap.put(</span>
+        StyleRubyPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.RubyProperties);
+<span class="nc" id="L98">    mStylePropertiesElementToSetMap.put(</span>
+        StyleSectionPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.SectionProperties);
+<span class="nc" id="L100">    mStylePropertiesElementToSetMap.put(</span>
+        StyleTableCellPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.TableCellProperties);
+<span class="nc" id="L102">    mStylePropertiesElementToSetMap.put(</span>
+        StyleTableColumnPropertiesElement.ELEMENT_NAME,
+        OdfStylePropertiesSet.TableColumnProperties);
+<span class="nc" id="L105">    mStylePropertiesElementToSetMap.put(</span>
+        StyleTablePropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.TableProperties);
+<span class="nc" id="L107">    mStylePropertiesElementToSetMap.put(</span>
+        StyleTableRowPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.TableRowProperties);
+<span class="nc" id="L109">    mStylePropertiesElementToSetMap.put(</span>
+        StyleTextPropertiesElement.ELEMENT_NAME, OdfStylePropertiesSet.TextProperties);
+<span class="nc" id="L111">  }</span>
+
+  /** Creates a new instance of OdfElement */
+  public OdfStyleBase(OdfFileDom ownerDocument, String namespaceURI, String qualifiedName)
+      throws DOMException {
+<span class="nc" id="L116">    super(ownerDocument, namespaceURI, qualifiedName);</span>
+<span class="nc" id="L117">  }</span>
+
+  /** Creates a new instance of OdfElement */
+  public OdfStyleBase(OdfFileDom ownerDocument, OdfName aName) throws DOMException {
+<span class="nc" id="L121">    super(ownerDocument, aName.getUri(), aName.getQName());</span>
+<span class="nc" id="L122">  }</span>
+
+  public void addStyleUser(OdfStylableElement user) {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">    if (mStyleUser == null) {</span>
+<span class="nc" id="L126">      mStyleUser = new ArrayList&lt;OdfStylableElement&gt;();</span>
+    }
+<span class="nc" id="L128">    mStyleUser.add(user);</span>
+<span class="nc" id="L129">  }</span>
+
+  /**
+   * get a map containing all properties of this style and their values.
+   *
+   * @return map of properties. @Deprecated Broken by design as the same OdfStlyeProperty can occur
+   *     multiple times and would be overwritten (e.g. background color exist 3times in cells).
+   */
+  public Map&lt;OdfStyleProperty, String&gt; getStyleProperties() {
+<span class="nc" id="L138">    TreeMap&lt;OdfStyleProperty, String&gt; result = new TreeMap&lt;OdfStyleProperty, String&gt;();</span>
+<span class="nc" id="L139">    OdfStyleFamily family = getFamily();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">    if (family != null) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">      for (OdfStyleProperty property : family.getProperties()) {</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (hasProperty(property)) {</span>
+<span class="nc" id="L143">          result.put(property, getProperty(property));</span>
+        }
+<span class="nc" id="L145">      }</span>
+    }
+<span class="nc" id="L147">    return result;</span>
+  }
+
+  /**
+   * get a map containing all properties of this style and their values. The map will also include
+   * any properties set by parent styles
+   *
+   * @return a map of all the properties. @Deprecated Broken by design as the same OdfStlyeProperty
+   *     can occur multiple times and would be overwritten (e.g. background color exist 3times in
+   *     cells).
+   */
+  public Map&lt;OdfStyleProperty, String&gt; getStylePropertiesDeep() {
+<span class="nc" id="L159">    TreeMap&lt;OdfStyleProperty, String&gt; result = new TreeMap&lt;OdfStyleProperty, String&gt;();</span>
+<span class="nc" id="L160">    OdfStyleBase style = this;</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">    while (style != null) {</span>
+<span class="nc" id="L162">      OdfStyleFamily family = style.getFamily();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">      if (family != null) {</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        for (OdfStyleProperty property : family.getProperties()) {</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">          if (!result.containsKey(property) &amp;&amp; style.hasProperty(property)) {</span>
+<span class="nc" id="L166">            result.put(property, style.getProperty(property));</span>
+          }
+<span class="nc" id="L168">        }</span>
+      }
+
+<span class="nc" id="L171">      style = style.getParentStyle();</span>
+<span class="nc" id="L172">    }</span>
+<span class="nc" id="L173">    return result;</span>
+  }
+
+  public void removeStyleUser(OdfStylableElement user) {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">    if (mStyleUser != null) {</span>
+<span class="nc" id="L178">      mStyleUser.remove(user);</span>
+    }
+<span class="nc" id="L180">  }</span>
+
+  public int getStyleUserCount() {
+<span class="nc bnc" id="L183" title="All 2 branches missed.">    return mStyleUser == null ? 0 : mStyleUser.size();</span>
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;OdfStylableElement&lt;/code&gt; elements using this style.
+   *
+   * @return an iterator for all &lt;code&gt;OdfStylableElement&lt;/code&gt; elements using this style
+   */
+  public Iterable&lt;OdfStylableElement&gt; getStyleUsers() {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">    if (mStyleUser != null) {</span>
+<span class="nc" id="L193">      return mStyleUser;</span>
+    }
+<span class="nc" id="L195">    return new ArrayList&lt;OdfStylableElement&gt;();</span>
+  }
+
+  public String getFamilyName() {
+<span class="nc" id="L199">    return getFamily().getName();</span>
+  }
+
+  /**
+   * @param set
+   * @return the style:*-properties element for the given set. Returns null if such element does not
+   *     exist yet.
+   */
+  public OdfStylePropertiesBase getPropertiesElement(OdfStylePropertiesSet set) {
+<span class="nc bnc" id="L208" title="All 2 branches missed.">    if (mPropertySetElementMap != null) {</span>
+<span class="nc" id="L209">      return mPropertySetElementMap.get(set);</span>
+    }
+
+<span class="nc" id="L212">    return null;</span>
+  }
+
+  /**
+   * @param set
+   * @return the style:*-properties element for the given set. If such element does not yet exist,
+   *     it is created.
+   */
+  public OdfStylePropertiesBase getOrCreatePropertiesElement(OdfStylePropertiesSet set) {
+<span class="nc" id="L221">    OdfStylePropertiesBase properties = null;</span>
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">    if (mPropertySetElementMap != null) {</span>
+<span class="nc" id="L224">      properties = mPropertySetElementMap.get(set);</span>
+    }
+
+<span class="nc bnc" id="L227" title="All 2 branches missed.">    if (properties == null) {</span>
+      for (Entry&lt;OdfName, OdfStylePropertiesSet&gt; entry :
+<span class="nc bnc" id="L229" title="All 2 branches missed.">          mStylePropertiesElementToSetMap.entrySet()) {</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        if (entry.getValue().equals(set)) {</span>
+<span class="nc" id="L231">          properties =</span>
+              (OdfStylePropertiesBase)
+<span class="nc" id="L233">                  ((OdfFileDom) this.ownerDocument).createElementNS(entry.getKey());</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">          if (getFirstChild() == null) {</span>
+<span class="nc" id="L235">            appendChild(properties);</span>
+          } else {
+            // make sure the properties elements are in the correct order
+<span class="nc" id="L238">            Node beforeNode = null;</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            if (set.equals(OdfStylePropertiesSet.GraphicProperties)) {</span>
+<span class="nc" id="L240">              beforeNode =</span>
+<span class="nc" id="L241">                  OdfElement.findFirstChildNode(StyleParagraphPropertiesElement.class, this);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">              if (beforeNode == null) {</span>
+<span class="nc" id="L243">                beforeNode = OdfElement.findFirstChildNode(StyleTextPropertiesElement.class, this);</span>
+              }
+<span class="nc bnc" id="L245" title="All 2 branches missed.">            } else if (set.equals(OdfStylePropertiesSet.ParagraphProperties)) {</span>
+<span class="nc" id="L246">              beforeNode = OdfElement.findFirstChildNode(StyleTextPropertiesElement.class, this);</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            } else if (!set.equals(OdfStylePropertiesSet.TextProperties)) {</span>
+<span class="nc" id="L248">              beforeNode = getFirstChild();</span>
+            }
+
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            if (beforeNode == null) {</span>
+<span class="nc" id="L252">              beforeNode = getFirstChild();</span>
+              // find first non properties node
+<span class="nc bnc" id="L254" title="All 2 branches missed.">              while (beforeNode != null) {</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">                if (beforeNode.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                  if (!(beforeNode instanceof OdfStylePropertiesBase)) {</span>
+<span class="nc" id="L257">                    break;</span>
+                  }
+                }
+<span class="nc" id="L260">                beforeNode = beforeNode.getNextSibling();</span>
+              }
+            }
+
+<span class="nc" id="L264">            insertBefore(properties, beforeNode);</span>
+          }
+<span class="nc" id="L266">          break;</span>
+        }
+<span class="nc" id="L268">      }</span>
+    }
+
+<span class="nc" id="L271">    return properties;</span>
+  }
+
+  /** @return a property value. */
+  public String getProperty(OdfStyleProperty prop) {
+<span class="nc" id="L276">    String value = null;</span>
+
+<span class="nc" id="L278">    OdfStylePropertiesBase properties = getPropertiesElement(prop.getPropertySet());</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">    if (properties != null) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">      if (properties.hasAttributeNS(prop.getName().getUri(), prop.getName().getLocalName())) {</span>
+<span class="nc" id="L281">        return properties.getOdfAttribute(prop.getName()).getValue();</span>
+      }
+    }
+
+<span class="nc" id="L285">    OdfStyleBase parent = getParentStyle();</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">    if (parent != null) {</span>
+<span class="nc" id="L287">      return parent.getProperty(prop);</span>
+    }
+
+<span class="nc" id="L290">    return value;</span>
+  }
+
+  public boolean hasProperty(OdfStyleProperty prop) {
+<span class="nc bnc" id="L294" title="All 2 branches missed.">    if (mPropertySetElementMap != null) {</span>
+<span class="nc" id="L295">      OdfStylePropertiesBase properties = mPropertySetElementMap.get(prop.getPropertySet());</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">      if (properties != null) {</span>
+<span class="nc" id="L297">        return properties.hasAttributeNS(prop.getName().getUri(), prop.getName().getLocalName());</span>
+      }
+    }
+<span class="nc" id="L300">    return false;</span>
+  }
+
+  @Override
+  protected void onOdfNodeInserted(OdfElement node, Node refChild) {
+<span class="nc bnc" id="L305" title="All 2 branches missed.">    if (node instanceof OdfStylePropertiesBase) {</span>
+<span class="nc" id="L306">      OdfStylePropertiesSet set = mStylePropertiesElementToSetMap.get(node.getOdfName());</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">      if (set != null) {</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (mPropertySetElementMap == null) {</span>
+<span class="nc" id="L309">          mPropertySetElementMap = new HashMap&lt;OdfStylePropertiesSet, OdfStylePropertiesBase&gt;();</span>
+        }
+<span class="nc" id="L311">        mPropertySetElementMap.put(set, (OdfStylePropertiesBase) node);</span>
+      }
+    }
+<span class="nc" id="L314">  }</span>
+
+  @Override
+  protected void onOdfNodeRemoved(OdfElement node) {
+<span class="nc bnc" id="L318" title="All 2 branches missed.">    if (mPropertySetElementMap != null) {</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">      if (node instanceof OdfStylePropertiesBase) {</span>
+<span class="nc" id="L320">        OdfStylePropertiesSet set = mStylePropertiesElementToSetMap.get(node.getOdfName());</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        if (set != null) {</span>
+<span class="nc" id="L322">          mPropertySetElementMap.remove(set);</span>
+        }
+      }
+    }
+<span class="nc" id="L326">  }</span>
+
+  public Map&lt;OdfStyleProperty, String&gt; getProperties(Set&lt;OdfStyleProperty&gt; properties) {
+<span class="nc" id="L329">    HashMap&lt;OdfStyleProperty, String&gt; map = new HashMap&lt;OdfStyleProperty, String&gt;();</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">    for (OdfStyleProperty property : properties) {</span>
+<span class="nc" id="L331">      map.put(property, getProperty(property));</span>
+<span class="nc" id="L332">    }</span>
+
+<span class="nc" id="L334">    return map;</span>
+  }
+
+  public Set&lt;OdfStyleProperty&gt; getStrictProperties() {
+<span class="nc" id="L338">    return getFamily().getProperties();</span>
+  }
+
+  public void removeProperty(OdfStyleProperty property) {
+<span class="nc bnc" id="L342" title="All 2 branches missed.">    if (mPropertySetElementMap != null) {</span>
+<span class="nc" id="L343">      OdfStylePropertiesBase properties = mPropertySetElementMap.get(property.getPropertySet());</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">      if (properties != null) {</span>
+<span class="nc" id="L345">        properties.removeAttributeNS(</span>
+<span class="nc" id="L346">            property.getName().getUri(), property.getName().getLocalName());</span>
+      }
+    }
+<span class="nc" id="L349">  }</span>
+
+  public void setProperties(Map&lt;OdfStyleProperty, String&gt; properties) {
+<span class="nc bnc" id="L352" title="All 2 branches missed.">    for (Map.Entry&lt;OdfStyleProperty, String&gt; entry : properties.entrySet()) {</span>
+<span class="nc" id="L353">      setProperty(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L354">    }</span>
+<span class="nc" id="L355">  }</span>
+
+  public void setProperty(OdfStyleProperty property, String value) {
+<span class="nc" id="L358">    OdfStylePropertiesBase properties = getOrCreatePropertiesElement(property.getPropertySet());</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">    if (properties != null) {</span>
+<span class="nc" id="L360">      OdfAttribute propertyAttr =</span>
+<span class="nc" id="L361">          ((OdfFileDom) this.ownerDocument).createAttributeNS(property.getName());</span>
+<span class="nc" id="L362">      properties.setOdfAttribute(propertyAttr);</span>
+<span class="nc" id="L363">      propertyAttr.setValue(value);</span>
+    }
+<span class="nc" id="L365">  }</span>
+
+  /**
+   * compare one style to another one. This implements a total order on style objects.
+   *
+   * @param obj - the reference object with which to compare2.
+   * @return 0 if this object is the same as the obj argument; -1 if this object is less than the
+   *     obj argument; 1 if this object is greater than the obj argument
+   */
+  public int compareTo(Object obj) {
+<span class="nc bnc" id="L375" title="All 2 branches missed.">    if (this == obj) {</span>
+<span class="nc" id="L376">      return 0;</span>
+    }
+
+<span class="nc bnc" id="L379" title="All 2 branches missed.">    if (!(obj instanceof OdfStyleBase)) {</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">      if (obj == null) {</span>
+<span class="nc" id="L381">        throw new ClassCastException(&quot;The object to be compared is null!&quot;);</span>
+      } else {
+<span class="nc" id="L383">        throw new ClassCastException(&quot;The object to be compared is not a style!&quot;);</span>
+      }
+    }
+<span class="nc" id="L386">    OdfStyleBase compare = (OdfStyleBase) obj;</span>
+
+<span class="nc" id="L388">    int c = compareNodes(this, compare);</span>
+<span class="nc" id="L389">    return c;</span>
+  }
+
+  // Currently this function does not consider the order of child nodes, e.g.,
+  //
+  //		&lt;style:style style:name=&quot;P1&quot; style:family=&quot;paragraph&quot; style:parent-style-name=&quot;Standard&quot;&gt;
+  //			&lt;style:paragraph-properties&gt;
+  //				&lt;style:tab-stops&gt;
+  //					&lt;style:tab-stop style:position=&quot;4.344cm&quot;/&gt;
+  //				&lt;/style:tab-stops&gt;
+  //				&lt;style:background-image xlink:href=&quot;Pictures/1.jpg&quot; xlink:type=&quot;simple&quot;
+  // xlink:actuate=&quot;onLoad&quot;/&gt;
+  //			&lt;/style:paragraph-properties&gt;
+  //		&lt;/style:style&gt;
+  //
+  //  and
+  //
+  //		&lt;style:style style:name=&quot;P2&quot; style:family=&quot;paragraph&quot; style:parent-style-name=&quot;Standard&quot;&gt;
+  //			&lt;style:paragraph-properties&gt;
+  //				&lt;style:background-image xlink:href=&quot;Pictures/1.jpg&quot; xlink:type=&quot;simple&quot;
+  // xlink:actuate=&quot;onLoad&quot;/&gt;
+  //				&lt;style:tab-stops&gt;
+  //					&lt;style:tab-stop style:position=&quot;4.344cm&quot;/&gt;
+  //				&lt;/style:tab-stops&gt;
+  //			&lt;/style:paragraph-properties&gt;
+  //		&lt;/style:style&gt;
+  //
+  //  are regarded non-equal
+  //
+  private static int compareNodes(Node compare1, Node compare2) {
+    // Only styles can be equal, that are from the same element
+    // (e.g. style:style and text:list-level-style-bullet are never equal)
+<span class="nc" id="L421">    int c = 0;</span>
+    // if the local name is unequal (e.g. style vs. list-level-style-bullet)
+    // the String compareTo will give me the order
+<span class="nc bnc" id="L424" title="All 2 branches missed.">    if ((c = compare1.getLocalName().compareTo(compare2.getLocalName())) != 0) {</span>
+<span class="nc" id="L425">      return c;</span>
+    }
+
+    // if the namespaceURI is unequal (e.g. style vs. text)
+    // the String compareTo will give me the order
+<span class="nc bnc" id="L430" title="All 2 branches missed.">    if ((c = compare1.getNamespaceURI().compareTo(compare2.getNamespaceURI())) != 0) {</span>
+<span class="nc" id="L431">      return c;</span>
+    }
+
+    // compare number of attributes
+<span class="nc bnc" id="L435" title="All 2 branches missed.">    int attr_count1 = compare1.getAttributes() != null ? compare1.getAttributes().getLength() : 0;</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">    int attr_count2 = compare2.getAttributes() != null ? compare2.getAttributes().getLength() : 0;</span>
+
+    // attributes with default values do not exist in the ODFDOM XML model
+<span class="nc bnc" id="L439" title="All 2 branches missed.">    if (attr_count1 != attr_count2) {</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">      return attr_count1 &lt; attr_count2 ? -1 : 1;</span>
+    }
+
+    // sort attributes by namespace:localname, omit style name
+<span class="nc" id="L444">    SortedMap&lt;String, String&gt; attr1 = getSortedAttributes(compare1);</span>
+<span class="nc" id="L445">    SortedMap&lt;String, String&gt; attr2 = getSortedAttributes(compare2);</span>
+
+    // compare2 attribute names and values
+<span class="nc" id="L448">    Iterator&lt;String&gt; keySet1Iter = attr1.keySet().iterator();</span>
+<span class="nc" id="L449">    Iterator&lt;String&gt; keySet2Iter = attr2.keySet().iterator();</span>
+
+<span class="nc bnc" id="L451" title="All 2 branches missed.">    while (keySet1Iter.hasNext()) {</span>
+<span class="nc" id="L452">      String key1 = keySet1Iter.next();</span>
+<span class="nc" id="L453">      String key2 = keySet2Iter.next();</span>
+
+<span class="nc bnc" id="L455" title="All 2 branches missed.">      if ((c = key1.compareTo(key2)) != 0) {</span>
+<span class="nc" id="L456">        return c;</span>
+      }
+
+<span class="nc" id="L459">      String attrValue1 = attr1.get(key1);</span>
+<span class="nc" id="L460">      String attrValue2 = attr2.get(key1);</span>
+
+<span class="nc bnc" id="L462" title="All 2 branches missed.">      if ((c = attrValue1.compareTo(attrValue2)) != 0) {</span>
+<span class="nc" id="L463">        return c;</span>
+      }
+<span class="nc" id="L465">    }</span>
+
+    // now number of child elements
+<span class="nc" id="L468">    ArrayList&lt;Node&gt; nodes1 = getNonEmptyChildNodes(compare1);</span>
+<span class="nc" id="L469">    ArrayList&lt;Node&gt; nodes2 = getNonEmptyChildNodes(compare2);</span>
+
+<span class="nc bnc" id="L471" title="All 2 branches missed.">    if (nodes1.size() != nodes2.size()) {</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">      return nodes1.size() &lt; nodes2.size() ? -1 : 1;</span>
+    }
+
+    // now compare child elements
+<span class="nc" id="L476">    Iterator&lt;Node&gt; iter1 = nodes1.iterator();</span>
+<span class="nc" id="L477">    Iterator&lt;Node&gt; iter2 = nodes2.iterator();</span>
+
+<span class="nc bnc" id="L479" title="All 2 branches missed.">    while (iter1.hasNext()) {</span>
+<span class="nc" id="L480">      Node child1 = iter1.next();</span>
+<span class="nc" id="L481">      Node child2 = iter2.next();</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">      if ((c = compareNodes(child1, child2)) != 0) {</span>
+<span class="nc" id="L483">        return c;</span>
+      }
+<span class="nc" id="L485">    }</span>
+
+<span class="nc" id="L487">    return 0;</span>
+  }
+
+  // helper function for compareTo.
+  // sorts attributes by namespace:localname
+  private static SortedMap&lt;String, String&gt; getSortedAttributes(Node node) {
+<span class="nc" id="L493">    SortedMap&lt;String, String&gt; ret = new TreeMap&lt;String, String&gt;();</span>
+<span class="nc" id="L494">    NamedNodeMap attrs = node.getAttributes();</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">    for (int i = 0; i &lt; attrs.getLength(); i++) {</span>
+<span class="nc" id="L496">      Node cur = attrs.item(i);</span>
+<span class="nc" id="L497">      String namespace = cur.getNamespaceURI();</span>
+<span class="nc" id="L498">      String local = cur.getLocalName();</span>
+      // styles can be still the same, even if they have different names
+<span class="nc bnc" id="L500" title="All 4 branches missed.">      if (local.equals(&quot;name&quot;) &amp;&amp; namespace.equals(OdfDocumentNamespace.STYLE.getUri())) {</span>
+<span class="nc" id="L501">        continue;</span>
+      }
+<span class="nc" id="L503">      ret.put(namespace + &quot;:&quot; + local, ((Attr) cur).getValue());</span>
+    }
+<span class="nc" id="L505">    return ret;</span>
+  }
+
+  // helper function for compareTo.
+  // all except &quot;empty&quot; text nodes will be returned
+  private static ArrayList&lt;Node&gt; getNonEmptyChildNodes(Node node) {
+<span class="nc" id="L511">    ArrayList&lt;Node&gt; ret = new ArrayList&lt;Node&gt;();</span>
+<span class="nc" id="L512">    NodeList childs = node.getChildNodes();</span>
+<span class="nc bnc" id="L513" title="All 2 branches missed.">    for (int i = 0; i &lt; childs.getLength(); i++) {</span>
+<span class="nc" id="L514">      Node cur = childs.item(i);</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">      if (cur.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (cur.getNodeValue().trim().length() == 0) {</span>
+<span class="nc" id="L517">          continue; // skip whitespace text nodes</span>
+        }
+      }
+<span class="nc" id="L520">      ret.add(cur);</span>
+    }
+<span class="nc" id="L522">    return ret;</span>
+  }
+
+  /**
+   * Indicates if some other object is equal to this one. The attribute style:name is ignored during
+   * compare2.
+   *
+   * @param obj - the reference object with which to compare2.
+   * @return true if this object is the same as the obj argument; false otherwise.
+   */
+  @Override
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L534" title="All 4 branches missed.">    return obj != null ? compareTo(obj) == 0 : false;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L539">    return 59 * 7</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        + (this.mPropertySetElementMap != null ? this.mPropertySetElementMap.hashCode() : 0);</span>
+  }
+
+  /** @return the style family of the style or null if none existent */
+  public OdfStyleFamily getFamily() {
+<span class="nc" id="L545">    return null;</span>
+  }
+
+  /** @return the style parent of the style or null if none existent */
+  public OdfStyleBase getParentStyle() {
+<span class="nc" id="L550">    return null;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

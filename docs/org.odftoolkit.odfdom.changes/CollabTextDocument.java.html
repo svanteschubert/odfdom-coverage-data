@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CollabTextDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">CollabTextDocument.java</span></div><h1>CollabTextDocument.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import static org.odftoolkit.odfdom.changes.OperationConstants.CONFIG_DEBUG_OPERATIONS;
+import static org.odftoolkit.odfdom.changes.OperationConstants.CONFIG_MAX_SHEETS;
+import static org.odftoolkit.odfdom.changes.OperationConstants.CONFIG_MAX_TABLE_CELLS;
+import static org.odftoolkit.odfdom.changes.OperationConstants.CONFIG_MAX_TABLE_COLUMNS;
+import static org.odftoolkit.odfdom.changes.OperationConstants.CONFIG_MAX_TABLE_ROWS;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_OPERATIONS;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.doc.OdfTextDocument;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument.OdfXMLFile;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
+/** This collaboration document embraces an ODF document ad */
+public class CollabTextDocument implements Closeable {
+
+<span class="nc" id="L51">  private static final Logger LOG = LoggerFactory.getLogger(CollabTextDocument.class);</span>
+  //	private static final Logger LOG = Logger.getLogger(CollabTextDocument.class.getName());
+  // not private as used as well by tests
+  static final String OPERATION_REVISON_FILE = &quot;debug/revision.txt&quot;;
+  static final String OPERATION_TEXT_FILE_PREFIX = &quot;debug/operationUpdates_&quot;;
+  static final String ORIGNAL_ODT_FILE = &quot;debug/original.odt&quot;;
+
+  /**
+   * Only being used when a certain test (my workbench test, which is not part of the regression
+   * testing) is being used
+   */
+<span class="nc" id="L62">  private static final String OPERATION_DEBUG_OUTPUT_FILE =</span>
+<span class="nc" id="L63">      System.getProperty(&quot;java.io.tmpdir&quot;) + File.separatorChar + &quot;odf-operations.txt&quot;;</span>
+
+  private OdfTextDocument mTextDocument;
+  private OdfPackage mPackage;
+  private Map&lt;Long, byte[]&gt; mResourceMap;
+  private boolean mSaveDebugOperations;
+  private int mMaxTableColumnCount;
+  private int mMaxTableRowCount;
+  private int mMaxTableCellCount;
+  private int mMaxSheetCount;
+<span class="nc" id="L73">  private boolean isMetadataUpdated = false;</span>
+<span class="nc" id="L74">  private int appliedChangesCount = 0;</span>
+
+  /** Creates an empty ODF document. */
+<span class="nc" id="L77">  private CollabTextDocument() {}</span>
+
+  // to be ... depending to the target the owner document might be also the StylesDom
+  public OdfFileDom getOwnerDocument() throws SAXException, IOException {
+
+<span class="nc" id="L82">    return getDocument().getContentDom();</span>
+  }
+
+  /**
+   * Creates a new ODT document from the default template
+   *
+   * @return new CollabTextDocument
+   */
+  public static CollabTextDocument newTextCollabDocument() throws Exception {
+<span class="nc" id="L91">    CollabTextDocument odt = new CollabTextDocument();</span>
+<span class="nc" id="L92">    odt.mTextDocument = OdfTextDocument.newTextDocument(Boolean.TRUE);</span>
+<span class="nc" id="L93">    return odt;</span>
+  }
+
+  /**
+   * Creates an CollabTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * CollabTextDocument, the InputStream is cached. This usually takes more time compared to the
+   * other createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param inputStream - the InputStream of the ODF text document.
+   */
+<span class="nc" id="L106">  public CollabTextDocument(InputStream inputStream) throws Exception {</span>
+<span class="nc" id="L107">    mTextDocument = OdfTextDocument.loadDocument(inputStream, Boolean.TRUE);</span>
+<span class="nc" id="L108">  }</span>
+
+  /**
+   * Creates an CollabTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * CollabTextDocument, the InputStream is cached. This usually takes more time compared to the
+   * other createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param configuration - key/value pairs of user given run-time settings (configuration)
+   * @param documentStream - the InputStream of the ODF text document.
+   */
+  public CollabTextDocument(InputStream documentStream, Map&lt;String, Object&gt; configuration)
+      throws Exception {
+<span class="nc" id="L123">    this(documentStream, null, configuration);</span>
+<span class="nc" id="L124">  }</span>
+
+  /**
+   * Creates an CollabTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * CollabTextDocument, the InputStream is cached. This usually takes more time compared to the
+   * other createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param inputStream - the InputStream of the ODF text document.
+   * @param resourceManager - the bytes of new resources can be accessed by an ID.
+   * @param configuration - key/value pairs of user given run-time settings (configuration)
+   * @throws java.lang.Exception document could not be opened
+   */
+  public CollabTextDocument(
+      InputStream inputStream, Map&lt;Long, byte[]&gt; resourceManager, Map&lt;String, Object&gt; configuration)
+<span class="nc" id="L141">      throws Exception {</span>
+<span class="nc" id="L142">    mTextDocument = OdfTextDocument.loadDocument(inputStream, configuration, Boolean.TRUE);</span>
+<span class="nc" id="L143">    mPackage = getDocument().getPackage();</span>
+<span class="nc" id="L144">    mResourceMap = resourceManager;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">    if (configuration != null) {</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">      if (configuration.containsKey(CONFIG_DEBUG_OPERATIONS)) {</span>
+<span class="nc" id="L147">        mSaveDebugOperations = (Boolean) configuration.get(CONFIG_DEBUG_OPERATIONS);</span>
+      }
+<span class="nc bnc" id="L149" title="All 2 branches missed.">      if (configuration.containsKey(CONFIG_MAX_TABLE_COLUMNS)) {</span>
+<span class="nc" id="L150">        mMaxTableColumnCount = (Integer) configuration.get(CONFIG_MAX_TABLE_COLUMNS);</span>
+      }
+<span class="nc bnc" id="L152" title="All 2 branches missed.">      if (configuration.containsKey(CONFIG_MAX_TABLE_ROWS)) {</span>
+<span class="nc" id="L153">        mMaxTableRowCount = (Integer) configuration.get(CONFIG_MAX_TABLE_ROWS);</span>
+      }
+<span class="nc bnc" id="L155" title="All 2 branches missed.">      if (configuration.containsKey(CONFIG_MAX_TABLE_CELLS)) {</span>
+<span class="nc" id="L156">        mMaxTableCellCount = (Integer) configuration.get(CONFIG_MAX_TABLE_CELLS);</span>
+      }
+<span class="nc bnc" id="L158" title="All 2 branches missed.">      if (configuration.containsKey(CONFIG_MAX_SHEETS)) {</span>
+<span class="nc" id="L159">        mMaxSheetCount = (Integer) configuration.get(CONFIG_MAX_SHEETS);</span>
+      }
+    }
+<span class="nc" id="L162">  }</span>
+
+  /**
+   * Receives the (known) operations of the ODF text document
+   *
+   * @return the operations as JSON
+   */
+  public JSONObject getDocumentAsChanges() throws SAXException, JSONException, IOException {
+
+<span class="nc" id="L171">    JSONObject ops = mTextDocument.getOperations(this);</span>
+<span class="nc bnc" id="L172" title="All 4 branches missed.">    if (ops != null &amp;&amp; ops.length() &gt; 0) {</span>
+<span class="nc" id="L173">      LOG.debug(&quot;\n\n*** ALL OPERATIONS:\n{0}&quot;, ops.toString());</span>
+    } else {
+<span class="nc" id="L175">      LOG.debug(&quot;\n\n*** ALL OPERATIONS:\nNo Operation have been extracted!&quot;);</span>
+    }
+<span class="nc" id="L177">    return ops;</span>
+  }
+
+  /**
+   * Applies the (known) operations to upon the latest state of the ODF text document
+   *
+   * @param operationString ODF operations as String JSONObject with &quot;changes&quot; as key for operations
+   * @return the number of operations being accepted
+   */
+  public int applyChanges(String operationString) throws Exception {
+<span class="nc" id="L187">    JSONObject operations = new JSONObject(operationString);</span>
+<span class="nc" id="L188">    int operationsCount = this.applyChanges(operations);</span>
+    // if the document was altered
+<span class="nc bnc" id="L190" title="All 2 branches missed.">    if (operationsCount &gt; 0) {</span>
+      // remove the cached view
+<span class="nc" id="L192">      removeCachedView();</span>
+    }
+<span class="nc" id="L194">    return operationsCount;</span>
+  }
+
+  /**
+   * Applies the (known) operations to upon the latest state of the ODF text document
+   *
+   * @param operations ODF operations as JSONArray within an JSONObject with OPK_OPERATIONS key from
+   *     &lt;code&gt;OperationConstants&lt;/code&gt;.
+   * @return the number of operations being accepted
+   */
+  public int applyChanges(JSONObject operations) throws Exception {
+<span class="nc" id="L205">    LOG.debug(&quot;\n*** EDIT OPERATIONS:\n{0}&quot;, operations.toString());</span>
+    //      System.err.println(&quot;\n*** EDIT OPERATIONS:\n&quot; + operations.toString());
+<span class="nc" id="L207">    final JSONArray ops = operations.getJSONArray(OPK_OPERATIONS);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">    if (mSaveDebugOperations) {</span>
+<span class="nc" id="L209">      addOriginalOdfAsDebug();</span>
+<span class="nc" id="L210">      addOperationFileAsDebug(ops);</span>
+    }
+<span class="nc" id="L212">    saveLocalDebug(ops);</span>
+<span class="nc" id="L213">    final int operationCount = JsonOperationConsumer.applyOperations(this, ops);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">    if (operationCount &gt; 0) {</span>
+      // remove the cached view
+<span class="nc" id="L216">      removeCachedView();</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">      if (!isMetadataUpdated) {</span>
+<span class="nc" id="L218">        mTextDocument.updateMetaData();</span>
+<span class="nc" id="L219">        isMetadataUpdated = true;</span>
+      }
+    }
+<span class="nc" id="L222">    return operationCount;</span>
+  }
+
+  private static void saveLocalDebug(JSONArray ops) {
+    // only meant for local testing
+<span class="nc" id="L227">    String unitTest = System.getProperty(&quot;test&quot;);</span>
+<span class="nc bnc" id="L228" title="All 4 branches missed.">    if (unitTest != null &amp;&amp; unitTest.equals(&quot;org.odftoolkit.odfdom.component.MyLatestTest&quot;)) {</span>
+<span class="nc" id="L229">      saveOperationAsDebugFile(ops, OPERATION_DEBUG_OUTPUT_FILE);</span>
+    }
+<span class="nc" id="L231">  }</span>
+
+  private void removeCachedView() {
+<span class="nc bnc" id="L234" title="All 2 branches missed.">    if (mPackage == null) {</span>
+<span class="nc" id="L235">      mPackage = getDocument().getPackage();</span>
+    }
+    // removes the LO/AO view caching
+<span class="nc" id="L238">    mPackage.remove(&quot;Thumbnails/thumbnail.png&quot;);</span>
+<span class="nc" id="L239">  }</span>
+
+  private void addOriginalOdfAsDebug() throws SAXException {
+<span class="nc" id="L242">    OdfPackage pkg = mTextDocument.getPackage();</span>
+    // if there is not already an orignal file being stored
+<span class="nc bnc" id="L244" title="All 2 branches missed.">    if (!pkg.contains(ORIGNAL_ODT_FILE)) {</span>
+<span class="nc" id="L245">      LOG.debug(&quot;Adding original ODT document as debug within the zip at &quot; + ORIGNAL_ODT_FILE);</span>
+      try {
+        // ..from the ODF ZIP
+<span class="nc" id="L248">        pkg.insert(</span>
+<span class="nc" id="L249">            pkg.getInputStream(), ORIGNAL_ODT_FILE, &quot;application/vnd.oasis.opendocument.text&quot;);</span>
+<span class="nc" id="L250">      } catch (IOException ex) {</span>
+<span class="nc" id="L251">        LOG.error(null, ex);</span>
+<span class="nc" id="L252">      }</span>
+    }
+<span class="nc" id="L254">  }</span>
+
+  /*
+   * @param file the file to be saved, when creating a test file, you might use &lt;code&gt;newTestOutputFile(String relativeFilePath)&lt;/code&gt;.
+   * @param inputData the data to be written into the file
+   */
+  private static void saveStringToFile(File file, String data) {
+<span class="nc" id="L261">    saveStringToFile(file, Charset.forName(&quot;UTF-8&quot;), data);</span>
+<span class="nc" id="L262">  }</span>
+
+  /**
+   * @param file the file to be saved, when creating a test file, you might use &lt;code&gt;
+   *     newTestOutputFile(String relativeFilePath)&lt;/code&gt;.
+   * @param charset the character encoding
+   * @param inputData the data to be written into the file
+   */
+  private static void saveStringToFile(File file, Charset charset, String inputData) {
+<span class="nc" id="L271">    BufferedWriter out = null;</span>
+    try {
+<span class="nc" id="L273">      out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), charset));</span>
+      // out = new BufferedWriter(new FileWriter(file));
+<span class="nc" id="L275">      out.write(inputData);</span>
+<span class="nc" id="L276">      out.close();</span>
+<span class="nc" id="L277">    } catch (IOException ex) {</span>
+<span class="nc" id="L278">      LOG.error(null, ex);</span>
+    } finally {
+      try {
+<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (out != null) {</span>
+<span class="nc" id="L282">          out.close();</span>
+        }
+<span class="nc" id="L284">      } catch (IOException ex) {</span>
+<span class="nc" id="L285">        LOG.error(null, ex);</span>
+<span class="nc" id="L286">      }</span>
+    }
+<span class="nc" id="L288">  }</span>
+
+  private static void saveOperationAsDebugFile(JSONArray operations, String debugFilePath) {
+    // serialize the operations as String (using ascii characters only) and indent a line for every
+    // new operations (heuristic: every array item will be split into new line)
+<span class="nc bnc" id="L293" title="All 4 branches missed.">    if (debugFilePath != null &amp;&amp; !debugFilePath.isEmpty()) {</span>
+<span class="nc" id="L294">      saveStringToFile(new File(debugFilePath), operations.toString());</span>
+    }
+<span class="nc" id="L296">  }</span>
+
+  private void addOperationFileAsDebug(JSONArray operations) {
+    // serialize the operations as String (using ascii characters only) and indent a line for every
+    // new operations (heuristic: every array item will be split into new line)
+    try {
+<span class="nc" id="L302">      OdfPackage pkg = mTextDocument.getPackage();</span>
+      // start with zero to always increment (either read a default by file or new)
+<span class="nc" id="L304">      int revisionNo = 0;</span>
+      // if there was already a revision, get it..
+<span class="nc bnc" id="L306" title="All 2 branches missed.">      if (pkg.contains(OPERATION_REVISON_FILE)) {</span>
+        // ..from the ODF ZIP
+<span class="nc" id="L308">        byte[] revisionByteArray = pkg.getBytes(OPERATION_REVISON_FILE);</span>
+<span class="nc bnc" id="L309" title="All 4 branches missed.">        if (revisionByteArray != null &amp;&amp; revisionByteArray.length != 0) {</span>
+<span class="nc" id="L310">          BufferedReader reader =</span>
+              new BufferedReader(
+                  new InputStreamReader(new ByteArrayInputStream(revisionByteArray)));
+          // read the first line of the file, only containing one number
+<span class="nc" id="L314">          String firstLine = reader.readLine();</span>
+          // map it to a number
+<span class="nc" id="L316">          revisionNo = Integer.parseInt(firstLine);</span>
+<span class="nc" id="L317">          LOG.debug(&quot;Found an existing revision number:{0}&quot;, revisionNo);</span>
+        }
+<span class="nc" id="L319">      } else {</span>
+<span class="nc" id="L320">        LOG.debug(&quot;Created a new revision number: 1&quot;);</span>
+      }
+      // always increment, so even a new file starts with the revision number &quot;1&quot;
+<span class="nc" id="L323">      revisionNo++;</span>
+<span class="nc" id="L324">      pkg.insert(</span>
+<span class="nc" id="L325">          operations.toString().getBytes(),</span>
+          OPERATION_TEXT_FILE_PREFIX + revisionNo + &quot;.txt&quot;,
+          &quot;text/plain&quot;);
+<span class="nc" id="L328">      pkg.insert(Integer.toString(revisionNo).getBytes(), OPERATION_REVISON_FILE, &quot;text/plain&quot;);</span>
+<span class="nc" id="L329">    } catch (Exception ex) {</span>
+<span class="nc" id="L330">      LOG.error(null, ex);</span>
+<span class="nc" id="L331">    }</span>
+<span class="nc" id="L332">  }</span>
+
+  public long getContentSize() {
+<span class="nc bnc" id="L335" title="All 2 branches missed.">    if (mPackage == null) {</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">      if (mTextDocument != null) {</span>
+<span class="nc" id="L337">        mPackage = mTextDocument.getPackage();</span>
+      }
+    }
+<span class="nc bnc" id="L340" title="All 2 branches missed.">    if (mPackage != null) {</span>
+<span class="nc" id="L341">      return mPackage.getSize(OdfXMLFile.CONTENT.getFileName());</span>
+    } else {
+<span class="nc" id="L343">      return 0;</span>
+    }
+  }
+
+  /**
+   * Returns the OdfTextDocument encapsulating the DOM view
+   *
+   * @return ODF document - currently only Te
+   */
+  public OdfTextDocument getDocument() {
+<span class="nc" id="L353">    return mTextDocument;</span>
+  }
+
+  /**
+   * Returns the OdfPackage
+   *
+   * @return ODF Package
+   */
+  public OdfPackage getPackage() {
+<span class="nc bnc" id="L362" title="All 4 branches missed.">    if (mPackage == null &amp;&amp; mTextDocument != null) {</span>
+<span class="nc" id="L363">      mPackage = mTextDocument.getPackage();</span>
+    }
+<span class="nc" id="L365">    return mPackage;</span>
+  }
+
+  /**
+   * Close the OdfPackage and release all temporary created data. After execution of this method,
+   * this class is no longer usable. Do this as the last action to free resources. Closing an
+   * already closed document has no effect.
+   */
+  @Override
+  public void close() {
+<span class="nc" id="L375">    mTextDocument.close();</span>
+<span class="nc" id="L376">  }</span>
+
+  void setAppliedChangesCount(int opCount) {
+<span class="nc" id="L379">    appliedChangesCount = opCount;</span>
+<span class="nc" id="L380">  }</span>
+
+  /** @return number of correct applied operations */
+  public int countAppliedChanges() {
+<span class="nc" id="L384">    return appliedChangesCount;</span>
+  }
+
+  public int getMaxTableColumnsCount() {
+<span class="nc" id="L388">    return mMaxTableColumnCount;</span>
+  }
+
+  public int getMaxTableRowsCount() {
+<span class="nc" id="L392">    return mMaxTableRowCount;</span>
+  }
+
+  public int getMaxTableCellCount() {
+<span class="nc" id="L396">    return mMaxTableCellCount;</span>
+  }
+
+  public int getMaxSheetCount() {
+<span class="nc" id="L400">    return mMaxSheetCount;</span>
+  }
+
+  /**
+   * Receives the a map with new resources for the Document
+   *
+   * @return the operations as JSON
+   */
+  public Map&lt;Long, byte[]&gt; getResourceMap() {
+<span class="nc bnc" id="L409" title="All 2 branches missed.">    if (mResourceMap != null) {</span>
+<span class="nc" id="L410">      return mResourceMap;</span>
+    }
+<span class="nc" id="L412">    return null;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

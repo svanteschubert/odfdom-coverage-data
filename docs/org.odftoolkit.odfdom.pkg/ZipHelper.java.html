@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ZipHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">ZipHelper.java</span></div><h1>ZipHelper.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.ZipException;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+
+class ZipHelper {
+
+<span class="nc" id="L44">  private ZipFile mZipFile = null;</span>
+<span class="nc" id="L45">  private byte[] mZipBuffer = null;</span>
+<span class="nc" id="L46">  private OdfPackage mPackage = null;</span>
+
+<span class="nc" id="L48">  public ZipHelper(OdfPackage pkg, ZipFile zipFile) {</span>
+<span class="nc" id="L49">    mZipFile = zipFile;</span>
+<span class="nc" id="L50">    mZipBuffer = null;</span>
+<span class="nc" id="L51">    mPackage = pkg;</span>
+<span class="nc" id="L52">  }</span>
+
+<span class="nc" id="L54">  public ZipHelper(OdfPackage pkg, byte[] buffer) {</span>
+<span class="nc" id="L55">    mZipBuffer = buffer;</span>
+<span class="nc" id="L56">    mZipFile = null;</span>
+<span class="nc" id="L57">    mPackage = pkg;</span>
+<span class="nc" id="L58">  }</span>
+
+  public static ZipArchiveInputStream createZipInputStream(InputStream is) {
+<span class="nc" id="L61">    return new ZipArchiveInputStream(is, StandardCharsets.UTF_8.toString(), true, true);</span>
+  }
+
+  String entriesToMap(Map&lt;String, ZipArchiveEntry&gt; zipEntries) throws IOException, SAXException {
+<span class="nc" id="L65">    String firstEntryName = null;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">    if (mZipFile != null) {</span>
+<span class="nc" id="L67">      Enumeration&lt;? extends ZipArchiveEntry&gt; entries = mZipFile.getEntries();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">      if (entries.hasMoreElements()) {</span>
+<span class="nc" id="L69">        ZipArchiveEntry zipEntry = entries.nextElement();</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (zipEntry != null) {</span>
+<span class="nc" id="L71">          firstEntryName = zipEntry.getName();</span>
+<span class="nc" id="L72">          addZipEntry(zipEntry, zipEntries);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">          while (entries.hasMoreElements()) {</span>
+<span class="nc" id="L74">            zipEntry = entries.nextElement();</span>
+<span class="nc" id="L75">            addZipEntry(zipEntry, zipEntries);</span>
+          }
+        }
+      }
+<span class="nc" id="L79">    } else {</span>
+<span class="nc" id="L80">      ZipArchiveInputStream inputStream =</span>
+<span class="nc" id="L81">          createZipInputStream(new ByteArrayInputStream(mZipBuffer));</span>
+<span class="nc" id="L82">      ZipArchiveEntry zipEntry = null;</span>
+      try {
+<span class="nc" id="L84">        zipEntry = inputStream.getNextZipEntry();</span>
+<span class="nc" id="L85">      } catch (ZipException e) {</span>
+        // Unit tests expect us to return an empty map in this case.
+<span class="nc" id="L87">      }</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">      if (zipEntry != null) {</span>
+<span class="nc" id="L89">        firstEntryName = zipEntry.getName();</span>
+<span class="nc" id="L90">        addZipEntry(zipEntry, zipEntries);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        while (zipEntry != null) {</span>
+<span class="nc" id="L92">          addZipEntry(zipEntry, zipEntries);</span>
+          try {
+<span class="nc" id="L94">            zipEntry = inputStream.getNextZipEntry();</span>
+<span class="nc" id="L95">          } catch (java.util.zip.ZipException e) {</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (e.getMessage().contains(&quot;only DEFLATED entries can have EXT descriptor&quot;)) {</span>
+<span class="nc" id="L97">              Logger.getLogger(ZipHelper.class.getName())</span>
+<span class="nc" id="L98">                  .finer(&quot;ZIP seems to contain encoded parts!&quot;);</span>
+<span class="nc" id="L99">              throw e;</span>
+            }
+            // JDK 6 -- the try/catch is workaround for a specific JDK 5 only problem
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (!e.getMessage().contains(&quot;missing entry name&quot;)</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                &amp;&amp; !&quot;1.5.0&quot;.equals(System.getProperty(&quot;Java.version&quot;))) {</span>
+<span class="nc" id="L104">              Logger.getLogger(ZipHelper.class.getName()).finer(&quot;ZIP ENTRY not found&quot;);</span>
+<span class="nc" id="L105">              throw e;</span>
+            }
+            // ToDo: Error: &quot;only DEFLATED entries can have EXT descriptor&quot;
+            // ZipInputStream does not expect (and does not know how to handle) an EXT descriptor
+            // when the associated data was not DEFLATED (i.e. was stored uncompressed, as-is).
+<span class="nc" id="L110">          }</span>
+        }
+      }
+<span class="nc" id="L113">      inputStream.close();</span>
+    }
+<span class="nc" id="L115">    return firstEntryName;</span>
+  }
+
+  private void addZipEntry(ZipArchiveEntry zipEntry, Map&lt;String, ZipArchiveEntry&gt; zipEntries) {
+<span class="nc" id="L119">    String filePath = OdfPackage.normalizePath(zipEntry.getName());</span>
+<span class="nc" id="L120">    ErrorHandler errorHandler = mPackage.getErrorHandler();</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">    if (errorHandler != null) {</span>
+      try {
+<span class="nc" id="L123">        int zipMethod = zipEntry.getMethod();</span>
+<span class="nc bnc" id="L124" title="All 4 branches missed.">        if (zipMethod != ZipArchiveEntry.STORED &amp;&amp; zipMethod != ZipArchiveEntry.DEFLATED) {</span>
+<span class="nc" id="L125">          mPackage</span>
+<span class="nc" id="L126">              .getErrorHandler()</span>
+<span class="nc" id="L127">              .error(</span>
+                  new OdfValidationException(
+                      OdfPackageConstraint.PACKAGE_ENTRY_USING_INVALID_COMPRESSION,
+<span class="nc" id="L130">                      mPackage.getBaseURI(),</span>
+                      filePath));
+        }
+<span class="nc" id="L133">      } catch (SAXException ex) {</span>
+<span class="nc" id="L134">        Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L135">      }</span>
+    }
+<span class="nc" id="L137">    zipEntries.put(filePath, zipEntry);</span>
+<span class="nc" id="L138">  }</span>
+
+  InputStream getInputStream(ZipArchiveEntry entry) throws IOException {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    if (mZipFile != null) {</span>
+<span class="nc" id="L142">      return mZipFile.getInputStream(entry);</span>
+    } else {
+<span class="nc" id="L144">      ZipArchiveInputStream inputStream =</span>
+<span class="nc" id="L145">          createZipInputStream(new ByteArrayInputStream(mZipBuffer));</span>
+<span class="nc" id="L146">      ZipArchiveEntry zipEntry = inputStream.getNextZipEntry();</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">      while (zipEntry != null) {</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (zipEntry.getName().equalsIgnoreCase(entry.getName())) {</span>
+<span class="nc" id="L149">          return readAsInputStream(inputStream);</span>
+        }
+<span class="nc" id="L151">        zipEntry = inputStream.getNextZipEntry();</span>
+      }
+<span class="nc" id="L153">      return null;</span>
+    }
+  }
+
+  private InputStream readAsInputStream(ZipArchiveInputStream inputStream) throws IOException {
+<span class="nc" id="L158">    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    if (outputStream != null) {</span>
+<span class="nc" id="L160">      byte[] buf = new byte[4096];</span>
+<span class="nc" id="L161">      int r = 0;</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">      while ((r = inputStream.read(buf, 0, 4096)) &gt; -1) {</span>
+<span class="nc" id="L163">        outputStream.write(buf, 0, r);</span>
+      }
+<span class="nc" id="L165">      inputStream.close();</span>
+    }
+<span class="nc" id="L167">    return new ByteArrayInputStream(outputStream.toByteArray());</span>
+  }
+
+  void close() throws IOException {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">    if (mZipFile != null) {</span>
+<span class="nc" id="L172">      mZipFile.close();</span>
+    } else {
+<span class="nc" id="L174">      mZipBuffer = null;</span>
+    }
+<span class="nc" id="L176">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

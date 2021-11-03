@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfName.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfName.java</span></div><h1>OdfName.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.util.HashMap;
+
+/**
+ * The class provides a simplified interface for XML names. The class defines a name for an XML
+ * node. It embraces XML NamespaceURI, XML prefix and XML localname.
+ */
+public class OdfName implements Comparable&lt;OdfName&gt; {
+
+  private OdfNamespace mNS;
+  private String mLocalName;
+  private String mExpandedName; // i.e. {nsURI}localName
+<span class="nc" id="L37">  private static HashMap&lt;String, OdfName&gt; mOdfNames = new HashMap&lt;String, OdfName&gt;();</span>
+  private static StringBuilder mSB;
+
+<span class="nc" id="L40">  private OdfName(OdfNamespace ns, String localname, String expandedName) {</span>
+<span class="nc" id="L41">    mNS = ns;</span>
+<span class="nc" id="L42">    mLocalName = localname;</span>
+<span class="nc" id="L43">    mExpandedName = expandedName;</span>
+<span class="nc" id="L44">  }</span>
+
+  /**
+   * Returns the OdfName for the given namespace and name. Creates a new one, if the OdfName was not
+   * asked before.
+   *
+   * @param name of the XML node
+   * @return the OdfName for the given OdfNamesapce and name.
+   */
+  public static OdfName newName(String name) {
+<span class="nc" id="L54">    return createName(null, name);</span>
+  }
+
+  /**
+   * Returns the OdfName for the given namespace and name. Creates a new one, if the OdfName was not
+   * asked before.
+   *
+   * @param odfNamespace the namespace of the name to be created
+   * @param name of the XML node. Can be both local or qualified name.
+   * @return the OdfName for the given OdfNamesapce and name.
+   */
+  public static OdfName newName(OdfNamespace odfNamespace, String name) {
+<span class="nc" id="L66">    return createName(odfNamespace, name);</span>
+  }
+
+  /**
+   * Returns the OdfName for the given namespace and name. Creates a new one, if the OdfName was not
+   * asked before.
+   *
+   * @param namespaceNamed represents a W3C Namespace Name. The interface &lt;code&gt;NamespaceName&lt;/code&gt;
+   *     is often implemented by an enum.
+   * @param name of the XML node. Can be both local or qualified name.
+   * @return the OdfName for the given OdfNamesapce and name.
+   */
+  public static OdfName newName(NamespaceName namespaceNamed, String name) {
+<span class="nc" id="L79">    return createName(OdfNamespace.newNamespace(namespaceNamed), name);</span>
+  }
+
+  public static OdfName newName(String uri, String qname) {
+<span class="nc" id="L83">    String prefix = OdfNamespace.getPrefixPart(qname);</span>
+<span class="nc" id="L84">    String localName = OdfNamespace.getLocalPart(qname);</span>
+<span class="nc" id="L85">    OdfNamespace ns = OdfNamespace.newNamespace(prefix, uri);</span>
+<span class="nc" id="L86">    return createName(ns, localName);</span>
+  }
+
+  private static OdfName createName(OdfNamespace odfNamespace, String name) {
+<span class="nc" id="L90">    int i = 0;</span>
+    // make sure the name is the local name
+<span class="nc bnc" id="L92" title="All 2 branches missed.">    if ((i = name.indexOf(':')) &gt;= 0) {</span>
+<span class="nc" id="L93">      name = name.substring(i + 1);</span>
+    }
+<span class="nc" id="L95">    return getOdfName(odfNamespace, name);</span>
+  }
+
+  /** Used for receiving an OdfName, in case of a default nameaspace, when there is no prefix. */
+  public static OdfName getOdfName(OdfNamespace odfNamespace, String localName) {
+<span class="nc" id="L100">    String expandedName = null;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">    if (odfNamespace != null) {</span>
+<span class="nc" id="L102">      expandedName = createExpandedName(odfNamespace.toString(), localName);</span>
+    } else {
+<span class="nc" id="L104">      expandedName = localName;</span>
+    }
+    // return a similar OdfName if one was already created before..
+<span class="nc" id="L107">    OdfName odfName = mOdfNames.get(expandedName);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">    if (odfName != null) {</span>
+<span class="nc" id="L109">      return odfName;</span>
+    } else {
+      // otherwise create a new OdfName, store it in the map and return it..
+<span class="nc" id="L112">      odfName = new OdfName(odfNamespace, localName, expandedName);</span>
+<span class="nc" id="L113">      mOdfNames.put(expandedName, odfName);</span>
+<span class="nc" id="L114">      return odfName;</span>
+    }
+  }
+
+  private static String createExpandedName(String nsUri, String localName) {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">    if (mSB == null) {</span>
+<span class="nc" id="L120">      mSB = new StringBuilder();</span>
+    } else {
+<span class="nc" id="L122">      mSB.delete(0, mSB.length());</span>
+    }
+<span class="nc" id="L124">    mSB.append('{');</span>
+<span class="nc" id="L125">    mSB.append(nsUri);</span>
+<span class="nc" id="L126">    mSB.append('}');</span>
+<span class="nc" id="L127">    mSB.append(localName);</span>
+<span class="nc" id="L128">    return mSB.toString();</span>
+  }
+
+  /**
+   * @return the XML Namespace URI, for &lt;text:p&gt; it would be
+   *     urn:oasis:names:tc:opendocument:xmlns:text:1.0
+   */
+  public String getUri() {
+<span class="nc bnc" id="L136" title="All 2 branches missed.">    if (mNS == null) {</span>
+<span class="nc" id="L137">      return null;</span>
+    } else {
+<span class="nc" id="L139">      return mNS.getUri();</span>
+    }
+  }
+
+  /** @return the XML localname, for &lt;text:p&gt; it would be p. */
+  public String getLocalName() {
+<span class="nc" id="L145">    return mLocalName;</span>
+  }
+
+  /** @return the XML prefix, for &lt;text:p&gt; it would be text. */
+  public String getPrefix() {
+<span class="nc" id="L150">    String prefix = null;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    if (mNS != null) {</span>
+<span class="nc" id="L152">      prefix = mNS.getPrefix();</span>
+    }
+<span class="nc" id="L154">    return prefix;</span>
+  }
+
+  /** @return the XML QName, the qualified name e.g. for &lt;text:p&gt; it is text:p. */
+  public String getQName() {
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    if (mNS != null) {</span>
+<span class="nc" id="L160">      return ((mNS.getPrefix() + &quot;:&quot; + mLocalName).intern());</span>
+    } else {
+<span class="nc" id="L162">      return mLocalName;</span>
+    }
+  }
+
+  /**
+   * @return the OdfName as String, represented by a concatenation of XML Namespace URI (within
+   *     brackets) and local name, as for &lt;text:p&gt; it would be
+   *     {urn:oasis:names:tc:opendocument:xmlns:text:1.0}p
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L173">    return mExpandedName;</span>
+  }
+
+  @Override
+  @SuppressWarnings(&quot;EqualsWhichDoesntCheckParameterClass&quot;)
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L179" title="All 2 branches missed.">    if (obj != null) {</span>
+<span class="nc" id="L180">      return toString().equals(obj.toString());</span>
+    } else {
+<span class="nc" id="L182">      return false;</span>
+    }
+  }
+
+  /**
+   * @param namespaceUri of the XML node to be compared.
+   * @param name of the XML node to be compared. Can be qualifed name or localname.
+   * @return true if the given OdfName has the same namespaceURI and localname.
+   */
+  public boolean equals(String namespaceUri, String name) {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">    if (!mNS.getUri().equals(namespaceUri)) {</span>
+<span class="nc" id="L193">      return false;</span>
+    }
+
+<span class="nc" id="L196">    int beginIndex = name.indexOf(':');</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">    if (beginIndex &gt;= 0) {</span>
+<span class="nc" id="L198">      return mLocalName.equals(name.substring(beginIndex + 1));</span>
+    } else {
+<span class="nc" id="L200">      return mLocalName.equals(name);</span>
+    }
+  }
+
+  @Override
+  /** Returns the hashcode of the OdfName */
+  public int hashCode() {
+<span class="nc" id="L207">    return toString().hashCode();</span>
+  }
+
+  /** Compares the by parameter given OdfName with this OdfName */
+  public int compareTo(OdfName o) {
+<span class="nc" id="L212">    return toString().compareTo(o.toString());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

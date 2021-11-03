@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfOfficeMasterStyles.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.office</a> &gt; <span class="el_source">OdfOfficeMasterStyles.java</span></div><h1>OdfOfficeMasterStyles.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.office;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.draw.DrawLayerSetElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHandoutMasterElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMasterPageElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public abstract class OdfOfficeMasterStyles extends OdfStylesBase
+    implements Iterable&lt;StyleMasterPageElement&gt; {
+
+<span class="nc" id="L44">  public static final OdfName ELEMENT_NAME =</span>
+<span class="nc" id="L45">      OdfName.newName(OdfDocumentNamespace.OFFICE, &quot;master-styles&quot;);</span>
+
+  private static final long serialVersionUID = 6598785919980862801L;
+  private DrawLayerSetElement mLayerSet;
+  private StyleHandoutMasterElement mHandoutMaster;
+  private HashMap&lt;String, StyleMasterPageElement&gt; mMasterPages;
+
+  public OdfOfficeMasterStyles(OdfFileDom ownerDoc) {
+<span class="nc" id="L53">    super(ownerDoc, ELEMENT_NAME);</span>
+<span class="nc" id="L54">  }</span>
+
+  @Override
+  public OdfName getOdfName() {
+    // TODO Auto-generated method stub
+<span class="nc" id="L59">    return null;</span>
+  }
+
+  public StyleHandoutMasterElement getHandoutMaster() {
+<span class="nc" id="L63">    return mHandoutMaster;</span>
+  }
+
+  public DrawLayerSetElement getLayerSet() {
+<span class="nc" id="L67">    return mLayerSet;</span>
+  }
+
+  public StyleMasterPageElement getMasterPage(String name) {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    if (mMasterPages != null) {</span>
+<span class="nc" id="L72">      return mMasterPages.get(name);</span>
+    } else {
+<span class="nc" id="L74">      return null;</span>
+    }
+  }
+
+  protected &lt;T extends OdfElement&gt; T getStylesElement(OdfFileDom dom, Class&lt;T&gt; clazz)
+      throws Exception {
+<span class="nc" id="L80">    OdfElement stylesRoot = dom.getRootElement();</span>
+
+<span class="nc" id="L82">    OdfOfficeMasterStyles contentBody =</span>
+<span class="nc" id="L83">        OdfElement.findFirstChildNode(OdfOfficeMasterStyles.class, stylesRoot);</span>
+<span class="nc" id="L84">    NodeList childs = contentBody.getChildNodes();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">    for (int i = 0; i &lt; childs.getLength(); i++) {</span>
+<span class="nc" id="L86">      Node cur = childs.item(i);</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">      if ((cur != null) &amp;&amp; clazz.isInstance(cur)) {</span>
+<span class="nc" id="L88">        return (T) cur;</span>
+      }
+    }
+<span class="nc" id="L91">    return null;</span>
+  }
+
+  /** @return the master page with the given style name or creates one */
+  public StyleMasterPageElement getOrCreateMasterPage(String name) {
+<span class="nc" id="L96">    StyleMasterPageElement masterPage = getMasterPage(name);</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">    if (masterPage == null) {</span>
+<span class="nc" id="L98">      masterPage = new StyleMasterPageElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L99">      masterPage.setStyleNameAttribute(name);</span>
+<span class="nc" id="L100">      this.appendChild(masterPage);</span>
+    }
+<span class="nc" id="L102">    return masterPage;</span>
+  }
+
+  /** @return all &lt;style:master-page&gt; element children */
+  public Map&lt;String, StyleMasterPageElement&gt; getMasterPages() {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (mMasterPages != null) {</span>
+<span class="nc" id="L108">      return mMasterPages;</span>
+    } else {
+<span class="nc" id="L110">      return null;</span>
+    }
+  }
+
+  /** override this method to get notified about element insertion */
+  @Override
+  public void onOdfNodeInserted(OdfElement node, Node refNode) {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">    if (node instanceof DrawLayerSetElement) {</span>
+<span class="nc" id="L118">      mLayerSet = (DrawLayerSetElement) node;</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">    } else if (node instanceof StyleHandoutMasterElement) {</span>
+<span class="nc" id="L120">      mHandoutMaster = (StyleHandoutMasterElement) node;</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">    } else if (node instanceof StyleMasterPageElement) {</span>
+<span class="nc" id="L122">      StyleMasterPageElement masterPage = (StyleMasterPageElement) node;</span>
+
+<span class="nc bnc" id="L124" title="All 2 branches missed.">      if (mMasterPages == null) {</span>
+<span class="nc" id="L125">        mMasterPages = new HashMap&lt;String, StyleMasterPageElement&gt;();</span>
+      }
+<span class="nc" id="L127">      mMasterPages.put(masterPage.getStyleNameAttribute(), masterPage);</span>
+    }
+<span class="nc" id="L129">  }</span>
+
+  /** override this method to get notified about element insertion */
+  @Override
+  public void onOdfNodeRemoved(OdfElement node) {
+<span class="nc bnc" id="L134" title="All 2 branches missed.">    if (node instanceof DrawLayerSetElement) {</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">      if (mLayerSet == (DrawLayerSetElement) node) {</span>
+<span class="nc" id="L136">        mLayerSet = null;</span>
+      }
+<span class="nc bnc" id="L138" title="All 2 branches missed.">    } else if (node instanceof StyleHandoutMasterElement) {</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">      if (mHandoutMaster == (StyleHandoutMasterElement) node) {</span>
+<span class="nc" id="L140">        mHandoutMaster = null;</span>
+      }
+<span class="nc bnc" id="L142" title="All 2 branches missed.">    } else if (node instanceof StyleMasterPageElement) {</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">      if (mMasterPages != null) {</span>
+<span class="nc" id="L144">        StyleMasterPageElement masterPage = (StyleMasterPageElement) node;</span>
+<span class="nc" id="L145">        mMasterPages.remove(masterPage.getStyleNameAttribute());</span>
+      }
+    }
+<span class="nc" id="L148">  }</span>
+
+  /** @return Iterator over the &lt;style:master-page&gt; element children */
+  public Iterator&lt;StyleMasterPageElement&gt; iterator() {
+<span class="nc" id="L152">    Iterator&lt;StyleMasterPageElement&gt; iter = null;</span>
+<span class="nc" id="L153">    Map&lt;String, StyleMasterPageElement&gt; masterPages = this.getMasterPages();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    if (masterPages != null) {</span>
+<span class="nc" id="L155">      iter = masterPages.values().iterator();</span>
+    }
+<span class="nc bnc" id="L157" title="All 2 branches missed.">    if (iter == null) {</span>
+<span class="nc" id="L158">      iter = Collections.emptyIterator();</span>
+    }
+<span class="nc" id="L160">    return iter;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

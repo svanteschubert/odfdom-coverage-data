@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RDFaParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.rdfa</a> &gt; <span class="el_source">RDFaParser.java</span></div><h1>RDFaParser.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.rdfa;
+
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLEventFactory;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
+import net.rootdev.javardfa.Constants;
+import net.rootdev.javardfa.Setting;
+import net.rootdev.javardfa.literal.LiteralCollector;
+import net.rootdev.javardfa.uri.IRIResolver;
+import net.rootdev.javardfa.uri.URIExtractor10;
+import org.xml.sax.Attributes;
+import org.xml.sax.Locator;
+
+/** A RDFa Parser modified from net.rootdev.javardfa.Parser */
+class RDFaParser extends net.rootdev.javardfa.Parser {
+
+<span class="nc" id="L49">  boolean ignore = false;</span>
+
+  protected XMLEventFactory eventFactory;
+  protected JenaSink sink;
+  protected Set&lt;Setting&gt; settings;
+  protected LiteralCollector literalCollector;
+  protected URIExtractor extractor;
+  protected Locator locator;
+  protected EvalContext context;
+
+  protected RDFaParser(
+      JenaSink sink,
+      XMLOutputFactory outputFactory,
+      XMLEventFactory eventFactory,
+      URIExtractor extractor) {
+<span class="nc" id="L64">    super(sink, outputFactory, eventFactory, new URIExtractor10(new IRIResolver()));</span>
+<span class="nc" id="L65">    this.sink = sink;</span>
+<span class="nc" id="L66">    this.eventFactory = eventFactory;</span>
+<span class="nc" id="L67">    this.settings = EnumSet.noneOf(Setting.class);</span>
+<span class="nc" id="L68">    this.extractor = extractor;</span>
+
+<span class="nc" id="L70">    this.literalCollector = new LiteralCollector(this, eventFactory, outputFactory);</span>
+
+<span class="nc" id="L72">    extractor.setSettings(settings);</span>
+
+    // Important, although I guess the caller doesn't get total control
+<span class="nc" id="L75">    outputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);</span>
+<span class="nc" id="L76">  }</span>
+
+  protected void beginRDFaElement(String arg0, String localname, String qname, Attributes arg3) {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    if (localname.equals(&quot;bookmark-start&quot;)) {</span>
+<span class="nc" id="L80">      ignore = true;</span>
+<span class="nc" id="L81">      return;</span>
+    }
+    try {
+      // System.err.println(&quot;Start element: &quot; + arg0 + &quot; &quot; + arg1 + &quot; &quot; +
+      // arg2);
+
+      // This is set very late in some html5 cases (not even ready by
+      // document start)
+<span class="nc bnc" id="L89" title="All 2 branches missed.">      if (context == null) {</span>
+<span class="nc" id="L90">        this.setBase(locator.getSystemId());</span>
+      }
+
+      // Dammit, not quite the same as XMLEventFactory
+      String prefix = /* (localname.equals(qname)) */
+<span class="nc bnc" id="L95" title="All 2 branches missed.">          (qname.indexOf(':') == -1) ? &quot;&quot; : qname.substring(0, qname.indexOf(':'));</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">      if (settings.contains(Setting.ManualNamespaces)) {</span>
+<span class="nc" id="L97">        getNamespaces(arg3);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (prefix.length() != 0) {</span>
+<span class="nc" id="L99">          arg0 = context.getNamespaceURI(prefix);</span>
+<span class="nc" id="L100">          localname = localname.substring(prefix.length() + 1);</span>
+        }
+      }
+<span class="nc" id="L103">      StartElement e =</span>
+<span class="nc" id="L104">          eventFactory.createStartElement(</span>
+<span class="nc" id="L105">              prefix, arg0, localname, fromAttributes(arg3), null, context);</span>
+
+<span class="nc bnc" id="L107" title="All 2 branches missed.">      if (literalCollector.isCollecting()) literalCollector.handleEvent(e);</span>
+
+      // If we are gathering XML we stop parsing
+<span class="nc bnc" id="L110" title="All 2 branches missed.">      if (!literalCollector.isCollectingXML()) context = parse(context, e);</span>
+<span class="nc" id="L111">    } catch (XMLStreamException ex) {</span>
+<span class="nc" id="L112">      throw new RuntimeException(&quot;Streaming issue&quot;, ex);</span>
+<span class="nc" id="L113">    }</span>
+<span class="nc" id="L114">  }</span>
+
+  protected void endRDFaElement(String arg0, String localname, String qname) {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">    if (localname.equals(&quot;bookmark-start&quot;)) {</span>
+<span class="nc" id="L118">      ignore = false;</span>
+<span class="nc" id="L119">      return;</span>
+    }
+<span class="nc bnc" id="L121" title="All 2 branches missed.">    if (literalCollector.isCollecting()) {</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      String prefix = (localname.equals(qname)) ? &quot;&quot; : qname.substring(0, qname.indexOf(':'));</span>
+<span class="nc" id="L123">      XMLEvent e = eventFactory.createEndElement(prefix, arg0, localname);</span>
+<span class="nc" id="L124">      literalCollector.handleEvent(e);</span>
+    }
+    // If we aren't collecting an XML literal keep parsing
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    if (!literalCollector.isCollectingXML()) context = context.parent;</span>
+<span class="nc" id="L128">  }</span>
+
+  protected void writeCharacters(String value) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    if (!ignore) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">      if (literalCollector.isCollecting()) {</span>
+<span class="nc" id="L133">        XMLEvent e = eventFactory.createCharacters(value);</span>
+<span class="nc" id="L134">        literalCollector.handleEvent(e);</span>
+      }
+    }
+<span class="nc" id="L137">  }</span>
+
+  /** Set the base uri of the DOM. */
+  public void setBase(String base) {
+<span class="nc" id="L141">    this.context = new EvalContext(base);</span>
+<span class="nc" id="L142">    sink.setBase(context.getBase());</span>
+<span class="nc" id="L143">  }</span>
+
+  protected EvalContext parse(EvalContext context, StartElement element) throws XMLStreamException {
+<span class="nc" id="L146">    boolean skipElement = false;</span>
+<span class="nc" id="L147">    String newSubject = null;</span>
+<span class="nc" id="L148">    String currentObject = null;</span>
+<span class="nc" id="L149">    List&lt;String&gt; forwardProperties = new LinkedList();</span>
+<span class="nc" id="L150">    List&lt;String&gt; backwardProperties = new LinkedList();</span>
+<span class="nc" id="L151">    String currentLanguage = context.language;</span>
+
+<span class="nc bnc" id="L153" title="All 2 branches missed.">    if (settings.contains(Setting.OnePointOne)) {</span>
+
+<span class="nc bnc" id="L155" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.vocab) != null) {</span>
+<span class="nc" id="L156">        context.vocab = getAttributeByName(element, Constants.vocab).getValue().trim();</span>
+      }
+
+<span class="nc bnc" id="L159" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.prefix) != null) {</span>
+<span class="nc" id="L160">        parsePrefixes(getAttributeByName(element, Constants.prefix).getValue(), context);</span>
+      }
+    }
+
+    // The xml / html namespace matching is a bit ropey. I wonder if the
+    // html 5
+    // parser has a setting for this?
+<span class="nc bnc" id="L167" title="All 2 branches missed.">    if (settings.contains(Setting.ManualNamespaces)) {</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.xmllang) != null) {</span>
+<span class="nc" id="L169">        currentLanguage = getAttributeByName(element, Constants.xmllang).getValue();</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (currentLanguage.length() == 0) currentLanguage = null;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">      } else if (getAttributeByName(element, Constants.lang) != null) {</span>
+<span class="nc" id="L172">        currentLanguage = getAttributeByName(element, Constants.lang).getValue();</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (currentLanguage.length() == 0) currentLanguage = null;</span>
+      }
+<span class="nc bnc" id="L175" title="All 2 branches missed.">    } else if (getAttributeByName(element, Constants.xmllangNS) != null) {</span>
+<span class="nc" id="L176">      currentLanguage = getAttributeByName(element, Constants.xmllangNS).getValue();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">      if (currentLanguage.length() == 0) currentLanguage = null;</span>
+    }
+
+<span class="nc bnc" id="L180" title="All 2 branches missed.">    if (Constants.base.equals(element.getName())</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        &amp;&amp; getAttributeByName(element, Constants.href) != null) {</span>
+<span class="nc" id="L182">      context.setBase(getAttributeByName(element, Constants.href).getValue());</span>
+<span class="nc" id="L183">      sink.setBase(context.getBase());</span>
+    }
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    if (getAttributeByName(element, Constants.rev) == null</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        &amp;&amp; getAttributeByName(element, Constants.rel) == null) {</span>
+<span class="nc" id="L187">      Attribute nSubj = findAttribute(element, Constants.about);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">      if (nSubj != null) {</span>
+<span class="nc" id="L189">        newSubject = extractor.getURI(element, nSubj, context);</span>
+      }
+<span class="nc bnc" id="L191" title="All 2 branches missed.">      if (newSubject == null) {</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">        if (Constants.body.equals(element.getName()) || Constants.head.equals(element.getName())) {</span>
+<span class="nc" id="L193">          newSubject = context.base;</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        } else if (getAttributeByName(element, Constants.typeof) != null) {</span>
+<span class="nc" id="L195">          newSubject = createBNode();</span>
+        } else {
+<span class="nc bnc" id="L197" title="All 2 branches missed.">          if (context.parentObject != null) {</span>
+<span class="nc" id="L198">            newSubject = context.parentObject;</span>
+          }
+<span class="nc bnc" id="L200" title="All 2 branches missed.">          if (getAttributeByName(element, Constants.property) == null) {</span>
+<span class="nc" id="L201">            skipElement = true;</span>
+          }
+        }
+      }
+<span class="nc" id="L205">    } else {</span>
+<span class="nc" id="L206">      Attribute nSubj = findAttribute(element, Constants.about, Constants.src);</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">      if (nSubj != null) {</span>
+<span class="nc" id="L208">        newSubject = extractor.getURI(element, nSubj, context);</span>
+      }
+<span class="nc bnc" id="L210" title="All 2 branches missed.">      if (newSubject == null) {</span>
+        // if element is head or body assume about=&quot;&quot;
+<span class="nc bnc" id="L212" title="All 4 branches missed.">        if (Constants.head.equals(element.getName()) || Constants.body.equals(element.getName())) {</span>
+<span class="nc" id="L213">          newSubject = context.base;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        } else if (getAttributeByName(element, Constants.typeof) != null) {</span>
+<span class="nc" id="L215">          newSubject = createBNode();</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        } else if (context.parentObject != null) {</span>
+<span class="nc" id="L217">          newSubject = context.parentObject;</span>
+        }
+      }
+<span class="nc" id="L220">      Attribute cObj = findAttribute(element, Constants.resource, Constants.href);</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">      if (cObj != null) {</span>
+<span class="nc" id="L222">        currentObject = extractor.getURI(element, cObj, context);</span>
+      }
+    }
+
+<span class="nc bnc" id="L226" title="All 4 branches missed.">    if (newSubject != null &amp;&amp; getAttributeByName(element, Constants.typeof) != null) {</span>
+<span class="nc" id="L227">      List&lt;String&gt; types =</span>
+<span class="nc" id="L228">          extractor.getURIs(element, getAttributeByName(element, Constants.typeof), context);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">      for (String type : types) {</span>
+<span class="nc" id="L230">        emitTriples(newSubject, Constants.rdfType, type);</span>
+<span class="nc" id="L231">      }</span>
+    }
+
+<span class="nc bnc" id="L234" title="All 2 branches missed.">    if (currentObject != null) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.rel) != null) {</span>
+<span class="nc" id="L236">        emitTriples(</span>
+            newSubject,
+<span class="nc" id="L238">            extractor.getURIs(element, getAttributeByName(element, Constants.rel), context),</span>
+            currentObject);
+      }
+<span class="nc bnc" id="L241" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.rev) != null) {</span>
+<span class="nc" id="L242">        emitTriples(</span>
+            currentObject,
+<span class="nc" id="L244">            extractor.getURIs(element, getAttributeByName(element, Constants.rev), context),</span>
+            newSubject);
+      }
+    } else {
+<span class="nc bnc" id="L248" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.rel) != null) {</span>
+<span class="nc" id="L249">        forwardProperties.addAll(</span>
+<span class="nc" id="L250">            extractor.getURIs(element, getAttributeByName(element, Constants.rel), context));</span>
+      }
+<span class="nc bnc" id="L252" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.rev) != null) {</span>
+<span class="nc" id="L253">        backwardProperties.addAll(</span>
+<span class="nc" id="L254">            extractor.getURIs(element, getAttributeByName(element, Constants.rev), context));</span>
+      }
+<span class="nc bnc" id="L256" title="All 4 branches missed.">      if (!forwardProperties.isEmpty() || !backwardProperties.isEmpty()) {</span>
+        // if predicate present
+<span class="nc" id="L258">        currentObject = createBNode();</span>
+      }
+    }
+
+    // Getting literal values. Complicated!
+<span class="nc bnc" id="L263" title="All 2 branches missed.">    if (getAttributeByName(element, Constants.property) != null) {</span>
+<span class="nc" id="L264">      List&lt;String&gt; props =</span>
+<span class="nc" id="L265">          extractor.getURIs(element, getAttributeByName(element, Constants.property), context);</span>
+<span class="nc" id="L266">      String dt = getDatatype(element);</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">      if (getAttributeByName(element, Constants.content) != null) { // The</span>
+        // easy
+        // bit
+<span class="nc" id="L270">        String lex = getAttributeByName(element, Constants.content).getValue();</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">        if (dt == null || dt.length() == 0) {</span>
+<span class="nc" id="L272">          emitTriplesPlainLiteral(newSubject, props, lex, currentLanguage);</span>
+        } else {
+<span class="nc" id="L274">          emitTriplesDatatypeLiteral(newSubject, props, lex, dt);</span>
+        }
+<span class="nc" id="L276">      } else {</span>
+<span class="nc" id="L277">        literalCollector.collect(newSubject, props, dt, currentLanguage);</span>
+      }
+    }
+
+<span class="nc bnc" id="L281" title="All 4 branches missed.">    if (!skipElement &amp;&amp; newSubject != null) {</span>
+<span class="nc" id="L282">      emitTriples(context.parentSubject, context.forwardProperties, newSubject);</span>
+
+<span class="nc" id="L284">      emitTriples(newSubject, context.backwardProperties, context.parentSubject);</span>
+    }
+
+<span class="nc" id="L287">    EvalContext ec = new EvalContext(context);</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">    if (skipElement) {</span>
+<span class="nc" id="L289">      ec.language = currentLanguage;</span>
+    } else {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">      if (newSubject != null) {</span>
+<span class="nc" id="L292">        ec.parentSubject = newSubject;</span>
+      } else {
+<span class="nc" id="L294">        ec.parentSubject = context.parentSubject;</span>
+      }
+
+<span class="nc bnc" id="L297" title="All 2 branches missed.">      if (currentObject != null) {</span>
+<span class="nc" id="L298">        ec.parentObject = currentObject;</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">      } else if (newSubject != null) {</span>
+<span class="nc" id="L300">        ec.parentObject = newSubject;</span>
+      } else {
+<span class="nc" id="L302">        ec.parentObject = context.parentSubject;</span>
+      }
+
+<span class="nc" id="L305">      ec.language = currentLanguage;</span>
+<span class="nc" id="L306">      ec.forwardProperties = forwardProperties;</span>
+<span class="nc" id="L307">      ec.backwardProperties = backwardProperties;</span>
+    }
+<span class="nc" id="L309">    return ec;</span>
+  }
+
+  private void getNamespaces(Attributes attrs) {
+<span class="nc bnc" id="L313" title="All 2 branches missed.">    for (int i = 0; i &lt; attrs.getLength(); i++) {</span>
+<span class="nc" id="L314">      String qname = attrs.getQName(i);</span>
+<span class="nc" id="L315">      String prefix = getPrefix(qname);</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">      if (&quot;xmlns&quot;.equals(prefix)) {</span>
+<span class="nc" id="L317">        String pre = getLocal(prefix, qname);</span>
+<span class="nc" id="L318">        String uri = attrs.getValue(i);</span>
+<span class="nc bnc" id="L319" title="All 4 branches missed.">        if (!settings.contains(Setting.ManualNamespaces) &amp;&amp; pre.contains(&quot;_&quot;))</span>
+<span class="nc" id="L320">          continue; // not permitted</span>
+<span class="nc" id="L321">        context.setNamespaceURI(pre, uri);</span>
+<span class="nc" id="L322">        extractor.setNamespaceURI(pre, uri);</span>
+<span class="nc" id="L323">        sink.addPrefix(pre, uri);</span>
+      }
+    }
+<span class="nc" id="L326">  }</span>
+
+  private String getPrefix(String qname) {
+<span class="nc bnc" id="L329" title="All 2 branches missed.">    if (!qname.contains(&quot;:&quot;)) {</span>
+<span class="nc" id="L330">      return &quot;&quot;;</span>
+    }
+<span class="nc" id="L332">    return qname.substring(0, qname.indexOf(&quot;:&quot;));</span>
+  }
+
+  private String getLocal(String prefix, String qname) {
+<span class="nc bnc" id="L336" title="All 2 branches missed.">    if (prefix.length() == 0) {</span>
+<span class="nc" id="L337">      return qname;</span>
+    }
+<span class="nc" id="L339">    return qname.substring(prefix.length() + 1);</span>
+  }
+
+  private Iterator fromAttributes(Attributes attributes) {
+<span class="nc" id="L343">    List toReturn = new LinkedList();</span>
+
+<span class="nc bnc" id="L345" title="All 2 branches missed.">    for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L346">      String qname = attributes.getQName(i);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">      String prefix = qname.contains(&quot;:&quot;) ? qname.substring(0, qname.indexOf(&quot;:&quot;)) : &quot;&quot;;</span>
+<span class="nc" id="L348">      Attribute attr =</span>
+<span class="nc" id="L349">          eventFactory.createAttribute(</span>
+<span class="nc" id="L350">              prefix, attributes.getURI(i), attributes.getLocalName(i), attributes.getValue(i));</span>
+
+<span class="nc bnc" id="L352" title="All 4 branches missed.">      if (!qname.equals(&quot;xmlns&quot;) &amp;&amp; !qname.startsWith(&quot;xmlns:&quot;)) toReturn.add(attr);</span>
+    }
+
+<span class="nc" id="L355">    return toReturn.iterator();</span>
+  }
+
+  private Attribute findAttribute(StartElement element, QName... names) {
+<span class="nc bnc" id="L359" title="All 2 branches missed.">    for (QName aName : names) {</span>
+<span class="nc" id="L360">      Attribute a = getAttributeByName(element, aName);</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">      if (a != null) {</span>
+<span class="nc" id="L362">        return a;</span>
+      }
+    }
+<span class="nc" id="L365">    return null;</span>
+  }
+
+  private void parsePrefixes(String value, EvalContext context) {
+<span class="nc" id="L369">    String[] parts = value.split(&quot;\\s+&quot;);</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">    for (int i = 0; i &lt; parts.length; i += 2) {</span>
+<span class="nc" id="L371">      String prefix = parts[i];</span>
+<span class="nc bnc" id="L372" title="All 4 branches missed.">      if (i + 1 &lt; parts.length &amp;&amp; prefix.endsWith(&quot;:&quot;)) {</span>
+<span class="nc" id="L373">        String prefixFix = prefix.substring(0, prefix.length() - 1);</span>
+<span class="nc" id="L374">        context.setPrefix(prefixFix, parts[i + 1]);</span>
+<span class="nc" id="L375">        sink.addPrefix(prefixFix, parts[i + 1]);</span>
+      }
+    }
+<span class="nc" id="L378">  }</span>
+
+  private Attribute getAttributeByName(StartElement element, QName name) {
+<span class="nc bnc" id="L381" title="All 4 branches missed.">    if (name == null || element == null) {</span>
+<span class="nc" id="L382">      return null;</span>
+    }
+<span class="nc" id="L384">    Iterator it = element.getAttributes();</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">    while (it.hasNext()) {</span>
+<span class="nc" id="L386">      Attribute at = (Attribute) it.next();</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">      if (Util.qNameEquals(at.getName(), name)) {</span>
+<span class="nc" id="L388">        return at;</span>
+      }
+<span class="nc" id="L390">    }</span>
+<span class="nc" id="L391">    return null;</span>
+  }
+
+<span class="nc" id="L394">  int bnodeId = 0;</span>
+
+  private String createBNode() // TODO probably broken? Can you write bnodes
+        // in rdfa directly?
+      {
+<span class="nc" id="L399">    return &quot;_:node&quot; + (bnodeId++);</span>
+  }
+
+  private String getDatatype(StartElement element) {
+<span class="nc" id="L403">    Attribute de = getAttributeByName(element, Constants.datatype);</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">    if (de == null) {</span>
+<span class="nc" id="L405">      return null;</span>
+    }
+<span class="nc" id="L407">    String dt = de.getValue();</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">    if (dt.length() == 0) {</span>
+<span class="nc" id="L409">      return dt;</span>
+    }
+<span class="nc" id="L411">    return extractor.expandCURIE(element, dt, context);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

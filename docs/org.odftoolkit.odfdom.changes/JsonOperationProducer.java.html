@@ -1,0 +1,2099 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonOperationProducer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">JsonOperationProducer.java</span></div><h1>JsonOperationProducer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import static org.odftoolkit.odfdom.changes.OperationConstants.*; // The names of operations /
+
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.office.OfficeMasterStylesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleListLevelLabelAlignmentElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleListLevelPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMasterPageElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListLevelStyleBulletElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListLevelStyleElementBase;
+import org.odftoolkit.odfdom.dom.element.text.TextListLevelStyleImageElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListLevelStyleNumberElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListStyleElement;
+import org.odftoolkit.odfdom.dom.element.text.TextParagraphElementBase;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfDefaultStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStylePageLayout;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.odftoolkit.odfdom.type.Length;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+// changes
+
+/**
+ * ToDo: Is it more flexible to build a different queue for OperationQueue and create an JSON
+ * exporter? Can a JSONArray / JSONObject be initialized with an existing queue?
+ *
+ * @author svante.schubertATgmail.com
+ */
+public class JsonOperationProducer {
+
+<span class="nc" id="L80">  private static final Logger LOG = Logger.getLogger(JsonOperationProducer.class.getName());</span>
+  static final String BLACK = &quot;#000000&quot;;
+<span class="nc" id="L82">  private static String ODFDOM_GIT_BRANCH = System.getProperty(&quot;odfdom.git.branch&quot;);</span>
+<span class="nc" id="L83">  private static String ODFDOM_GIT_COMMIT_TIME = System.getProperty(&quot;odfdom.git.commit.time&quot;);</span>
+<span class="nc" id="L84">  private static String ODFDOM_GIT_COMMIT_DESCRIBE =</span>
+<span class="nc" id="L85">      System.getProperty(&quot;odfdom.git.commit.id.describe&quot;);</span>
+<span class="nc" id="L86">  private static String ODFDOM_GIT_URL = System.getProperty(&quot;odfdom.git.remote.origin.url&quot;);</span>
+
+  // line widths constants
+<span class="nc" id="L89">  private final JSONArray mOperationQueue = new JSONArray();</span>
+<span class="nc" id="L90">  private final JSONObject mOperations = new JSONObject();</span>
+<span class="nc" id="L91">  private final JSONObject mDocumentAttributes = new JSONObject();</span>
+  /** The maximum empty cell number before starting a new operation */
+  /** Every knonwStyle does not have to be read */
+<span class="nc" id="L94">  Map knownStyles = new HashMap&lt;String, Boolean&gt;();</span>
+  // Added an own map for list styles as it is not 100% certain that the names between styles and
+  // list style might be overlapping.
+<span class="nc" id="L97">  Map knownListStyles = new HashMap&lt;String, Boolean&gt;();</span>
+  /**
+   * There is a special style for the replacement table of too large tables, which have to be added
+   * only once to a document
+   */
+<span class="nc" id="L102">  boolean mIsTableExceededStyleAdded = false;</span>
+
+<span class="nc" id="L104">  public JsonOperationProducer() {</span>
+    try {
+<span class="nc" id="L106">      mDocumentAttributes.put(OPK_NAME, &quot;noOp&quot;);</span>
+<span class="nc" id="L107">      mOperationQueue.put(mDocumentAttributes);</span>
+<span class="nc" id="L108">      mOperations.put(OPK_EDITOR, ODFDOM_GIT_URL);</span>
+<span class="nc" id="L109">      mOperations.put(OPK_VERSION, ODFDOM_GIT_COMMIT_DESCRIBE);</span>
+<span class="nc" id="L110">      mOperations.put(OPK_VERSION_BRANCH, ODFDOM_GIT_BRANCH);</span>
+<span class="nc" id="L111">      mOperations.put(OPK_VERSION_TIME, ODFDOM_GIT_COMMIT_TIME);</span>
+<span class="nc" id="L112">      mOperations.put(OPK_OPERATIONS, mOperationQueue);</span>
+<span class="nc" id="L113">    } catch (JSONException e) {</span>
+<span class="nc" id="L114">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L115">    }</span>
+<span class="nc" id="L116">  }</span>
+
+  public JSONObject getDocumentOperations() {
+<span class="nc" id="L119">    return mOperations;</span>
+  }
+
+  /** Used for repeated elements, repeats a set of operations */
+  public int getCurrentOperationIndex() {
+<span class="nc" id="L124">    return mOperations.length() - 1;</span>
+  }
+
+  // -------------------------------------------------------------------------
+  /**
+   * @param * @param start: An array, that contains the number of that paragraph, before which the
+   *     new paragraph shall be inserted. Has the last paragraph the number 2, so causes para=3,
+   *     that the new paragraph will be inserted at the end. para=4 is not allowed in this case.
+   */
+  public void add(
+      String componentType,
+      final List&lt;Integer&gt; start,
+      final Map&lt;String, Object&gt; formattingProperties,
+      String context) {
+    // ToDo: Moving styleId into para list -
+    // final Map&lt;String, Object&gt; args,
+
+<span class="nc" id="L141">    final JSONObject addComponentObject = new JSONObject();</span>
+
+    try {
+<span class="nc" id="L144">      addComponentObject.put(OPK_NAME, &quot;add&quot; + componentType);</span>
+<span class="nc" id="L145">      addComponentObject.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L147">        addComponentObject.put(OPK_CONTEXT, context);</span>
+      }
+      // ToDo: Moving styleId into para list -
+      //			if (args != null) {
+      //				for (String arg : args.keySet()) {
+      //					newOperation.put(arg, args.get(arg));
+      //				}
+      //			}
+<span class="nc bnc" id="L155" title="All 4 branches missed.">      if (formattingProperties != null &amp;&amp; !formattingProperties.isEmpty()) {</span>
+<span class="nc" id="L156">        JSONObject attrs = new JSONObject();</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        for (String arg : formattingProperties.keySet()) {</span>
+<span class="nc" id="L158">          attrs.put(arg, formattingProperties.get(arg));</span>
+<span class="nc" id="L159">        }</span>
+<span class="nc" id="L160">        addComponentObject.put(OPK_ATTRS, attrs);</span>
+      }
+      // IN CASE STYLE BECOMES AN ATTRIBUTE
+      //			if (args != null || formattingProperties != null &amp;&amp; !formattingProperties.isEmpty()) {
+      //				JSONObject attrs = new JSONObject();
+      //
+      //				if (args != null) {
+      //					for (String arg : args.keySet()) {
+      //						attrs.put(arg, args.get(arg));
+      //					}
+      //				}
+      //				if (formattingProperties != null &amp;&amp; !formattingProperties.isEmpty()) {
+      //					for (String arg : formattingProperties.keySet()) {
+      //						attrs.put(arg, formattingProperties.get(arg));
+      //					}
+      //					newOperation.put(OPK_ATTRS, attrs);
+      //				}
+      //			}
+
+<span class="nc" id="L179">      mOperationQueue.put(addComponentObject);</span>
+<span class="nc" id="L180">      LOG.log(Level.FINEST, &quot;add&quot; + componentType + &quot; - component:{0}&quot;, addComponentObject);</span>
+
+<span class="nc" id="L182">    } catch (JSONException e) {</span>
+<span class="nc" id="L183">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L184">    }</span>
+<span class="nc" id="L185">  }</span>
+
+  public void addAnnotation(
+      final List&lt;Integer&gt; start, String id, String author, String date, String context) {
+<span class="nc" id="L189">    final JSONObject newOperation = new JSONObject();</span>
+    try {
+<span class="nc" id="L191">      newOperation.put(OPK_NAME, OP_NOTE);</span>
+<span class="nc" id="L192">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc" id="L193">      newOperation.put(OPK_ID, id);</span>
+<span class="nc" id="L194">      newOperation.put(&quot;author&quot;, author);</span>
+<span class="nc" id="L195">      newOperation.put(&quot;date&quot;, date);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L197">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc" id="L199">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L200">      LOG.log(Level.FINEST, OP_NOTE + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L202">    } catch (JSONException e) {</span>
+<span class="nc" id="L203">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L204">    }</span>
+<span class="nc" id="L205">  }</span>
+
+  public void addRange(final List&lt;Integer&gt; start, String id, String context) {
+<span class="nc" id="L208">    final JSONObject newOperation = new JSONObject();</span>
+    try {
+<span class="nc" id="L210">      newOperation.put(OPK_NAME, OP_NOTE_SELECTION);</span>
+<span class="nc" id="L211">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc" id="L212">      newOperation.put(OPK_ID, id);</span>
+<span class="nc" id="L213">      newOperation.put(OPK_TYPE, &quot;comment&quot;);</span>
+<span class="nc" id="L214">      newOperation.put(OPK_POSITION, &quot;end&quot;);</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L216">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc" id="L218">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L219">      LOG.log(Level.FINEST, OP_NOTE_SELECTION + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L221">    } catch (JSONException e) {</span>
+<span class="nc" id="L222">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L223">    }</span>
+<span class="nc" id="L224">  }</span>
+
+  /**
+   * @param start: An array, that contains the number of that paragraph, before which the new
+   *     paragraph shall be inserted. Has the last paragraph the number 2, so causes para=3, that
+   *     the new paragraph will be inserted at the end. para=4 is not allowed in this case.
+   */
+  public void formatColumns(
+      final List&lt;Integer&gt; start,
+      final Map&lt;String, Object&gt; formattingProperties,
+      Integer firstColumn,
+      Integer lastColumn,
+      String context) {
+<span class="nc bnc" id="L237" title="All 4 branches missed.">    if (formattingProperties != null &amp;&amp; !formattingProperties.isEmpty()) {</span>
+<span class="nc" id="L238">      final JSONObject newOperation = new JSONObject();</span>
+
+      try {
+<span class="nc" id="L241">        newOperation.put(OPK_NAME, FORMATCOLUMNS);</span>
+<span class="nc" id="L242">        newOperation.put(OPK_SHEET, start.get(0));</span>
+<span class="nc" id="L243">        newOperation.put(OPK_START, firstColumn);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if (context != null) {</span>
+<span class="nc" id="L245">          newOperation.put(OPK_CONTEXT, context);</span>
+        }
+<span class="nc bnc" id="L247" title="All 4 branches missed.">        if (lastColumn != null &amp;&amp; !firstColumn.equals(lastColumn)) {</span>
+<span class="nc" id="L248">          newOperation.put(OPK_END, lastColumn);</span>
+        }
+<span class="nc bnc" id="L250" title="All 4 branches missed.">        if (formattingProperties != null &amp;&amp; !formattingProperties.isEmpty()) {</span>
+<span class="nc" id="L251">          JSONObject attrs = new JSONObject();</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">          for (String arg : formattingProperties.keySet()) {</span>
+<span class="nc" id="L253">            attrs.put(arg, formattingProperties.get(arg));</span>
+<span class="nc" id="L254">          }</span>
+<span class="nc" id="L255">          newOperation.put(OPK_ATTRS, attrs);</span>
+        }
+<span class="nc" id="L257">        mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L258">        LOG.log(Level.FINEST, &quot;changeColumns - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L260">      } catch (JSONException e) {</span>
+<span class="nc" id="L261">        Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L262">      }</span>
+    }
+<span class="nc" id="L264">  }</span>
+
+  /**
+   * @param start: An array, that contains the number of that paragraph, before which the new
+   *     paragraph shall be inserted. Has the last paragraph the number 2, so causes para=3, that
+   *     the new paragraph will be inserted at the end. para=4 is not allowed in this case.
+   */
+  public void formatRows(
+      final List&lt;Integer&gt; start,
+      final Map&lt;String, Object&gt; formattingProperties,
+      Integer firstRow,
+      Integer lastRow,
+      Integer previousRowRepeated,
+      String context) {
+<span class="nc bnc" id="L278" title="All 4 branches missed.">    if (formattingProperties != null &amp;&amp; !formattingProperties.isEmpty()) {</span>
+<span class="nc" id="L279">      final JSONObject newOperation = new JSONObject();</span>
+
+      try {
+<span class="nc" id="L282">        newOperation.put(OPK_NAME, &quot;changeRows&quot;);</span>
+<span class="nc" id="L283">        newOperation.put(OPK_SHEET, start.get(0));</span>
+<span class="nc" id="L284">        newOperation.put(OPK_START, firstRow + previousRowRepeated);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (context != null) {</span>
+<span class="nc" id="L286">          newOperation.put(OPK_CONTEXT, context);</span>
+        }
+<span class="nc bnc" id="L288" title="All 4 branches missed.">        if (lastRow != null &amp;&amp; !firstRow.equals(lastRow)) {</span>
+<span class="nc" id="L289">          newOperation.put(OPK_END, lastRow + previousRowRepeated);</span>
+        }
+<span class="nc" id="L291">        JSONObject attrs = new JSONObject();</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        for (String arg : formattingProperties.keySet()) {</span>
+<span class="nc" id="L293">          attrs.put(arg, formattingProperties.get(arg));</span>
+<span class="nc" id="L294">        }</span>
+<span class="nc" id="L295">        newOperation.put(OPK_ATTRS, attrs);</span>
+
+<span class="nc" id="L297">        mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L298">        LOG.log(Level.FINEST, &quot;changeRows - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L300">      } catch (JSONException e) {</span>
+<span class="nc" id="L301">        Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L302">      }</span>
+    }
+<span class="nc" id="L304">  }</span>
+
+  private static final String NUMBER_FORMAT_CODE = &quot;code&quot;;
+  private static final String NUMBER_FORMAT_CODE_STANDARD = &quot;Standard&quot;;
+
+  /** Maps the ODF office:value-type attribute to the Changes API Text numberFormat property */
+  private JSONObject getCellNumberFormat(String valueType) {
+<span class="nc" id="L311">    JSONObject cellNumberFormat = new JSONObject();</span>
+    try {
+<span class="nc bnc" id="L313" title="All 4 branches missed.">      if (valueType == null || valueType.isEmpty()) {</span>
+<span class="nc" id="L314">        cellNumberFormat.put(NUMBER_FORMAT_CODE, NUMBER_FORMAT_CODE_STANDARD);</span>
+        //			} else if (valueType.equals(&quot;1&quot;)) {
+        //			} else if (valueType.equals(&quot;i&quot;)) {
+        //			} else if (valueType.equals(&quot;I&quot;)) {
+        //			} else if (valueType.equals(&quot;a&quot;)) {
+        //			} else if (valueType.equals(&quot;A&quot;)) {
+      } else {
+<span class="nc" id="L321">        cellNumberFormat.put(NUMBER_FORMAT_CODE, NUMBER_FORMAT_CODE_STANDARD);</span>
+      }
+<span class="nc" id="L323">    } catch (JSONException ex) {</span>
+<span class="nc" id="L324">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L325">    }</span>
+<span class="nc" id="L326">    return cellNumberFormat;</span>
+  }
+
+  private void addRange(
+      int sheet,
+      Integer firstRow,
+      Integer lastRow,
+      int repeatedRowOffset,
+      int firstContentCell,
+      int horizontalRepetition,
+      JSONObject repeatedCell,
+      JSONArray singleRow,
+      boolean hasHorizontalRepetition) {
+
+    // the row start/end number 0 based, therefore - 1
+<span class="nc" id="L341">    int rowStartNo = firstRow + repeatedRowOffset;</span>
+<span class="nc" id="L342">    List rangeStart = new LinkedList&lt;Integer&gt;();</span>
+
+    // if there is a repeated row, there will be repeated cells (at least vertical)
+<span class="nc bnc" id="L345" title="All 6 branches missed.">    if (hasHorizontalRepetition || lastRow != null &amp;&amp; !firstRow.equals(lastRow)) {</span>
+      // first the start column position
+<span class="nc" id="L347">      rangeStart.add(firstContentCell);</span>
+      // second the start row position
+<span class="nc" id="L349">      rangeStart.add(rowStartNo);</span>
+
+<span class="nc" id="L351">      List rangeEnd = new LinkedList&lt;Integer&gt;();</span>
+
+      // first the end column position: StartPos of content plus any repetiton (including itself,
+      // therefore - 1)
+<span class="nc" id="L355">      rangeEnd.add(firstContentCell + horizontalRepetition - 1);</span>
+      // second the end row position
+<span class="nc" id="L357">      int rowEndNo = lastRow + repeatedRowOffset;</span>
+<span class="nc" id="L358">      rangeEnd.add(rowEndNo);</span>
+
+      // create a operation for the given cell range with similar content
+<span class="nc" id="L361">      fillCellRange(sheet, rangeStart, rangeEnd, repeatedCell);</span>
+<span class="nc" id="L362">    } else {</span>
+      // first the start column position
+<span class="nc" id="L364">      rangeStart.add(firstContentCell);</span>
+      // second the start row position
+<span class="nc" id="L366">      rangeStart.add(rowStartNo);</span>
+
+<span class="nc" id="L368">      setCellContents(sheet, rangeStart, singleRow);</span>
+    }
+<span class="nc" id="L370">  }</span>
+
+  /**
+   * Writes a range of the spreadsheet with various values. Will be called only indirectly after a
+   * spreadsheet row has checked for optimization.
+   *
+   * @param name String 'setCellContents'
+   * @param sheet Integer The zero-based index of the sheet containing the cell range.
+   * @param firstRow Integer The next row number being written
+   * @param lastRow Integer The last row number being written (different when the row was repeated)
+   * @param spreadsheetRange Object[][] The values and attribute sets to be written into the cell
+   *     range. The outer array contains rows of cell contents, and the inner row arrays contain the
+   *     cell contents for each single row. The lengths of the inner arrays may be different. Cells
+   *     not covered by a row array will not be modified.
+   */
+  private void setCellContents(Integer sheet, List rangeStart, JSONArray spreadsheetRange) {
+<span class="nc" id="L386">    final JSONObject newOperation = new JSONObject();</span>
+
+    try {
+<span class="nc" id="L389">      newOperation.put(OPK_NAME, &quot;setCellContents&quot;);</span>
+<span class="nc" id="L390">      newOperation.put(OPK_SHEET, sheet);</span>
+<span class="nc" id="L391">      newOperation.put(OPK_START, rangeStart);</span>
+      // Although we only deliver a single row, the range have to be two dimensional
+<span class="nc" id="L393">      newOperation.put(&quot;contents&quot;, new JSONArray().put(spreadsheetRange));</span>
+<span class="nc" id="L394">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L395">      LOG.log(Level.FINEST, &quot;setCellContents - component:{0}&quot;, newOperation);</span>
+<span class="nc" id="L396">    } catch (JSONException e) {</span>
+<span class="nc" id="L397">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L398">    }</span>
+<span class="nc" id="L399">  }</span>
+
+  /** */
+  public void mergeCells(List&lt;Integer&gt; position, int columns, int rows) {
+<span class="nc" id="L403">    final JSONObject newOperation = new JSONObject();</span>
+<span class="nc" id="L404">    LinkedList&lt;Integer&gt; rangeStart = new LinkedList&lt;Integer&gt;();</span>
+<span class="nc" id="L405">    rangeStart.add(position.get(2));</span>
+<span class="nc" id="L406">    rangeStart.add(position.get(1));</span>
+<span class="nc" id="L407">    LinkedList&lt;Integer&gt; rangeEnd = new LinkedList&lt;Integer&gt;();</span>
+<span class="nc" id="L408">    rangeEnd.add(position.get(2) + columns - 1);</span>
+<span class="nc" id="L409">    rangeEnd.add(position.get(1) + rows - 1);</span>
+    try {
+<span class="nc" id="L411">      newOperation.put(OPK_NAME, &quot;mergeCells&quot;);</span>
+<span class="nc" id="L412">      newOperation.put(OPK_SHEET, position.get(0));</span>
+<span class="nc" id="L413">      newOperation.put(OPK_START, rangeStart);</span>
+<span class="nc" id="L414">      newOperation.put(OPK_END, rangeEnd);</span>
+<span class="nc" id="L415">      newOperation.put(OPK_TYPE, &quot;merge&quot;);</span>
+<span class="nc" id="L416">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L417">      LOG.log(Level.FINEST, &quot;mergeCells - component:{0}&quot;, newOperation);</span>
+<span class="nc" id="L418">    } catch (JSONException e) {</span>
+<span class="nc" id="L419">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L420">    }</span>
+<span class="nc" id="L421">  }</span>
+
+  /**
+   * Writes a range of the spreadsheet with various identical/repeating values and attributes
+   *
+   * &lt;p&gt;Will be called only indirectly after a spreadsheet row has checked for optimization.
+   *
+   * @param name String 'fillCellRange'
+   * @param sheet Integer The zero-based index of the sheet containing the cell range.
+   * @param start Integer[2] The logical cell position of the upper-left cell in the range.
+   * @param end Integer[2] (optional) The logical cell position of the bottom-right cell in the
+   *     range. If omitted, the operation addresses a single cell.
+   * @param value CellValue (optional) The value used to fill the specified cell range. The value
+   *     null will clear the cell range. If omitted, the current values will not change (e.g., to
+   *     change the formatting only), except for shared formulas referred by the shared attribute of
+   *     this operation. If the parse property is set in the operation, the value must be a string.
+   */
+  private void fillCellRange(
+      int sheet, final List&lt;Integer&gt; start, final List&lt;Integer&gt; end, JSONObject cell) {
+<span class="nc" id="L440">    final JSONObject newOperation = new JSONObject();</span>
+
+    try {
+<span class="nc bnc" id="L443" title="All 4 branches missed.">      if (cell != null &amp;&amp; cell.length() != 0) {</span>
+<span class="nc" id="L444">        newOperation.put(OPK_NAME, &quot;fillCellRange&quot;);</span>
+<span class="nc" id="L445">        newOperation.put(OPK_SHEET, sheet);</span>
+<span class="nc" id="L446">        newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        if (end != null) {</span>
+<span class="nc" id="L448">          newOperation.put(OPK_END, incrementAll(end));</span>
+        }
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (cell.has(&quot;value&quot;)) {</span>
+<span class="nc" id="L451">          newOperation.put(&quot;value&quot;, cell.get(&quot;value&quot;));</span>
+        }
+<span class="nc bnc" id="L453" title="All 2 branches missed.">        if (cell.has(OPK_ATTRS)) {</span>
+<span class="nc" id="L454">          newOperation.put(OPK_ATTRS, cell.get(OPK_ATTRS));</span>
+        }
+<span class="nc" id="L456">        mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L457">        LOG.log(Level.FINEST, &quot;fillCellRange - component:{0}&quot;, newOperation);</span>
+      }
+<span class="nc" id="L459">    } catch (JSONException e) {</span>
+<span class="nc" id="L460">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L461">    }</span>
+<span class="nc" id="L462">  }</span>
+
+  // -------------------------------------------------------------------------
+  /**
+   * @param text: text to be inserted into the specified paragraph at the specified position
+   * @param start: an array that contains the position, where the new text shall be inserted.
+   */
+  public void addText(final List&lt;Integer&gt; start, final String text, final String context) {
+
+<span class="nc" id="L471">    final JSONObject newOperation = new JSONObject();</span>
+
+    try {
+<span class="nc" id="L474">      newOperation.put(&quot;text&quot;, text);</span>
+
+<span class="nc" id="L476">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L478">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc" id="L480">      newOperation.put(OPK_NAME, OP_TEXT);</span>
+<span class="nc" id="L481">      mOperationQueue.put(newOperation);</span>
+
+<span class="nc" id="L483">      LOG.log(Level.FINEST, newOperation.toString());</span>
+<span class="nc" id="L484">    } catch (JSONException e) {</span>
+<span class="nc" id="L485">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L486">    }</span>
+<span class="nc" id="L487">  }</span>
+
+  // -------------------------------------------------------------------------
+  /**
+   * @param para
+   * @param start
+   * @param end
+   * @return
+   */
+  void format(final List&lt;Integer&gt; start, Map&lt;String, Object&gt; attrs, String context) {
+<span class="nc" id="L497">    JsonOperationProducer.this.format(start, null, attrs, context);</span>
+<span class="nc" id="L498">  }</span>
+
+  // -------------------------------------------------------------------------
+  /**
+   * @param para
+   * @param start
+   * @param end
+   * @return
+   */
+  public void format(
+      final List&lt;Integer&gt; start,
+      final List&lt;Integer&gt; end,
+      Map&lt;String, Object&gt; attrs,
+      String context) {
+<span class="nc bnc" id="L512" title="All 4 branches missed.">    if (attrs != null &amp;&amp; attrs.size() &gt; 0) {</span>
+      // Not the next position, but the last character to be marked will be referenced
+<span class="nc" id="L514">      final JSONObject newOp = new JSONObject();</span>
+<span class="nc" id="L515">      List&lt;Integer&gt; lastCharacterPos = new LinkedList&lt;Integer&gt;();</span>
+      // text position is usually -1 as we take the first and the last character to be styled
+<span class="nc bnc" id="L517" title="All 2 branches missed.">      if (end != null) {</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">        for (int i = 0; i &lt; end.size(); i++) {</span>
+<span class="nc" id="L519">          Integer pos = end.get(i);</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">          if (i == end.size() - 1) {</span>
+            // Special case the span is empty, in this case it shall not be -1
+<span class="nc bnc" id="L522" title="All 2 branches missed.">            if (pos != 0) {</span>
+<span class="nc" id="L523">              pos--;</span>
+            }
+          }
+<span class="nc" id="L526">          lastCharacterPos.add(pos);</span>
+        }
+      }
+
+      try {
+<span class="nc" id="L531">        newOp.put(OPK_NAME, OP_FORMAT);</span>
+<span class="nc" id="L532">        newOp.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">        if (context != null) {</span>
+<span class="nc" id="L534">          newOp.put(OPK_CONTEXT, context);</span>
+        }
+<span class="nc" id="L536">        boolean isValidOperation = true;</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (end != null) {</span>
+<span class="nc" id="L538">          newOp.put(OPK_END, incrementAll(lastCharacterPos));</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">          if (start.get(start.size() - 1) &gt; lastCharacterPos.get(start.size() - 1)) {</span>
+<span class="nc" id="L540">            isValidOperation = false;</span>
+<span class="nc" id="L541">            LOG.fine(&quot;Neglecting '&quot; + newOp.toString());</span>
+          }
+        }
+<span class="nc" id="L544">        newOp.put(OPK_ATTRS, attrs);</span>
+<span class="nc bnc" id="L545" title="All 2 branches missed.">        if (isValidOperation) {</span>
+<span class="nc" id="L546">          mOperationQueue.put(newOp);</span>
+        }
+
+<span class="nc" id="L549">        LOG.log(Level.FINEST, &quot;New Operation '&quot; + OP_FORMAT + &quot;':&quot; + newOp);</span>
+
+<span class="nc" id="L551">      } catch (JSONException e) {</span>
+<span class="nc" id="L552">        Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L553">      }</span>
+    }
+<span class="nc" id="L555">  }</span>
+
+  public void addImage(
+      final List&lt;Integer&gt; start, Map&lt;String, Object&gt; hardFormatations, final String context) {
+
+<span class="nc" id="L560">    final JSONObject newOperation = new JSONObject();</span>
+    try {
+<span class="nc" id="L562">      newOperation.put(OPK_NAME, OP_DRAWING);</span>
+<span class="nc" id="L563">      newOperation.put(OPK_TYPE, &quot;image&quot;);</span>
+<span class="nc" id="L564">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L566">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc bnc" id="L568" title="All 2 branches missed.">      if (hardFormatations != null) {</span>
+<span class="nc" id="L569">        newOperation.put(OPK_ATTRS, hardFormatations);</span>
+      }
+<span class="nc" id="L571">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L572">      LOG.log(Level.FINEST, OP_DRAWING + &quot; (image)&quot; + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L574">    } catch (JSONException e) {</span>
+<span class="nc" id="L575">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L576">    }</span>
+<span class="nc" id="L577">  }</span>
+
+  public void addShape(
+      final List&lt;Integer&gt; start,
+      Map&lt;String, Object&gt; hardFormatations,
+      final String context,
+      boolean isGroup) {
+
+<span class="nc" id="L585">    final JSONObject newOperation = new JSONObject();</span>
+    try {
+<span class="nc" id="L587">      newOperation.put(OPK_NAME, OP_DRAWING);</span>
+<span class="nc bnc" id="L588" title="All 2 branches missed.">      newOperation.put(OPK_TYPE, isGroup ? &quot;group&quot; : &quot;shape&quot;);</span>
+<span class="nc" id="L589">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L591">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc bnc" id="L593" title="All 2 branches missed.">      if (hardFormatations != null) {</span>
+<span class="nc" id="L594">        newOperation.put(OPK_ATTRS, hardFormatations);</span>
+      }
+<span class="nc" id="L596">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L597">      LOG.log(Level.FINEST, OP_DRAWING + &quot; (shape)&quot; + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L599">    } catch (JSONException e) {</span>
+<span class="nc" id="L600">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L601">    }</span>
+<span class="nc" id="L602">  }</span>
+
+  /** Special Table color mJsonOperationProducer.addChild(&quot;Table&quot;, position, props, mTableColor); */
+  // -------------------------------------------------------------------------
+  /**
+   * @param * @param start: An array, that contains the number of that paragraph, before which the
+   *     new paragraph shall be inserted. Has the last paragraph the number 2, so causes para=3,
+   *     that the new paragraph will be inserted at the end. para=4 is not allowed in this case.
+   */
+  public void addTable(
+      final List&lt;Integer&gt; start,
+      Map&lt;String, Object&gt; hardFormatations,
+      final List&lt;Integer&gt; tableGrid,
+      String tableName,
+      final String context) {
+
+<span class="nc" id="L618">    final JSONObject newOperation = new JSONObject();</span>
+
+    try {
+<span class="nc" id="L621">      newOperation.put(OPK_NAME, OP_TABLE);</span>
+<span class="nc" id="L622">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L624">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc" id="L626">      JSONObject tableAttrs = null;</span>
+<span class="nc bnc" id="L627" title="All 4 branches missed.">      if (hardFormatations != null &amp;&amp; !hardFormatations.isEmpty()) {</span>
+<span class="nc" id="L628">        tableAttrs = (JSONObject) hardFormatations.get(&quot;table&quot;);</span>
+      } else {
+<span class="nc bnc" id="L630" title="All 2 branches missed.">        if (hardFormatations == null) {</span>
+<span class="nc" id="L631">          hardFormatations = new HashMap&lt;String, Object&gt;();</span>
+        }
+      }
+<span class="nc bnc" id="L634" title="All 2 branches missed.">      if (tableAttrs == null) {</span>
+<span class="nc" id="L635">        tableAttrs = new JSONObject();</span>
+      }
+<span class="nc bnc" id="L637" title="All 2 branches missed.">      if (tableGrid != null) {</span>
+<span class="nc" id="L638">        tableAttrs.put(&quot;tableGrid&quot;, tableGrid);</span>
+      }
+<span class="nc" id="L640">      hardFormatations.put(&quot;table&quot;, tableAttrs);</span>
+<span class="nc" id="L641">      newOperation.put(OPK_ATTRS, hardFormatations);</span>
+<span class="nc" id="L642">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L643">      LOG.log(Level.FINEST, OP_TABLE + &quot; - component:{0}&quot;, newOperation);</span>
+<span class="nc" id="L644">    } catch (JSONException e) {</span>
+<span class="nc" id="L645">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L646">    }</span>
+<span class="nc" id="L647">  }</span>
+
+  private void addTableExceededStyle() {
+    try {
+<span class="nc" id="L651">      JSONArray operations =</span>
+          new JSONArray(
+              &quot;[{\&quot;styleName\&quot;:\&quot;Exceeded Table Style\&quot;,\&quot;styleId\&quot;:\&quot;LightShading-Accent1\&quot;,\&quot;attrs\&quot;:{\&quot;firstRow\&quot;:{\&quot;paragraph\&quot;:{\&quot;marginBottom\&quot;:0,\&quot;lineHeight\&quot;:{\&quot;value\&quot;:100,\&quot;type\&quot;:\&quot;percent\&quot;},\&quot;marginTop\&quot;:0},\&quot;cell\&quot;:{\&quot;borderInsideVert\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderTop\&quot;:{\&quot;style\&quot;:\&quot;single\&quot;,\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;},\&quot;width\&quot;:35},\&quot;borderInsideHor\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderBottom\&quot;:{\&quot;style\&quot;:\&quot;single\&quot;,\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;},\&quot;width\&quot;:35},\&quot;borderRight\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderLeft\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;}},\&quot;character\&quot;:{\&quot;bold\&quot;:true}},\&quot;lastRow\&quot;:{\&quot;paragraph\&quot;:{\&quot;marginBottom\&quot;:0,\&quot;lineHeight\&quot;:{\&quot;value\&quot;:100,\&quot;type\&quot;:\&quot;percent\&quot;},\&quot;marginTop\&quot;:0},\&quot;cell\&quot;:{\&quot;borderInsideVert\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderTop\&quot;:{\&quot;style\&quot;:\&quot;single\&quot;,\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;},\&quot;width\&quot;:35},\&quot;borderInsideHor\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderBottom\&quot;:{\&quot;style\&quot;:\&quot;single\&quot;,\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;},\&quot;width\&quot;:35},\&quot;borderRight\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderLeft\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;}},\&quot;character\&quot;:{\&quot;bold\&quot;:true}},\&quot;band1Hor\&quot;:{\&quot;cell\&quot;:{\&quot;borderInsideVert\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;fillColor\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;,\&quot;transformations\&quot;:[{\&quot;value\&quot;:24706,\&quot;type\&quot;:\&quot;tint\&quot;}]},\&quot;borderInsideHor\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderRight\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderLeft\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;}}},\&quot;lastCol\&quot;:{\&quot;character\&quot;:{\&quot;bold\&quot;:true}},\&quot;wholeTable\&quot;:{\&quot;paragraph\&quot;:{\&quot;marginBottom\&quot;:0,\&quot;lineHeight\&quot;:{\&quot;value\&quot;:100,\&quot;type\&quot;:\&quot;percent\&quot;}},\&quot;table\&quot;:{\&quot;paddingTop\&quot;:0,\&quot;borderTop\&quot;:{\&quot;style\&quot;:\&quot;single\&quot;,\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;},\&quot;width\&quot;:35},\&quot;borderBottom\&quot;:{\&quot;style\&quot;:\&quot;single\&quot;,\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;},\&quot;width\&quot;:35},\&quot;paddingBottom\&quot;:0,\&quot;paddingLeft\&quot;:190,\&quot;paddingRight\&quot;:190},\&quot;character\&quot;:{\&quot;color\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;,\&quot;transformations\&quot;:[{\&quot;value\&quot;:74902,\&quot;type\&quot;:\&quot;shade\&quot;}]}}},\&quot;band1Vert\&quot;:{\&quot;cell\&quot;:{\&quot;borderInsideVert\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;fillColor\&quot;:{\&quot;value\&quot;:\&quot;accent1\&quot;,\&quot;type\&quot;:\&quot;scheme\&quot;,\&quot;transformations\&quot;:[{\&quot;value\&quot;:24706,\&quot;type\&quot;:\&quot;tint\&quot;}]},\&quot;borderInsideHor\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderRight\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;},\&quot;borderLeft\&quot;:{\&quot;style\&quot;:\&quot;none\&quot;}}},\&quot;firstCol\&quot;:{\&quot;character\&quot;:{\&quot;bold\&quot;:true}}},\&quot;parent\&quot;:\&quot;TableNormal\&quot;,\&quot;uiPriority\&quot;:60,\&quot;type\&quot;:\&quot;table\&quot;,\&quot;name\&quot;: \&quot;&quot;
+                  + OP_STYLE
+                  + &quot;\&quot;}]&quot;);
+<span class="nc" id="L656">      mOperationQueue.put(operations.get(0));</span>
+
+<span class="nc" id="L658">    } catch (JSONException ex) {</span>
+<span class="nc" id="L659">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L660">    }</span>
+<span class="nc" id="L661">  }</span>
+
+  public void addExceededTable(
+      final List&lt;Integer&gt; start,
+      int columns,
+      int rows,
+      final List&lt;Integer&gt; tableGrid,
+      String context) {
+<span class="nc" id="L669">    final JSONObject newOperation = new JSONObject();</span>
+
+<span class="nc bnc" id="L671" title="All 2 branches missed.">    if (!mIsTableExceededStyleAdded) {</span>
+      // addChild once the table style
+<span class="nc" id="L673">      addTableExceededStyle();</span>
+<span class="nc" id="L674">      mIsTableExceededStyleAdded = true;</span>
+    }
+
+    try {
+<span class="nc" id="L678">      newOperation.put(OPK_NAME, OP_TABLE);</span>
+<span class="nc" id="L679">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L680" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L681">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc" id="L683">      Map&lt;String, Integer&gt; sizeExceeded = new HashMap&lt;String, Integer&gt;();</span>
+<span class="nc" id="L684">      sizeExceeded.put(&quot;columns&quot;, columns);</span>
+<span class="nc" id="L685">      sizeExceeded.put(&quot;rows&quot;, rows);</span>
+<span class="nc" id="L686">      newOperation.put(&quot;sizeExceeded&quot;, sizeExceeded);</span>
+<span class="nc" id="L687">      Map&lt;String, Object&gt; hardFormatations = new HashMap&lt;String, Object&gt;();</span>
+<span class="nc" id="L688">      JSONObject tableAttrs = new JSONObject();</span>
+      //			JSONObject tableAttrs = null;
+      //			if (hardFormatations != null &amp;&amp; !hardFormatations.isEmpty()) {
+      //				tableAttrs = (JSONObject) hardFormatations.get(&quot;table&quot;);
+      //			} else {
+      //				if (hardFormatations == null) {
+      //					hardFormatations = new HashMap&lt;String, Object&gt;();
+      //				}
+      //			}
+      //			if (tableAttrs == null) {
+      //				tableAttrs = new JSONObject();
+      //			}
+      //			if (tableGrid != null) {
+      //				tableAttrs.put(&quot;tableGrid&quot;, tableGrid);
+      //			}
+<span class="nc" id="L703">      tableAttrs.put(&quot;tableGrid&quot;, tableGrid);</span>
+<span class="nc" id="L704">      tableAttrs.put(&quot;style&quot;, &quot;LightShading-Accent1&quot;);</span>
+<span class="nc" id="L705">      tableAttrs.put(&quot;width&quot;, &quot;auto&quot;);</span>
+<span class="nc" id="L706">      List exclude = new ArrayList(3);</span>
+<span class="nc" id="L707">      exclude.add(&quot;lastRow&quot;);</span>
+<span class="nc" id="L708">      exclude.add(&quot;lastCol&quot;);</span>
+<span class="nc" id="L709">      exclude.add(&quot;bandsVert&quot;);</span>
+<span class="nc" id="L710">      tableAttrs.put(&quot;exclude&quot;, exclude);</span>
+<span class="nc" id="L711">      hardFormatations.put(&quot;table&quot;, tableAttrs);</span>
+<span class="nc" id="L712">      newOperation.put(OPK_ATTRS, hardFormatations);</span>
+<span class="nc" id="L713">      mOperationQueue.put(newOperation);</span>
+
+<span class="nc" id="L715">      LOG.log(Level.FINEST, OP_TABLE + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L717">    } catch (JSONException e) {</span>
+<span class="nc" id="L718">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L719">    }</span>
+<span class="nc" id="L720">  }</span>
+
+  public void addField(
+      final List&lt;Integer&gt; start,
+      String fieldType,
+      String fieldContent,
+      final Map&lt;String, Object&gt; fieldAttributes,
+      String context) {
+<span class="nc" id="L728">    final JSONObject newOperation = new JSONObject();</span>
+
+    try {
+<span class="nc" id="L731">      newOperation.put(OPK_NAME, OP_FIELD);</span>
+<span class="nc" id="L732">      newOperation.put(OPK_START, incrementAll(start));</span>
+<span class="nc bnc" id="L733" title="All 2 branches missed.">      if (context != null) {</span>
+<span class="nc" id="L734">        newOperation.put(OPK_CONTEXT, context);</span>
+      }
+<span class="nc" id="L736">      newOperation.put(OPK_TYPE, fieldType);</span>
+<span class="nc bnc" id="L737" title="All 4 branches missed.">      if (fieldAttributes != null &amp;&amp; !fieldAttributes.isEmpty()) {</span>
+<span class="nc" id="L738">        JSONObject attrs = new JSONObject();</span>
+<span class="nc" id="L739">        JSONObject fieldAttrs = new JSONObject();</span>
+<span class="nc bnc" id="L740" title="All 2 branches missed.">        for (Map.Entry&lt;String, Object&gt; entry : fieldAttributes.entrySet()) {</span>
+<span class="nc" id="L741">          fieldAttrs.put(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L742">        }</span>
+
+<span class="nc" id="L744">        attrs.put(&quot;field&quot;, fieldAttrs);</span>
+<span class="nc" id="L745">        newOperation.put(OPK_ATTRS, attrs);</span>
+      }
+<span class="nc bnc" id="L747" title="All 2 branches missed.">      if (fieldContent != null) {</span>
+<span class="nc" id="L748">        newOperation.put(&quot;representation&quot;, fieldContent);</span>
+      } else {
+<span class="nc" id="L750">        newOperation.put(&quot;representation&quot;, &quot;&quot;);</span>
+      }
+<span class="nc" id="L752">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L753">      LOG.log(Level.FINEST, OP_FIELD + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L755">    } catch (JSONException e) {</span>
+<span class="nc" id="L756">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L757">    }</span>
+<span class="nc" id="L758">  }</span>
+
+  void addAutoFilterColumn(final List&lt;Integer&gt; start, int sheet, final List&lt;String&gt; entries) {
+<span class="nc" id="L761">    final JSONObject newOperation = new JSONObject();</span>
+
+    try {
+<span class="nc" id="L764">      newOperation.put(OPK_NAME, &quot;changeTableColumn&quot;);</span>
+<span class="nc" id="L765">      newOperation.put(&quot;col&quot;, start.get(0));</span>
+<span class="nc" id="L766">      newOperation.put(OPK_SHEET, sheet);</span>
+<span class="nc" id="L767">      newOperation.put(&quot;table&quot;, &quot;&quot;);</span>
+<span class="nc" id="L768">      JSONObject attrs = new JSONObject();</span>
+<span class="nc" id="L769">      JSONObject filterAttrs = new JSONObject();</span>
+<span class="nc bnc" id="L770" title="All 2 branches missed.">      filterAttrs.put(OPK_TYPE, entries.isEmpty() ? &quot;none&quot; : &quot;discrete&quot;);</span>
+<span class="nc bnc" id="L771" title="All 2 branches missed.">      if (!entries.isEmpty()) {</span>
+<span class="nc" id="L772">        JSONArray entryArray = new JSONArray();</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">        for (String entry : entries) {</span>
+<span class="nc" id="L774">          entryArray.put(entry);</span>
+<span class="nc" id="L775">        }</span>
+<span class="nc" id="L776">        filterAttrs.put(&quot;entries&quot;, entryArray);</span>
+      }
+<span class="nc" id="L778">      attrs.put(&quot;filter&quot;, filterAttrs);</span>
+<span class="nc" id="L779">      newOperation.put(OPK_ATTRS, attrs);</span>
+<span class="nc" id="L780">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L781">      LOG.log(Level.FINEST, &quot;changeTableColumn&quot; + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L783">    } catch (JSONException e) {</span>
+<span class="nc" id="L784">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L785">    }</span>
+<span class="nc" id="L786">  }</span>
+
+  /**
+   * * addStylesheet name: 'addStylesheet' type: &quot;table&quot; styleId: The identifier of this stylesheet
+   * (unique for the corresponding type). stylename: The readable name of this style sheet. attrs:
+   * JSONObject, contains formatting attributes as nested JSON objects, keyed by attribute family,
+   * as well as other properties specific to a family. Must support the attributes of the main
+   * attribute family, may support attributes of other families. See chapter &quot;Style Sheet
+   * Properties&quot; below for a list of supported values. parent: (string, optional) The identifier of
+   * the parent style sheet that derives formatting attributes to this style sheet (default: no
+   * parent). hidden: (boolean, optional) Whether the style sheet is hidden in the user interface
+   * (default: false). uipriority: (integer, optional) The priority of the style sheet used to order
+   * style sheet in the user interface. The lower the value the higher the priority (default: 0).
+   * default: (boolean, optional) Whether this style sheet is the default style sheet of the family.
+   * Only one style sheet per family can be the default style sheet (default: false). pooldefault:
+   * (boolean, optional) Whether this style sheet is the pool default style sheet. (default: false).
+   * OOXML may have on the table default style properties for table Object { type: table properties
+   * } '' row Object { type: row properties } '' cell Object { type: cell properties } '' paragraph
+   * Object { type: paragraph properties } '' character Object { type: character properties } We
+   * need to split this table style into an additional row and cell style and addChild it as parent
+   * for those.
+   */
+  //
+  public void addStyleSheet(
+      String styleId,
+      String familyID,
+      String displayName,
+      Map&lt;String, Object&gt; componentProps,
+      String parentStyle,
+      String nextStyleId,
+      Integer outlineLevel,
+      boolean isDefaultStyle,
+      boolean isHidden,
+      String custom) {
+    // conditionalType: wholetable
+<span class="nc" id="L821">    final JSONObject newOperation = new JSONObject();</span>
+    try {
+<span class="nc" id="L823">      newOperation.put(OPK_NAME, OP_STYLE);</span>
+<span class="nc bnc" id="L824" title="All 4 branches missed.">      if (styleId != null &amp;&amp; !styleId.isEmpty()) {</span>
+<span class="nc" id="L825">        newOperation.put(OPK_STYLE_ID, styleId);</span>
+      }
+<span class="nc" id="L827">      newOperation.put(OPK_TYPE, familyID);</span>
+<span class="nc bnc" id="L828" title="All 4 branches missed.">      if (displayName != null &amp;&amp; !displayName.isEmpty()) {</span>
+<span class="nc" id="L829">        newOperation.put(&quot;styleName&quot;, displayName);</span>
+      }
+<span class="nc bnc" id="L831" title="All 2 branches missed.">      if (familyID.equals(&quot;table&quot;)) {</span>
+<span class="nc" id="L832">        final JSONObject tableStyleAttrs = new JSONObject();</span>
+<span class="nc" id="L833">        tableStyleAttrs.put(&quot;wholeTable&quot;, componentProps);</span>
+<span class="nc" id="L834">        newOperation.put(OPK_ATTRS, tableStyleAttrs);</span>
+
+<span class="nc" id="L836">      } else {</span>
+<span class="nc" id="L837">        newOperation.put(OPK_ATTRS, componentProps);</span>
+      }
+<span class="nc bnc" id="L839" title="All 4 branches missed.">      if (parentStyle != null &amp;&amp; !parentStyle.isEmpty()) {</span>
+<span class="nc" id="L840">        newOperation.put(&quot;parent&quot;, parentStyle);</span>
+      }
+<span class="nc bnc" id="L842" title="All 2 branches missed.">      if (isDefaultStyle) {</span>
+<span class="nc" id="L843">        newOperation.put(&quot;default&quot;, isDefaultStyle);</span>
+      }
+<span class="nc bnc" id="L845" title="All 2 branches missed.">      if (isHidden) {</span>
+<span class="nc" id="L846">        newOperation.put(&quot;hidden&quot;, isHidden);</span>
+      }
+<span class="nc bnc" id="L848" title="All 4 branches missed.">      if (outlineLevel != null || nextStyleId != null) {</span>
+        JSONObject paraProps;
+<span class="nc bnc" id="L850" title="All 2 branches missed.">        if (componentProps.containsKey(&quot;paragraph&quot;)) {</span>
+<span class="nc" id="L851">          paraProps = (JSONObject) componentProps.get(&quot;paragraph&quot;);</span>
+        } else {
+<span class="nc" id="L853">          paraProps = new JSONObject();</span>
+<span class="nc" id="L854">          componentProps.put(&quot;paragraph&quot;, paraProps);</span>
+        }
+<span class="nc bnc" id="L856" title="All 2 branches missed.">        if (outlineLevel != null) {</span>
+<span class="nc" id="L857">          paraProps.put(&quot;outlineLevel&quot;, outlineLevel);</span>
+        }
+<span class="nc bnc" id="L859" title="All 4 branches missed.">        if (nextStyleId != null &amp;&amp; !nextStyleId.isEmpty()) {</span>
+<span class="nc" id="L860">          paraProps.put(&quot;nextStyleId&quot;, nextStyleId);</span>
+        }
+<span class="nc" id="L862">        componentProps.put(&quot;paragraph&quot;, paraProps);</span>
+<span class="nc" id="L863">        newOperation.put(OPK_ATTRS, componentProps);</span>
+      }
+<span class="nc bnc" id="L865" title="All 4 branches missed.">      if (null != custom &amp;&amp; Boolean.parseBoolean(custom)) {</span>
+<span class="nc" id="L866">        newOperation.put(&quot;custom&quot;, true);</span>
+      }
+<span class="nc" id="L868">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L869">      LOG.log(Level.FINEST, OP_STYLE + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L871">    } catch (JSONException e) {</span>
+<span class="nc" id="L872">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L873">    }</span>
+<span class="nc" id="L874">  }</span>
+
+  public void addFontData(
+      String fontName,
+      String[] altNames,
+      String family,
+      String familyGeneric,
+      String pitch,
+      String panose1) {
+<span class="nc" id="L883">    List&lt;Integer&gt; panose1_Integers = null;</span>
+<span class="nc bnc" id="L884" title="All 4 branches missed.">    if (panose1 != null &amp;&amp; !panose1.isEmpty()) {</span>
+<span class="nc" id="L885">      String[] result = null;</span>
+<span class="nc bnc" id="L886" title="All 2 branches missed.">      if (panose1.contains(&quot;[&quot;)) {</span>
+<span class="nc" id="L887">        panose1 = panose1.substring(1, panose1.length() - 1);</span>
+      }
+
+<span class="nc bnc" id="L890" title="All 2 branches missed.">      if (panose1.contains(&quot;,&quot;)) {</span>
+<span class="nc" id="L891">        result = panose1.split(&quot;,&quot;);</span>
+      } else {
+<span class="nc" id="L893">        result = panose1.split(&quot;\\s&quot;);</span>
+      }
+<span class="nc" id="L895">      panose1_Integers = new LinkedList&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L896" title="All 2 branches missed.">      for (String token : result) {</span>
+        try {
+<span class="nc" id="L898">          panose1_Integers.add(Integer.parseInt(token));</span>
+
+<span class="nc" id="L900">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L901">          Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L902">        }</span>
+      }
+    }
+<span class="nc" id="L905">    addFontData(fontName, altNames, family, familyGeneric, pitch, panose1_Integers);</span>
+<span class="nc" id="L906">  }</span>
+
+  /**
+   * Inserts an extended description for a specific font which an be used for font substitution
+   * algorithms. name String 'addFontData'
+   *
+   * @param fontName The font name.
+   * @param altNames String[] NOTE: Will be ignored in ODF. A list of alternate names for the font.
+   * @param family String The font family.
+   * @param pitch String The font pitch. One of 'fixed', or 'variable'.
+   * @param panose1 Integer[10] The font typeface classification number. See
+   *     http://en.wikipedia.org/wiki/PANOSE.
+   */
+  private void addFontData(
+      String fontName,
+      String[] altNames,
+      String family,
+      String familyGeneric,
+      String pitch,
+      List&lt;Integer&gt; panose1) {
+<span class="nc" id="L926">    final JSONObject newOperation = new JSONObject();</span>
+<span class="nc" id="L927">    final JSONObject attrs = new JSONObject();</span>
+    try {
+<span class="nc" id="L929">      newOperation.put(OPK_NAME, OP_FONT_DECL);</span>
+<span class="nc bnc" id="L930" title="All 4 branches missed.">      if (fontName != null &amp;&amp; !fontName.isEmpty()) {</span>
+<span class="nc" id="L931">        newOperation.put(&quot;fontName&quot;, fontName);</span>
+      } else {
+<span class="nc" id="L933">        LOG.fine(&quot;The font name is mandatory!&quot;);</span>
+      }
+<span class="nc" id="L935">      newOperation.put(OPK_ATTRS, attrs);</span>
+<span class="nc bnc" id="L936" title="All 4 branches missed.">      if (family != null &amp;&amp; !family.isEmpty()) {</span>
+<span class="nc" id="L937">        attrs.put(&quot;family&quot;, family);</span>
+      }
+<span class="nc bnc" id="L939" title="All 4 branches missed.">      if (familyGeneric != null &amp;&amp; !familyGeneric.isEmpty()) {</span>
+<span class="nc" id="L940">        attrs.put(&quot;familyGeneric&quot;, familyGeneric);</span>
+      }
+<span class="nc bnc" id="L942" title="All 4 branches missed.">      if (pitch != null &amp;&amp; !pitch.isEmpty()) {</span>
+<span class="nc" id="L943">        attrs.put(&quot;pitch&quot;, pitch);</span>
+      }
+<span class="nc bnc" id="L945" title="All 4 branches missed.">      if (panose1 != null &amp;&amp; !panose1.isEmpty()) {</span>
+<span class="nc bnc" id="L946" title="All 2 branches missed.">        if (panose1.size() != 10) {</span>
+<span class="nc" id="L947">          LOG.fine(&quot;Panose1 is not 10 digits long: &quot; + panose1.toString());</span>
+        }
+<span class="nc" id="L949">        attrs.put(&quot;panose1&quot;, panose1);</span>
+      }
+
+<span class="nc" id="L952">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L953">      LOG.log(Level.FINEST, OP_FONT_DECL + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L955">    } catch (JSONException e) {</span>
+<span class="nc" id="L956">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L957">    }</span>
+<span class="nc" id="L958">  }</span>
+
+  /**
+   * @param the componentProps is a JSONObject that has the family ID as key (e.g 'page') and the
+   *     properties as JSON object as value
+   */
+  public void addDocumentData(JSONObject componentProps) {
+    // conditionalType: wholetable
+    try {
+<span class="nc" id="L967">      mDocumentAttributes.put(OPK_ATTRS, componentProps);</span>
+<span class="nc" id="L968">      mDocumentAttributes.put(OPK_NAME, OP_DOCUMENT_LAYOUT);</span>
+<span class="nc" id="L969">      LOG.log(Level.FINEST, OP_DOCUMENT_LAYOUT + &quot; - component:{0}&quot;, mDocumentAttributes);</span>
+
+<span class="nc" id="L971">    } catch (JSONException e) {</span>
+<span class="nc" id="L972">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L973">    }</span>
+<span class="nc" id="L974">  }</span>
+
+  private String getComponentPath(List&lt;Integer&gt; pathIntegers) {
+<span class="nc" id="L977">    StringBuilder path = new StringBuilder();</span>
+<span class="nc bnc" id="L978" title="All 2 branches missed.">    for (Integer pathInteger : pathIntegers) {</span>
+<span class="nc" id="L979">      path.append(Constants.PATH_SEPARATOR);</span>
+<span class="nc" id="L980">      path.append(pathInteger);</span>
+<span class="nc" id="L981">    }</span>
+<span class="nc" id="L982">    return path.toString();</span>
+  }
+
+  /**
+   * ODF List Style inheritance will be resolved:
+   *
+   * &lt;ol&gt;
+   *   &lt;li&gt;The paragraph/heading's list style reference from its closest text:list or text:list-item
+   *       ancestor is taken. text:list uses the attribute
+   *
+   * @text:style-name and text:list-item the attribute
+   * @text:style-override respectively.
+   *     &lt;li&gt;If no list style was given by any text:list nor text:list-item ancestor the list-style
+   *         reference of the paragraph style is being chosen, i.e. the
+   * @style:list-style-name attribute within the paragraph style style:style element.
+   *     &lt;/ol&gt;
+   */
+  public static String getListStyle(
+      ArrayDeque&lt;ParagraphListProperties&gt; listStyleStack, TextParagraphElementBase p) {
+<span class="nc" id="L1001">    String listStyleId = null;</span>
+<span class="nc" id="L1002">    Iterator&lt;ParagraphListProperties&gt; listStyles = listStyleStack.descendingIterator();</span>
+    // Choose the first style being set
+<span class="nc bnc" id="L1004" title="All 2 branches missed.">    while (listStyles.hasNext()) {</span>
+<span class="nc" id="L1005">      ParagraphListProperties paraListStyle = listStyles.next();</span>
+<span class="nc" id="L1006">      listStyleId = paraListStyle.getListStyleName();</span>
+<span class="nc bnc" id="L1007" title="All 4 branches missed.">      if (listStyleId != null &amp;&amp; !listStyleId.isEmpty()) {</span>
+<span class="nc" id="L1008">        break;</span>
+      }
+<span class="nc" id="L1010">    }</span>
+    // if no style was previous set, use the style on the paragraph
+<span class="nc bnc" id="L1012" title="All 4 branches missed.">    if (listStyleId == null || listStyleId.isEmpty()) {</span>
+<span class="nc" id="L1013">      OdfStyleBase style = null;</span>
+<span class="nc bnc" id="L1014" title="All 2 branches missed.">      if (p.hasAutomaticStyle()) {</span>
+<span class="nc" id="L1015">        style = p.getAutomaticStyle();</span>
+      } else {
+<span class="nc" id="L1017">        style = p.getDocumentStyle();</span>
+      }
+<span class="nc bnc" id="L1019" title="All 2 branches missed.">      if (style != null) {</span>
+<span class="nc" id="L1020">        listStyleId = ((OdfStyle) style).getStyleListStyleNameAttribute();</span>
+      }
+    }
+<span class="nc" id="L1023">    return listStyleId;</span>
+  }
+
+  static Map&lt;String, Object&gt; getAutomaticStyleHierarchyProps(OdfStylableElement styleElement) {
+    // Hard formatted properties (automatic styles)
+<span class="nc" id="L1028">    Map&lt;String, Object&gt; allHardFormatting = null;</span>
+<span class="nc" id="L1029">    Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps = null;</span>
+    // AUTOMATIC STYLE HANDLING
+<span class="nc bnc" id="L1031" title="All 2 branches missed.">    if (styleElement.hasAutomaticStyle()) {</span>
+      try {
+<span class="nc" id="L1033">        OdfStyleBase style = styleElement.getAutomaticStyle();</span>
+
+        // all ODF properties
+<span class="nc" id="L1036">        allOdfProps = new HashMap&lt;String, Map&lt;String, String&gt;&gt;();</span>
+<span class="nc" id="L1037">        List&lt;OdfStyleBase&gt; parents = new LinkedList&lt;OdfStyleBase&gt;();</span>
+<span class="nc" id="L1038">        parents.add(style);</span>
+<span class="nc" id="L1039">        OdfStyleBase parent = style.getParentStyle();</span>
+        // if automatic style inheritance is possible
+<span class="nc bnc" id="L1041" title="All 2 branches missed.">        while (parent != null) {</span>
+<span class="nc" id="L1042">          Node n = parent.getParentNode();</span>
+          // if it is no longer an automatic style (template or default style)
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">          if (n instanceof OdfOfficeStyles) {</span>
+<span class="nc" id="L1045">            break;</span>
+          }
+<span class="nc" id="L1047">          parents.add(parent);</span>
+<span class="nc" id="L1048">          parent = parent.getParentStyle();</span>
+<span class="nc" id="L1049">        }</span>
+        // due to inheritance the top ancestor style have to be propagated first
+<span class="nc" id="L1051">        boolean numberFormatInserted = false;</span>
+<span class="nc" id="L1052">        OdfOfficeStyles officeStyles = null;</span>
+<span class="nc" id="L1053">        OdfOfficeAutomaticStyles automaticStyles = null;</span>
+<span class="nc" id="L1054">        OdfFileDom fileDom = (OdfFileDom) styleElement.getOwnerDocument();</span>
+<span class="nc" id="L1055">        OdfDocument doc = (OdfDocument) fileDom.getDocument();</span>
+<span class="nc" id="L1056">        officeStyles = doc.getStylesDom().getOfficeStyles();</span>
+<span class="nc" id="L1057">        OdfStylesDom stylesDom = null;</span>
+        // get the automatic styles according to the current DOM
+<span class="nc bnc" id="L1059" title="All 2 branches missed.">        if (fileDom instanceof OdfStylesDom) {</span>
+<span class="nc" id="L1060">          stylesDom = (OdfStylesDom) fileDom;</span>
+<span class="nc" id="L1061">          automaticStyles = stylesDom.getAutomaticStyles();</span>
+        } else {
+<span class="nc" id="L1063">          automaticStyles = doc.getContentDom().getAutomaticStyles();</span>
+        }
+<span class="nc bnc" id="L1065" title="All 2 branches missed.">        for (int i = parents.size() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L1066">          OdfStyleBase styleBase = parents.get(i);</span>
+<span class="nc" id="L1067">          MapHelper.getStyleProperties(styleBase, styleElement, allOdfProps);</span>
+<span class="nc" id="L1068">          numberFormatInserted |=</span>
+<span class="nc" id="L1069">              MapHelper.putNumberFormat(</span>
+                  null, allOdfProps, (OdfStyle) styleBase, automaticStyles, officeStyles);
+        }
+<span class="nc" id="L1072">        allHardFormatting = MapHelper.mapStyleProperties(styleElement, allOdfProps);</span>
+<span class="nc bnc" id="L1073" title="All 2 branches missed.">        if (numberFormatInserted) {</span>
+<span class="nc" id="L1074">          Map&lt;String, String&gt; cellProps = allOdfProps.get(&quot;cell&quot;);</span>
+
+<span class="nc" id="L1076">          JSONObject jsonCellProps = null;</span>
+<span class="nc bnc" id="L1077" title="All 2 branches missed.">          if (allHardFormatting.containsKey(&quot;cell&quot;)) {</span>
+<span class="nc" id="L1078">            jsonCellProps = (JSONObject) allHardFormatting.get(&quot;cell&quot;);</span>
+          } else {
+<span class="nc" id="L1080">            jsonCellProps = new JSONObject();</span>
+          }
+<span class="nc" id="L1082">          String formatCode = cellProps.get(&quot;numberformat_code&quot;);</span>
+<span class="nc" id="L1083">          jsonCellProps.put(&quot;formatCode&quot;, formatCode);</span>
+<span class="nc" id="L1084">          allHardFormatting.put(&quot;cell&quot;, jsonCellProps);</span>
+        }
+<span class="nc" id="L1086">      } catch (SAXException ex) {</span>
+<span class="nc" id="L1087">        Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1088">      } catch (IOException ex) {</span>
+<span class="nc" id="L1089">        Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1090">      }</span>
+    }
+<span class="nc" id="L1092">    return allHardFormatting;</span>
+  }
+
+  /**
+   * Maps the styles of the given stylable ODF element to operations. In case the ODF element uses
+   * automatic styles, all styles will be returned as property map. In case the ODF element uses
+   * template styles, an operation for each style is being triggered, which not have been triggered
+   * by now.
+   *
+   * @return the mapped automatic style grouped by property set
+   */
+  public Map&lt;String, Object&gt; getHardStyles(OdfStylableElement styleElement) {
+    // Hard formatted properties (automatic styles)
+<span class="nc" id="L1105">    Map&lt;String, Object&gt; allHardFormatting = null;</span>
+    // AUTOMATIC STYLE HANDLING
+<span class="nc bnc" id="L1107" title="All 2 branches missed.">    if (styleElement.hasAutomaticStyle()) {</span>
+<span class="nc" id="L1108">      allHardFormatting = getAutomaticStyleHierarchyProps(styleElement);</span>
+    }
+<span class="nc" id="L1110">    return allHardFormatting;</span>
+  }
+
+  /**
+   * Creates the operation to insert a list style. All template list styles should be already set
+   * during initialization.
+   */
+  public void addListStyle(
+      OdfSchemaDocument doc, Map&lt;String, TextListStyleElement&gt; autoListStyles, String styleId) {
+<span class="nc bnc" id="L1119" title="All 6 branches missed.">    if (styleId != null &amp; !styleId.isEmpty()) {</span>
+<span class="nc bnc" id="L1120" title="All 2 branches missed.">      if (!knownListStyles.containsKey(styleId)) {</span>
+        try {
+          // Three locations to check for the list style
+          //  - 1 -  Automatic Styles of content.xml
+<span class="nc" id="L1124">          TextListStyleElement listStyle = autoListStyles.get(styleId);</span>
+<span class="nc bnc" id="L1125" title="All 2 branches missed.">          if (listStyle != null) {</span>
+<span class="nc" id="L1126">            JsonOperationProducer.this.addListStyle(listStyle);</span>
+          } else {
+            //  - 2 -  Automatic Styles of styles.xml
+<span class="nc" id="L1129">            OdfOfficeAutomaticStyles autoStyles = doc.getStylesDom().getAutomaticStyles();</span>
+<span class="nc bnc" id="L1130" title="All 2 branches missed.">            if (autoStyles != null) {</span>
+<span class="nc" id="L1131">              listStyle = autoStyles.getListStyle(styleId);</span>
+<span class="nc bnc" id="L1132" title="All 2 branches missed.">              if (listStyle != null) {</span>
+<span class="nc" id="L1133">                JsonOperationProducer.this.addListStyle(listStyle);</span>
+              }
+            } else {
+              //  - 3 -  Template Styles of styles.xml -- third as already checked when initialized
+<span class="nc" id="L1137">              OdfOfficeStyles templateStyles = doc.getStylesDom().getOfficeStyles();</span>
+<span class="nc bnc" id="L1138" title="All 2 branches missed.">              if (templateStyles != null) {</span>
+<span class="nc" id="L1139">                listStyle = templateStyles.getListStyle(styleId);</span>
+<span class="nc bnc" id="L1140" title="All 2 branches missed.">                if (listStyle != null) {</span>
+<span class="nc" id="L1141">                  JsonOperationProducer.this.addListStyle(listStyle);</span>
+                }
+              }
+            }
+          }
+<span class="nc" id="L1146">        } catch (Exception ex) {</span>
+<span class="nc" id="L1147">          Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1148">        }</span>
+      }
+    }
+<span class="nc" id="L1151">  }</span>
+
+  /**
+   * After checking if the given list style was not declared before as operation call. A new list
+   * style will be mapped to an operation.
+   *
+   * &lt;p&gt;The &lt;text:list-style&gt; element has the following attributes: style:display-name, style:name
+   * and text:consecutive-numbering.
+   */
+  public void addListStyle(TextListStyleElement listStyle) {
+<span class="nc bnc" id="L1161" title="All 2 branches missed.">    if (listStyle != null) {</span>
+<span class="nc" id="L1162">      String styleId = listStyle.getStyleNameAttribute();</span>
+<span class="nc bnc" id="L1163" title="All 2 branches missed.">      if (!knownListStyles.containsKey(styleId)) {</span>
+        // addChild the given style to the known styles, so it will not provided again
+<span class="nc" id="L1165">        knownListStyles.put(styleId, Boolean.TRUE);</span>
+<span class="nc" id="L1166">        addListStyle(</span>
+<span class="nc" id="L1167">            listStyle.getStyleNameAttribute(),</span>
+<span class="nc" id="L1168">            listStyle.getStyleDisplayNameAttribute(),</span>
+<span class="nc" id="L1169">            listStyle.getTextConsecutiveNumberingAttribute(),</span>
+<span class="nc" id="L1170">            getListLevelDefinitions(listStyle));</span>
+      }
+    }
+<span class="nc" id="L1173">  }</span>
+
+  /** Receives the ten list definition */
+  private JSONObject getListLevelDefinitions(TextListStyleElement listStyle) {
+<span class="nc" id="L1177">    JSONObject listDefinition = new JSONObject(9);</span>
+<span class="nc" id="L1178">    NodeList listStyleChildren = listStyle.getChildNodes();</span>
+<span class="nc" id="L1179">    int size = listStyleChildren.getLength();</span>
+<span class="nc bnc" id="L1180" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L1181">      Node child = listStyleChildren.item(i);</span>
+<span class="nc bnc" id="L1182" title="All 2 branches missed.">      if (!(child instanceof Element)) {</span>
+        // avoid line breaks, when XML is indented
+<span class="nc" id="L1184">        continue;</span>
+      } else {
+<span class="nc" id="L1186">        TextListLevelStyleElementBase listLevelStyle = (TextListLevelStyleElementBase) child;</span>
+        // Transform mandatory attribute to integer
+
+<span class="nc" id="L1189">        String textLevel =</span>
+<span class="nc" id="L1190">            listLevelStyle.getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;level&quot;);</span>
+<span class="nc" id="L1191">        int listLevel = Integer.parseInt(textLevel) - 1;</span>
+        try {
+<span class="nc" id="L1193">          listDefinition.put(</span>
+<span class="nc" id="L1194">              &quot;listLevel&quot; + listLevel, createListLevelDefinition(listLevelStyle, listLevel));</span>
+
+<span class="nc" id="L1196">        } catch (JSONException ex) {</span>
+<span class="nc" id="L1197">          Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1198">        }</span>
+      }
+    }
+<span class="nc" id="L1201">    return listDefinition;</span>
+  }
+
+  /*
+  justification		String	 One of 'left', 'right', or 'center'.
+  numberFormat		String	 One of 'none', 'bullet', 'decimal', 'lowerRoman', 'upperRoman', 'lowerLetter', or 'upperLetter'.
+  levelStart			Integer	 Start index of the level.
+  indentLeft			Integer	 Left indent of the numbered paragraph.
+  indentFirstLine		Integer	 First line indent, negative values represent hanging indents.
+  fontName			String	 Font name, typically used for bullet symbols.
+  levelText			String	 Formatting text of the label, can contain bullet symbol or level format like &quot;%1.&quot;
+  levelRestartValue	Integer	 The number level that resets the current level back to its starting value.
+  OLD		paraStyle			String	 Identifier of the paragraph style that the current numbering level shall be applied to.
+  NEW		textStyle
+  NEW		HARD TEXT PROPERTIES
+  levelPicBulletUri	String	 (optional) URI of the bullet picture.
+  tabStopPosition		Integer	 Tabulator position, in 1/100 of millimeters.
+  OLD		color				Color
+  *
+  * The &lt;text:list-level-style-bullet&gt; element has the following attributes: style:num-prefix 19.502, style:num-suffix 19.503, text:bullet-char 19.760, text:bullet-relative-size 19.761, text:level 19.828 and text:style-name 19.874.24
+  * The &lt;text:list-level-style-number&gt; element has the following attributes: style:num-format 19.500, style:num-letter-sync 19.501, style:num-prefix 19.502, style:num-suffix 19.503, text:display-levels 19.797, text:level 19.828, text:start-value 19.868.4 and text:style-name 19.874.23.
+  * The &lt;text:list-level-style-image&gt; element has the following attributes: text:level 19.828, xlink:actuate 19.909, xlink:href 19.910.35, xlink:show 19.911 and xlink:type 19.913.
+  */
+  private JSONObject createListLevelDefinition(
+      TextListLevelStyleElementBase listLevelStyle, int listLevel) throws JSONException {
+<span class="nc" id="L1226">    JSONObject listLevelDefinition = new JSONObject();</span>
+
+    // NUMBERED LISTS
+<span class="nc bnc" id="L1229" title="All 2 branches missed.">    if (listLevelStyle instanceof TextListLevelStyleNumberElement) {</span>
+<span class="nc" id="L1230">      TextListLevelStyleNumberElement listLevelNumberStyle =</span>
+          (TextListLevelStyleNumberElement) listLevelStyle;
+<span class="nc" id="L1232">      listLevelDefinition.put(&quot;levelText&quot;, getLabel(listLevelNumberStyle, listLevel));</span>
+<span class="nc bnc" id="L1233" title="All 2 branches missed.">      if (listLevelStyle.hasAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;start-value&quot;)) {</span>
+<span class="nc" id="L1234">        String listStartValue = getListStartValue(listLevelNumberStyle);</span>
+<span class="nc" id="L1235">        listLevelDefinition.put(&quot;listStartValue&quot;, Integer.parseInt(listStartValue));</span>
+      }
+      // There is always the number format set
+<span class="nc" id="L1238">      listLevelDefinition.put(&quot;numberFormat&quot;, getNumberFormat(listLevelNumberStyle));</span>
+
+      // BULLET LISTS
+<span class="nc bnc" id="L1241" title="All 2 branches missed.">    } else if (listLevelStyle instanceof TextListLevelStyleBulletElement) {</span>
+<span class="nc" id="L1242">      TextListLevelStyleBulletElement listLevelBulletStyle =</span>
+          (TextListLevelStyleBulletElement) listLevelStyle;
+<span class="nc" id="L1244">      listLevelDefinition.put(&quot;levelText&quot;, getLabel(listLevelBulletStyle, listLevel));</span>
+<span class="nc bnc" id="L1245" title="All 2 branches missed.">      if (listLevelStyle.hasAttributeNS(</span>
+<span class="nc" id="L1246">          OdfDocumentNamespace.TEXT.getUri(), &quot;bullet-relative-size&quot;)) {</span>
+<span class="nc" id="L1247">        listLevelDefinition.put(</span>
+            &quot;bulletRelativeSize&quot;,
+<span class="nc" id="L1249">            listLevelStyle.getAttributeNS(</span>
+<span class="nc" id="L1250">                OdfDocumentNamespace.TEXT.getUri(), &quot;bullet-relative-size&quot;));</span>
+      }
+<span class="nc" id="L1252">      listLevelDefinition.put(&quot;numberFormat&quot;, &quot;bullet&quot;);</span>
+
+      // IMAGE LISTS
+<span class="nc bnc" id="L1255" title="All 2 branches missed.">    } else if (listLevelStyle instanceof TextListLevelStyleImageElement) {</span>
+<span class="nc" id="L1256">      listLevelDefinition.put(</span>
+          &quot;levelPicBulletUri&quot;,
+<span class="nc" id="L1258">          listLevelStyle.getAttributeNS(OdfDocumentNamespace.XLINK.getUri(), &quot;href&quot;));</span>
+<span class="nc" id="L1259">      listLevelDefinition.put(&quot;numberFormat&quot;, &quot;bullet&quot;);</span>
+    }
+
+    // ALL THREE TYPES: number, bullet and image list
+<span class="nc bnc" id="L1263" title="All 2 branches missed.">    if (listLevelStyle.hasAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;style-name&quot;)) {</span>
+<span class="nc" id="L1264">      listLevelDefinition.put(</span>
+          OPK_STYLE_ID,
+<span class="nc" id="L1266">          listLevelStyle.getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;style-name&quot;));</span>
+    }
+
+    /*
+    The &lt;style:list-level-properties&gt; element has the following attributes:
+    fo:height 20.187,
+    fo:text-align 20.216.2,
+    fo:width 20.222,
+    style:font-name 20.269,
+    style:vertical-pos 20.387,
+    style:vertical-rel 20.388,
+    svg:y 20.402.2,
+    text:list-level-position-and-space-mode 20.421,
+    text:min-label-distance 20.422,
+    text:min-label-width 20.423 and
+    text:space-before 20.425.
+    */
+<span class="nc" id="L1283">    NodeList listLevelProps =</span>
+<span class="nc" id="L1284">        listLevelStyle.getElementsByTagNameNS(</span>
+<span class="nc" id="L1285">            OdfDocumentNamespace.STYLE.getUri(), &quot;list-level-properties&quot;);</span>
+<span class="nc bnc" id="L1286" title="All 2 branches missed.">    if (listLevelProps != null) {</span>
+<span class="nc" id="L1287">      StyleListLevelPropertiesElement styleListLevelProperties =</span>
+<span class="nc" id="L1288">          (StyleListLevelPropertiesElement) listLevelProps.item(0);</span>
+<span class="nc bnc" id="L1289" title="All 2 branches missed.">      if (styleListLevelProperties != null) {</span>
+        //  fo:height
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;height&quot;)) {</span>
+<span class="nc" id="L1292">          String heightValue =</span>
+<span class="nc" id="L1293">              styleListLevelProperties.getAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;height&quot;);</span>
+<span class="nc bnc" id="L1294" title="All 2 branches missed.">          if (heightValue != null) {</span>
+<span class="nc" id="L1295">            int height = MapHelper.normalizeLength(heightValue);</span>
+<span class="nc" id="L1296">            listLevelDefinition.put(&quot;height&quot;, height);</span>
+          }
+        }
+
+        // fo:text-align
+<span class="nc bnc" id="L1301" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1302">            OdfDocumentNamespace.FO.getUri(), &quot;text-align&quot;)) {</span>
+<span class="nc" id="L1303">          listLevelDefinition.put(</span>
+              &quot;textAlign&quot;,
+<span class="nc" id="L1305">              MapHelper.mapFoTextAlign(</span>
+<span class="nc" id="L1306">                  styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1307">                      OdfDocumentNamespace.FO.getUri(), &quot;text-align&quot;)));</span>
+        }
+
+        //  fo:width
+<span class="nc bnc" id="L1311" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;width&quot;)) {</span>
+<span class="nc" id="L1312">          String widthValue =</span>
+<span class="nc" id="L1313">              styleListLevelProperties.getAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;width&quot;);</span>
+<span class="nc bnc" id="L1314" title="All 2 branches missed.">          if (widthValue != null) {</span>
+<span class="nc" id="L1315">            int width = MapHelper.normalizeLength(widthValue);</span>
+<span class="nc" id="L1316">            listLevelDefinition.put(&quot;width&quot;, width);</span>
+          }
+        }
+
+        // style:font-name
+<span class="nc bnc" id="L1321" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1322">            OdfDocumentNamespace.STYLE.getUri(), &quot;font-name&quot;)) {</span>
+<span class="nc" id="L1323">          listLevelDefinition.put(</span>
+              &quot;fontName&quot;,
+<span class="nc" id="L1325">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1326">                  OdfDocumentNamespace.STYLE.getUri(), &quot;font-name&quot;));</span>
+        }
+
+        // style:vertical-pos
+<span class="nc bnc" id="L1330" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1331">            OdfDocumentNamespace.STYLE.getUri(), &quot;vertical-pos&quot;)) {</span>
+<span class="nc" id="L1332">          listLevelDefinition.put(</span>
+              &quot;verticalPos&quot;,
+<span class="nc" id="L1334">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1335">                  OdfDocumentNamespace.STYLE.getUri(), &quot;vertical-pos&quot;));</span>
+        }
+
+        // style:vertical-rel
+<span class="nc bnc" id="L1339" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1340">            OdfDocumentNamespace.STYLE.getUri(), &quot;vertical-rel&quot;)) {</span>
+<span class="nc" id="L1341">          listLevelDefinition.put(</span>
+              &quot;verticalRel&quot;,
+<span class="nc" id="L1343">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1344">                  OdfDocumentNamespace.STYLE.getUri(), &quot;vertical-rel&quot;));</span>
+        }
+
+        // svg:y
+<span class="nc bnc" id="L1348" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(OdfDocumentNamespace.SVG.getUri(), &quot;y&quot;)) {</span>
+<span class="nc" id="L1349">          listLevelDefinition.put(</span>
+<span class="nc" id="L1350">              &quot;y&quot;, styleListLevelProperties.getAttributeNS(OdfDocumentNamespace.SVG.getUri(), &quot;y&quot;));</span>
+        }
+
+        // text:list-level-position-and-space-mode
+<span class="nc bnc" id="L1354" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1355">            OdfDocumentNamespace.TEXT.getUri(), &quot;list-level-position-and-space-mode&quot;)) {</span>
+<span class="nc" id="L1356">          listLevelDefinition.put(</span>
+              &quot;listLevelPositionAndSpaceMode&quot;,
+<span class="nc" id="L1358">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1359">                  OdfDocumentNamespace.TEXT.getUri(), &quot;list-level-position-and-space-mode&quot;));</span>
+        }
+
+        // text:min-label-distance
+<span class="nc bnc" id="L1363" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1364">            OdfDocumentNamespace.TEXT.getUri(), &quot;min-label-distance&quot;)) {</span>
+<span class="nc" id="L1365">          String minLabelDistanceValue =</span>
+<span class="nc" id="L1366">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1367">                  OdfDocumentNamespace.TEXT.getUri(), &quot;min-label-distance&quot;);</span>
+<span class="nc bnc" id="L1368" title="All 4 branches missed.">          if (minLabelDistanceValue != null &amp;&amp; !minLabelDistanceValue.isEmpty()) {</span>
+<span class="nc" id="L1369">            int minLabelDistance = MapHelper.normalizeLength(minLabelDistanceValue);</span>
+<span class="nc" id="L1370">            listLevelDefinition.put(&quot;minLabelDistance&quot;, minLabelDistance);</span>
+          }
+        }
+
+        // text:min-label-width
+<span class="nc" id="L1375">        String minLabelWidthValue = null;</span>
+<span class="nc bnc" id="L1376" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1377">            OdfDocumentNamespace.TEXT.getUri(), &quot;min-label-width&quot;)) {</span>
+<span class="nc" id="L1378">          minLabelWidthValue =</span>
+<span class="nc" id="L1379">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1380">                  OdfDocumentNamespace.TEXT.getUri(), &quot;min-label-width&quot;);</span>
+<span class="nc bnc" id="L1381" title="All 4 branches missed.">          if (minLabelWidthValue != null &amp;&amp; !minLabelWidthValue.isEmpty()) {</span>
+<span class="nc" id="L1382">            int width = MapHelper.normalizeLength(minLabelWidthValue);</span>
+<span class="nc" id="L1383">            listLevelDefinition.put(&quot;minLabelWidth&quot;, width);</span>
+          }
+        }
+
+        // text:space-before
+<span class="nc" id="L1388">        String spaceBeforeValue = null;</span>
+<span class="nc bnc" id="L1389" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1390">            OdfDocumentNamespace.TEXT.getUri(), &quot;space-before&quot;)) {</span>
+<span class="nc" id="L1391">          spaceBeforeValue =</span>
+<span class="nc" id="L1392">              styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1393">                  OdfDocumentNamespace.TEXT.getUri(), &quot;space-before&quot;);</span>
+<span class="nc bnc" id="L1394" title="All 4 branches missed.">          if (spaceBeforeValue != null &amp;&amp; !spaceBeforeValue.isEmpty()) {</span>
+<span class="nc" id="L1395">            int spaceBefore = MapHelper.normalizeLength(spaceBeforeValue);</span>
+<span class="nc" id="L1396">            listLevelDefinition.put(&quot;spaceBefore&quot;, spaceBefore);</span>
+          }
+        }
+
+        // Mapping list XML ODF 1.1 to ODF 1.2: Adding @text:min-label-width &amp; @text:space-before to
+        // margin-left
+<span class="nc" id="L1402">        listLevelDefinition = mapIndent(minLabelWidthValue, spaceBeforeValue, listLevelDefinition);</span>
+
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">        if (styleListLevelProperties.hasAttributeNS(</span>
+<span class="nc" id="L1405">            OdfDocumentNamespace.TEXT.getUri(), &quot;list-level-position-and-space-mode&quot;)) {</span>
+<span class="nc" id="L1406">          if (&quot;label-alignment&quot;</span>
+<span class="nc bnc" id="L1407" title="All 2 branches missed.">              .equals(</span>
+<span class="nc" id="L1408">                  styleListLevelProperties.getAttributeNS(</span>
+<span class="nc" id="L1409">                      OdfDocumentNamespace.TEXT.getUri(), &quot;list-level-position-and-space-mode&quot;))) {</span>
+<span class="nc" id="L1410">            NodeList nl =</span>
+<span class="nc" id="L1411">                styleListLevelProperties.getElementsByTagNameNS(</span>
+<span class="nc" id="L1412">                    OdfDocumentNamespace.STYLE.getUri(), &quot;list-level-label-alignment&quot;);</span>
+<span class="nc bnc" id="L1413" title="All 4 branches missed.">            if (nl != null &amp;&amp; nl.getLength() == 1) {</span>
+<span class="nc" id="L1414">              StyleListLevelLabelAlignmentElement labelAlignmentElement =</span>
+<span class="nc" id="L1415">                  (StyleListLevelLabelAlignmentElement) nl.item(0);</span>
+<span class="nc" id="L1416">              String marginLeft =</span>
+<span class="nc" id="L1417">                  labelAlignmentElement.getAttributeNS(</span>
+<span class="nc" id="L1418">                      OdfDocumentNamespace.FO.getUri(), &quot;margin-left&quot;);</span>
+<span class="nc" id="L1419">              int margin = 0;</span>
+<span class="nc bnc" id="L1420" title="All 4 branches missed.">              if (marginLeft != null &amp;&amp; !marginLeft.isEmpty()) {</span>
+<span class="nc" id="L1421">                margin = MapHelper.normalizeLength(marginLeft);</span>
+<span class="nc" id="L1422">                listLevelDefinition.put(&quot;indentLeft&quot;, margin);</span>
+              } else {
+<span class="nc" id="L1424">                listLevelDefinition =</span>
+<span class="nc" id="L1425">                    mapIndent(minLabelWidthValue, spaceBeforeValue, listLevelDefinition);</span>
+              }
+<span class="nc" id="L1427">              String textIndent =</span>
+<span class="nc" id="L1428">                  labelAlignmentElement.getAttributeNS(</span>
+<span class="nc" id="L1429">                      OdfDocumentNamespace.FO.getUri(), &quot;text-indent&quot;);</span>
+<span class="nc bnc" id="L1430" title="All 4 branches missed.">              if (textIndent != null &amp;&amp; !textIndent.isEmpty()) {</span>
+<span class="nc" id="L1431">                int indent = MapHelper.normalizeLength(textIndent);</span>
+<span class="nc" id="L1432">                listLevelDefinition.put(&quot;indentFirstLine&quot;, indent);</span>
+              }
+
+              //			&lt;optional&gt;
+              //				&lt;attribute name=&quot;text:list-tab-stop-position&quot;&gt;
+              //					&lt;ref name=&quot;length&quot;/&gt;
+              //				&lt;/attribute&gt;
+              //			&lt;/optional&gt;
+<span class="nc bnc" id="L1440" title="All 2 branches missed.">              if (labelAlignmentElement.hasAttributeNS(</span>
+<span class="nc" id="L1441">                  OdfDocumentNamespace.TEXT.getUri(), &quot;list-tab-stop-position&quot;)) {</span>
+<span class="nc" id="L1442">                String tabPosition =</span>
+<span class="nc" id="L1443">                    labelAlignmentElement.getAttributeNS(</span>
+<span class="nc" id="L1444">                        OdfDocumentNamespace.TEXT.getUri(), &quot;list-tab-stop-position&quot;);</span>
+<span class="nc bnc" id="L1445" title="All 4 branches missed.">                if (tabPosition != null &amp;&amp; !tabPosition.isEmpty()) {</span>
+                  //									if(marginLeft != null &amp;&amp; !marginLeft.isEmpty()){
+                  //										listLevelDefinition.put(&quot;tabStopPosition&quot;,
+                  // MapHelper.normalizeLength(tabPosition) + margin);
+                  //									}else{
+<span class="nc" id="L1450">                  listLevelDefinition.put(</span>
+<span class="nc" id="L1451">                      &quot;tabStopPosition&quot;, MapHelper.normalizeLength(tabPosition));</span>
+                  //									}
+                }
+              }
+
+              //			&lt;attribute name=&quot;text:label-followed-by&quot;&gt;
+              //				&lt;choice&gt;
+              //					&lt;value&gt;listtab&lt;/value&gt;
+              //					&lt;value&gt;space&lt;/value&gt;
+              //					&lt;value&gt;nothing&lt;/value&gt;
+              //				&lt;/choice&gt;
+              //			&lt;/attribute&gt;
+<span class="nc bnc" id="L1463" title="All 2 branches missed.">              if (labelAlignmentElement.hasAttributeNS(</span>
+<span class="nc" id="L1464">                  OdfDocumentNamespace.TEXT.getUri(), &quot;label-followed-by&quot;)) {</span>
+<span class="nc" id="L1465">                listLevelDefinition.put(</span>
+                    &quot;labelFollowedBy&quot;,
+<span class="nc" id="L1467">                    labelAlignmentElement.getAttributeNS(</span>
+<span class="nc" id="L1468">                        OdfDocumentNamespace.TEXT.getUri(), &quot;label-followed-by&quot;));</span>
+              }
+            }
+          }
+        }
+      }
+    }
+<span class="nc" id="L1475">    return listLevelDefinition;</span>
+  }
+
+  private static JSONObject mapIndent(
+      String minLabelWidthValue, String spaceBeforeValue, JSONObject listLevelDefinition)
+      throws JSONException {
+<span class="nc" id="L1481">    int minLabelWidth = 0;</span>
+<span class="nc" id="L1482">    boolean isValidMinLabelWidth = Length.isValid(minLabelWidthValue);</span>
+<span class="nc bnc" id="L1483" title="All 2 branches missed.">    if (isValidMinLabelWidth) {</span>
+<span class="nc" id="L1484">      minLabelWidth = MapHelper.normalizeLength(minLabelWidthValue);</span>
+    }
+<span class="nc" id="L1486">    int spaceBefore = 0;</span>
+<span class="nc" id="L1487">    boolean isValidSpaceBefore = Length.isValid(spaceBeforeValue);</span>
+<span class="nc bnc" id="L1488" title="All 2 branches missed.">    if (isValidSpaceBefore) {</span>
+<span class="nc" id="L1489">      spaceBefore = MapHelper.normalizeLength(spaceBeforeValue);</span>
+    }
+<span class="nc bnc" id="L1491" title="All 4 branches missed.">    if (isValidMinLabelWidth || isValidSpaceBefore) {</span>
+<span class="nc" id="L1492">      listLevelDefinition.put(&quot;indentLeft&quot;, minLabelWidth + spaceBefore);</span>
+    }
+<span class="nc" id="L1494">    return listLevelDefinition;</span>
+  }
+
+  /**
+   * Handling the attributes of
+   *
+   * @style:num-format
+   *     &lt;p&gt;The style:num-format attribute specifies a numbering sequence. The defined ODF values
+   *     for the style:num-format attribute are:
+   *     &lt;ul&gt;
+   *       &lt;li&gt;1: Hindu-Arabic number sequence starts with 1.
+   *       &lt;li&gt;a: number sequence of lowercase Modern Latin basic alphabet characters starts with
+   *           &quot;a&quot;.
+   *       &lt;li&gt;A: number sequence of uppercase Modern Latin basic alphabet characters starts with
+   *           &quot;A&quot;.
+   *       &lt;li&gt;i: number sequence of lowercase Roman numerals starts with &quot;i&quot;.
+   *       &lt;li&gt;I: number sequence of uppercase Roman numerals start with &quot;I&quot;.
+   *       &lt;li&gt;a value of type string 18.2. (COMPLEX NUMBERING ie. ASIAN oder ERSTENS..)
+   *       &lt;li&gt;an empty string: no number sequence displayed.
+   *       &lt;li&gt;If no value is given, no number sequence is displayed.
+   *     &lt;/ul&gt;
+   *     Our API: One of 'none', 'bullet', 'decimal', 'lowerRoman', 'upperRoman', 'lowerLetter', or
+   *     'upperLetter'.
+   */
+  private String getNumberFormat(TextListLevelStyleElementBase listLevelStyle) {
+<span class="nc" id="L1519">    String numberFormat =</span>
+<span class="nc" id="L1520">        listLevelStyle.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;num-format&quot;);</span>
+    String numFormat;
+<span class="nc bnc" id="L1522" title="All 4 branches missed.">    if (numberFormat == null || numberFormat.isEmpty()) {</span>
+<span class="nc" id="L1523">      numFormat = &quot;none&quot;;</span>
+<span class="nc bnc" id="L1524" title="All 2 branches missed.">    } else if (numberFormat.equals(&quot;1&quot;)) {</span>
+<span class="nc" id="L1525">      numFormat = &quot;decimal&quot;;</span>
+<span class="nc bnc" id="L1526" title="All 2 branches missed.">    } else if (numberFormat.equals(&quot;i&quot;)) {</span>
+<span class="nc" id="L1527">      numFormat = &quot;lowerRoman&quot;;</span>
+<span class="nc bnc" id="L1528" title="All 2 branches missed.">    } else if (numberFormat.equals(&quot;I&quot;)) {</span>
+<span class="nc" id="L1529">      numFormat = &quot;upperRoman&quot;;</span>
+<span class="nc bnc" id="L1530" title="All 2 branches missed.">    } else if (numberFormat.equals(&quot;a&quot;)) {</span>
+<span class="nc" id="L1531">      numFormat = &quot;lowerLetter&quot;;</span>
+<span class="nc bnc" id="L1532" title="All 2 branches missed.">    } else if (numberFormat.equals(&quot;A&quot;)) {</span>
+<span class="nc" id="L1533">      numFormat = &quot;upperLetter&quot;;</span>
+    } else {
+      // a value of type string 18.2. (COMPLEX NUMBERING ie. ASIAN oder ERSTENS..)
+<span class="nc" id="L1536">      numFormat = numberFormat;</span>
+    }
+<span class="nc" id="L1538">    return numFormat;</span>
+  }
+
+  /**
+   * Handling the attributes of
+   *
+   * @text:start-value
+   */
+  private String getListStartValue(TextListLevelStyleElementBase listLevelStyle) {
+<span class="nc" id="L1547">    return listLevelStyle.getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;start-value&quot;);</span>
+  }
+
+  /**
+   * Handling the attributes of
+   *
+   * @style:num-prefix
+   * @text:display-levels
+   * @style:num-suffix
+   */
+  private String getLabel(TextListLevelStyleElementBase listLevelStyle, int listLevel) {
+<span class="nc" id="L1558">    StringBuilder levelText = new StringBuilder();</span>
+
+    // creating label prefix
+<span class="nc" id="L1561">    String labelPrefix =</span>
+<span class="nc" id="L1562">        listLevelStyle.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;num-prefix&quot;);</span>
+<span class="nc bnc" id="L1563" title="All 4 branches missed.">    if (labelPrefix != null &amp;&amp; !labelPrefix.isEmpty()) {</span>
+<span class="nc" id="L1564">      levelText.append(labelPrefix);</span>
+    }
+
+    // creating label number
+<span class="nc bnc" id="L1568" title="All 2 branches missed.">    if (listLevelStyle instanceof TextListLevelStyleNumberElement) {</span>
+<span class="nc" id="L1569">      String displayLevels =</span>
+<span class="nc" id="L1570">          listLevelStyle.getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;display-levels&quot;);</span>
+<span class="nc bnc" id="L1571" title="All 4 branches missed.">      if (displayLevels != null &amp;&amp; !displayLevels.isEmpty()) {</span>
+<span class="nc" id="L1572">        int showLevels = Integer.parseInt(displayLevels);</span>
+        // Creating the label, in ODF always adding the low levelText first, adding each follow up
+        // level for display level
+        // Custom string with one of the placeholders from '%1' to '%9') for numbered lists.
+<span class="nc bnc" id="L1576" title="All 2 branches missed.">        for (int i = showLevels; i &gt; 0; i--) {</span>
+<span class="nc" id="L1577">          levelText.append(&quot;%&quot;).append(listLevel + 2 - i);</span>
+          // Although not commented in the specification a &quot;.&quot; is being added to the text level
+<span class="nc bnc" id="L1579" title="All 2 branches missed.">          if (i != 1) {</span>
+<span class="nc" id="L1580">            levelText.append('.');</span>
+          }
+        }
+<span class="nc" id="L1583">      } else {</span>
+<span class="nc" id="L1584">        levelText.append(&quot;%&quot;).append(listLevel + 1);</span>
+      }
+      // creating label suffix
+<span class="nc" id="L1587">      String labelSuffix =</span>
+<span class="nc" id="L1588">          listLevelStyle.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;num-suffix&quot;);</span>
+<span class="nc bnc" id="L1589" title="All 4 branches missed.">      if (labelSuffix != null &amp;&amp; !labelSuffix.isEmpty()) {</span>
+<span class="nc" id="L1590">        levelText.append(labelSuffix);</span>
+      }
+<span class="nc" id="L1592">    } else {</span>
+<span class="nc" id="L1593">      String bulletChar =</span>
+<span class="nc" id="L1594">          listLevelStyle.getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;bullet-char&quot;);</span>
+<span class="nc bnc" id="L1595" title="All 4 branches missed.">      if (bulletChar != null &amp;&amp; !bulletChar.isEmpty()) {</span>
+<span class="nc" id="L1596">        levelText.append(bulletChar);</span>
+      }
+    }
+<span class="nc" id="L1599">    return levelText.toString();</span>
+  }
+  // addListStyle(knownListStyles.size(), listStyle.getStyleNameAttribute(),
+  // listStyle.getStyleDisplayNameAttribute(), listStyle.getTextConsecutiveNumberingAttribute(),
+  // getListLevelDefinitions(listStyle));
+
+  private void addListStyle(
+      String styleName,
+      String displayName,
+      boolean hasConsecutiveNumbering,
+      JSONObject listDefinition) {
+    // conditionalType: wholetable
+<span class="nc" id="L1611">    final JSONObject newOperation = new JSONObject();</span>
+    try {
+<span class="nc" id="L1613">      newOperation.put(OPK_NAME, OP_LIST_STYLE);</span>
+<span class="nc" id="L1614">      newOperation.put(&quot;listStyleId&quot;, styleName);</span>
+      //			newOperation.put(&quot;displayName&quot;, displayName);
+<span class="nc bnc" id="L1616" title="All 2 branches missed.">      if (hasConsecutiveNumbering) {</span>
+<span class="nc" id="L1617">        newOperation.put(&quot;listUnifiedNumbering&quot;, hasConsecutiveNumbering);</span>
+      }
+<span class="nc" id="L1619">      newOperation.put(&quot;listDefinition&quot;, listDefinition);</span>
+
+<span class="nc" id="L1621">      mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L1622">      LOG.log(Level.FINEST, OP_LIST_STYLE + &quot; - component:{0}&quot;, newOperation);</span>
+
+<span class="nc" id="L1624">    } catch (JSONException e) {</span>
+<span class="nc" id="L1625">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1626">    }</span>
+<span class="nc" id="L1627">  }</span>
+
+  public Integer triggerStyleHierarchyOps(
+      OdfOfficeStyles officeStyles, OdfStyleFamily styleFamily, OdfStyleBase style) {
+<span class="nc" id="L1631">    Integer defaultTabStopWidth = null;</span>
+<span class="nc bnc" id="L1632" title="All 2 branches missed.">    if (style != null) {</span>
+
+<span class="nc bnc" id="L1634" title="All 2 branches missed.">      if (!(style instanceof OdfDefaultStyle)) {</span>
+
+<span class="nc bnc" id="L1636" title="All 2 branches missed.">        if (!knownStyles.containsKey(((OdfStyle) style).getStyleNameAttribute())) {</span>
+<span class="nc" id="L1637">          List&lt;OdfStyleBase&gt; parents = new LinkedList&lt;OdfStyleBase&gt;();</span>
+<span class="nc" id="L1638">          OdfStyleBase parent = style;</span>
+
+          // Collecting hierachy, to go back through the style hierarchy from the end, to be able to
+          // neglect empty styles and adjust parent style attribute
+<span class="nc bnc" id="L1642" title="All 4 branches missed.">          while (parent != null</span>
+              &amp;&amp; (parent instanceof OdfDefaultStyle
+<span class="nc bnc" id="L1644" title="All 2 branches missed.">                  || !knownStyles.containsKey(((OdfStyle) parent).getStyleNameAttribute()))) {</span>
+<span class="nc bnc" id="L1645" title="All 2 branches missed.">            if (parent instanceof OdfDefaultStyle) {</span>
+              // Default styles will receive a name and will be referenced by the root style (the
+              // default style for the web editor)
+<span class="nc bnc" id="L1648" title="All 2 branches missed.">              if (styleFamily.equals(OdfStyleFamily.Paragraph)) {</span>
+<span class="nc" id="L1649">                defaultTabStopWidth =</span>
+<span class="nc" id="L1650">                    triggerDefaultStyleOp(styleFamily, officeStyles.getDefaultStyle(styleFamily));</span>
+              } else {
+<span class="nc" id="L1652">                triggerDefaultStyleOp(styleFamily, officeStyles.getDefaultStyle(styleFamily));</span>
+              }
+              // NEXT: there is no style above a default in the style hierarchy
+<span class="nc" id="L1655">              break;</span>
+<span class="nc bnc" id="L1656" title="All 2 branches missed.">            } else if (parent != null) {</span>
+<span class="nc" id="L1657">              parents.add(parent);</span>
+
+              // NEXT: get the next parent style and if the style parent name is the ODFTK_DEFAULT
+              // NAME remove it
+<span class="nc" id="L1661">              Attr parentStyleName =</span>
+<span class="nc" id="L1662">                  parent.getAttributeNodeNS(</span>
+<span class="nc" id="L1663">                      OdfDocumentNamespace.STYLE.getUri(), &quot;parent-style-name&quot;);</span>
+<span class="nc bnc" id="L1664" title="All 2 branches missed.">              if (parentStyleName != null</span>
+                  &amp;&amp; parentStyleName
+<span class="nc" id="L1666">                      .getValue()</span>
+<span class="nc bnc" id="L1667" title="All 2 branches missed.">                      .equals(</span>
+                          Constants.ODFTK_DEFAULT_STYLE_PREFIX
+<span class="nc" id="L1669">                              + Component.getFamilyID(styleFamily)</span>
+                              + Constants.ODFTK_DEFAULT_STYLE_SUFFIX)) {
+<span class="nc" id="L1671">                parent.removeAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;parent-style-name&quot;);</span>
+<span class="nc" id="L1672">                triggerDefaultStyleOp(styleFamily, style.getParentStyle());</span>
+<span class="nc" id="L1673">                break;</span>
+              } else {
+<span class="nc" id="L1675">                parent = parent.getParentStyle();</span>
+              }
+<span class="nc" id="L1677">            }</span>
+
+            // trigger operation only for those style not already existing
+            // check if the named style already exists
+          }
+
+<span class="nc" id="L1683">          String lastWrittenStyleName = null; // Only write out parents with mapped styles</span>
+<span class="nc" id="L1684">          boolean skippedEmptyParent = false;</span>
+          // Intermediate ODF properties
+<span class="nc" id="L1686">          Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps = new HashMap&lt;String, Map&lt;String, String&gt;&gt;();</span>
+          // The property groups for this component, e.g. cell, paragraph, text for a cell with
+          // properties
+<span class="nc" id="L1689">          Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups =</span>
+<span class="nc" id="L1690">              Component.getAllStyleGroupingIdProperties(styleFamily);</span>
+          // Mapped properties
+<span class="nc" id="L1692">          Map&lt;String, Object&gt; mappedFormatting = null;</span>
+
+          // addChild named style to operation
+          String styleName;
+
+          // due to inheritance the top ancestor style have to be propagated first
+<span class="nc bnc" id="L1698" title="All 2 branches missed.">          for (int i = parents.size() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L1699">            style = parents.get(i);</span>
+
+            // get all ODF properties from this style
+<span class="nc" id="L1702">            MapHelper.getStyleProperties(style, familyPropertyGroups, allOdfProps);</span>
+            // mapping the ODF attribute style props to our component properties
+<span class="nc" id="L1704">            mappedFormatting = MapHelper.mapStyleProperties(familyPropertyGroups, allOdfProps);</span>
+<span class="nc" id="L1705">            MapHelper.putNumberFormat(mappedFormatting, null, (OdfStyle) style, null, officeStyles);</span>
+
+<span class="nc" id="L1707">            styleName = ((OdfStyle) style).getStyleNameAttribute();</span>
+            // No OdfStyle, as the parent still might be a default style without name
+<span class="nc" id="L1709">            OdfStyleBase parentStyle = style.getParentStyle();</span>
+<span class="nc" id="L1710">            String parentStyleName = null;</span>
+
+            // Default styles do not have a name
+<span class="nc bnc" id="L1713" title="All 4 branches missed.">            if (parentStyle != null &amp;&amp; !(parentStyle instanceof OdfDefaultStyle)) {</span>
+<span class="nc" id="L1714">              parentStyleName = ((OdfStyle) parentStyle).getStyleNameAttribute();</span>
+            }
+<span class="nc" id="L1716">            String nextStyle = ((OdfStyle) style).getStyleNextStyleNameAttribute();</span>
+<span class="nc" id="L1717">            Integer outlineLevel = ((OdfStyle) style).getStyleDefaultOutlineLevelAttribute();</span>
+            // Do not trigger operations to create empty styles
+<span class="nc bnc" id="L1719" title="All 2 branches missed.">            if (skippedEmptyParent) {</span>
+<span class="nc" id="L1720">              parentStyleName = lastWrittenStyleName;</span>
+            }
+
+<span class="nc" id="L1723">            String custom = style.getAttribute(&quot;custom&quot;);</span>
+
+<span class="nc" id="L1725">            String familyId = Component.getFamilyID(styleFamily);</span>
+<span class="nc bnc" id="L1726" title="All 4 branches missed.">            if (parentStyleName != null &amp;&amp; !parentStyleName.isEmpty()) {</span>
+<span class="nc" id="L1727">              addStyleSheet(</span>
+                  styleName,
+                  familyId,
+<span class="nc" id="L1730">                  ((OdfStyle) style).getStyleDisplayNameAttribute(),</span>
+                  mappedFormatting,
+                  parentStyleName,
+                  nextStyle,
+                  outlineLevel,
+                  false,
+                  false,
+                  custom);
+            } else {
+              // the template style without parent is a root style and being used as a default style
+              // in the editor
+              // addStyleSheet(styleName, familyId, ((OdfStyle)
+              // style).getStyleDisplayNameAttribute(), mappedFormatting, ODFTK_DEFAULT_STYLE_PREFIX
+              // + familyId + ODFTK_DEFAULT_STYLE_SUFFIX, nextStyle, outlineLevel, true, false);
+<span class="nc" id="L1744">              addStyleSheet(</span>
+                  styleName,
+                  familyId,
+<span class="nc" id="L1747">                  ((OdfStyle) style).getStyleDisplayNameAttribute(),</span>
+                  mappedFormatting,
+                  Constants.ODFTK_DEFAULT_STYLE_PREFIX
+                      + familyId
+                      + Constants.ODFTK_DEFAULT_STYLE_SUFFIX,
+                  nextStyle,
+                  outlineLevel,
+                  false,
+                  false,
+                  custom);
+            }
+
+<span class="nc" id="L1759">            lastWrittenStyleName = styleName;</span>
+<span class="nc" id="L1760">            mappedFormatting.clear();</span>
+<span class="nc" id="L1761">            allOdfProps.clear();</span>
+            // addChild named style to known styles, so it will be only executed once
+<span class="nc" id="L1763">            knownStyles.put(styleName, Boolean.TRUE);</span>
+          }
+<span class="nc" id="L1765">        }</span>
+      } else {
+        // DEFAULT STYLE PARENT
+        // Default styles will receive a name and will be referenced by the root style (the default
+        // style for the web editor)
+<span class="nc bnc" id="L1770" title="All 2 branches missed.">        if (styleFamily.equals(OdfStyleFamily.Paragraph)) {</span>
+<span class="nc" id="L1771">          defaultTabStopWidth = triggerDefaultStyleOp(styleFamily, style);</span>
+        } else {
+<span class="nc" id="L1773">          triggerDefaultStyleOp(styleFamily, style);</span>
+        }
+      }
+    }
+<span class="nc" id="L1777">    return defaultTabStopWidth;</span>
+  }
+
+  /**
+   * Tests first if the default style was already added to the document, than triggers a
+   * addStylesheet operation
+   */
+  public Integer triggerDefaultStyleOp(OdfStyleFamily styleFamily, OdfStyleBase style) {
+<span class="nc" id="L1785">    Integer defaultTabStopWidth = null;</span>
+    // Intermediate ODF properties
+<span class="nc" id="L1787">    Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps = new HashMap&lt;String, Map&lt;String, String&gt;&gt;();</span>
+    // The property groups for this component, e.g. cell, paragraph, text for a cell with properties
+<span class="nc" id="L1789">    Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups =</span>
+<span class="nc" id="L1790">        Component.getAllStyleGroupingIdProperties(styleFamily);</span>
+    // Mapped properties
+<span class="nc" id="L1792">    Map&lt;String, Object&gt; mappedFormatting = null;</span>
+
+    // addChild named style to operation
+    String styleName;
+
+<span class="nc bnc" id="L1797" title="All 2 branches missed.">    if (style instanceof OdfDefaultStyle</span>
+<span class="nc bnc" id="L1798" title="All 2 branches missed.">        &amp;&amp; !knownStyles.containsKey(</span>
+            Constants.ODFTK_DEFAULT_STYLE_PREFIX
+<span class="nc" id="L1800">                + Component.getFamilyID(styleFamily)</span>
+                + Constants.ODFTK_DEFAULT_STYLE_SUFFIX)) {
+      // get all ODF properties from this style
+<span class="nc" id="L1803">      MapHelper.getStyleProperties(style, familyPropertyGroups, allOdfProps);</span>
+      // mapping the ODF attribute style props to our component properties
+<span class="nc" id="L1805">      mappedFormatting = MapHelper.mapStyleProperties(familyPropertyGroups, allOdfProps);</span>
+      // Tabulator default size is an attribute in the default style, will be received from static
+      // mapping functions
+<span class="nc bnc" id="L1808" title="All 2 branches missed.">      if (mappedFormatting.containsKey(&quot;paragraph&quot;)) {</span>
+<span class="nc" id="L1809">        JSONObject paraProps = (JSONObject) mappedFormatting.get(&quot;paragraph&quot;);</span>
+<span class="nc bnc" id="L1810" title="All 2 branches missed.">        if (paraProps.has(&quot;document&quot;)) {</span>
+<span class="nc" id="L1811">          JSONObject documentProps = paraProps.optJSONObject(&quot;document&quot;);</span>
+<span class="nc" id="L1812">          defaultTabStopWidth = documentProps.optInt(&quot;defaultTabStop&quot;);</span>
+        }
+      }
+<span class="nc" id="L1815">      String familyId = Component.getFamilyID(styleFamily);</span>
+      // Do not trigger operations to create empty styles
+<span class="nc bnc" id="L1817" title="All 2 branches missed.">      if (!mappedFormatting.isEmpty()) {</span>
+<span class="nc" id="L1818">        String displayName = &quot;Default &quot; + Component.getFamilyDisplayName(styleFamily) + &quot; Style&quot;;</span>
+<span class="nc" id="L1819">        addStyleSheet(</span>
+            Constants.ODFTK_DEFAULT_STYLE_PREFIX + familyId + Constants.ODFTK_DEFAULT_STYLE_SUFFIX,
+            familyId,
+            displayName,
+            mappedFormatting,
+            null,
+            null,
+            null,
+            true,
+            true,
+            null);
+      }
+      // addChild named style to known styles, so it will be only executed once
+<span class="nc" id="L1832">      styleName =</span>
+          Constants.ODFTK_DEFAULT_STYLE_PREFIX
+<span class="nc" id="L1834">              + Component.getFamilyID(styleFamily)</span>
+              + Constants.ODFTK_DEFAULT_STYLE_SUFFIX;
+<span class="nc" id="L1836">      knownStyles.put(styleName, Boolean.TRUE);</span>
+    }
+<span class="nc" id="L1838">    return defaultTabStopWidth;</span>
+  }
+
+  /** trigger pageStyle operations, only the &quot;standard&quot; page style will be returned */
+  public JSONObject addPageProperties(OdfStylesDom stylesDom) {
+<span class="nc" id="L1843">    JSONObject defaultPageProperties = null;</span>
+    // Do NOT create the master styles with getOrCreateMasterStyles()
+    // as we might be at the prior office:styles element and office:master-styles would be
+    // duplicated
+<span class="nc" id="L1847">    OfficeMasterStylesElement masterStyles = stylesDom.getMasterStyles();</span>
+<span class="nc bnc" id="L1848" title="All 2 branches missed.">    if (masterStyles != null) {</span>
+<span class="nc bnc" id="L1849" title="All 2 branches missed.">      for (StyleMasterPageElement masterPage : masterStyles.getMasterPages().values()) {</span>
+<span class="nc" id="L1850">        String styleName = masterPage.getStyleNameAttribute();</span>
+        /**
+         * &lt;style:page-layout style:name=&quot;Mpm1&quot;&gt; &lt;style:page-layout-properties
+         * fo:margin-bottom=&quot;20mm&quot; fo:margin-left=&quot;20mm&quot; fo:margin-right=&quot;20mm&quot; fo:margin-top=&quot;20mm&quot;
+         * fo:page-height=&quot;297mm&quot; fo:page-width=&quot;210.01mm&quot; style:footnote-max-height=&quot;0mm&quot;
+         * style:num-format=&quot;1&quot; style:print-orientation=&quot;portrait&quot; style:writing-mode=&quot;lr-tb&quot;&gt;
+         * &lt;style:footnote-sep style:adjustment=&quot;left&quot; style:color=&quot;#000000&quot;
+         * style:distance-after-sep=&quot;1.01mm&quot; style:distance-before-sep=&quot;1.01mm&quot;
+         * style:line-style=&quot;solid&quot; style:rel-width=&quot;25%&quot; style:width=&quot;0.18mm&quot;/&gt;
+         * &lt;/style:page-layout-properties&gt; &lt;style:header-style&gt; &lt;style:header-footer-properties
+         * fo:margin-bottom=&quot;4.99mm&quot; fo:margin-left=&quot;0mm&quot; fo:margin-right=&quot;0mm&quot;
+         * fo:min-height=&quot;9.98mm&quot; style:dynamic-spacing=&quot;false&quot;/&gt; &lt;/style:header-style&gt;
+         * &lt;style:footer-style&gt; &lt;style:header-footer-properties fo:margin-left=&quot;0mm&quot;
+         * fo:margin-right=&quot;0mm&quot; fo:margin-top=&quot;14.99mm&quot; style:dynamic-spacing=&quot;false&quot;
+         * svg:height=&quot;24.99mm&quot;/&gt; &lt;/style:footer-style&gt; &lt;/style:page-layout&gt;
+         */
+<span class="nc bnc" id="L1866" title="All 4 branches missed.">        if (styleName != null &amp;&amp; !styleName.isEmpty()) {</span>
+<span class="nc" id="L1867">          String pageLayoutName = masterPage.getStylePageLayoutNameAttribute();</span>
+<span class="nc" id="L1868">          JSONObject pagePropsJson = null;</span>
+<span class="nc bnc" id="L1869" title="All 4 branches missed.">          if (pageLayoutName != null &amp;&amp; !pageLayoutName.isEmpty()) {</span>
+<span class="nc" id="L1870">            OdfOfficeAutomaticStyles autoStyles = stylesDom.getAutomaticStyles();</span>
+<span class="nc bnc" id="L1871" title="All 2 branches missed.">            if (autoStyles != null) {</span>
+<span class="nc" id="L1872">              OdfStylePageLayout pageLayout = autoStyles.getPageLayout(pageLayoutName);</span>
+<span class="nc" id="L1873">              Map&lt;OdfStyleProperty, String&gt; pageProperties = pageLayout.getStyleProperties();</span>
+<span class="nc" id="L1874">              Map&lt;String, String&gt; pageProps = transformMap(pageProperties);</span>
+<span class="nc" id="L1875">              pagePropsJson = MapHelper.mapProperties(&quot;page&quot;, pageProps);</span>
+              try {
+<span class="nc" id="L1877">                pagePropsJson = pagePropsJson.getJSONObject(&quot;page&quot;);</span>
+<span class="nc" id="L1878">              } catch (JSONException e) {</span>
+                // no need for handline
+<span class="nc" id="L1880">              }</span>
+              /**
+               * SVANTEWHY NO LONGER REQUIRED NodeList pageLayoutChildren =
+               * pageLayout.getChildNodes(); if (pageLayoutChildren.getLength() &gt; 1) { for (int i =
+               * 0; i &lt; pageLayoutChildren.getLength(); i++) { Node child =
+               * pageLayoutChildren.item(i); boolean isHeaderAttribute = child instanceof
+               * StyleHeaderStyleElement; if (isHeaderAttribute || child instanceof
+               * StyleFooterStyleElement) { StyleHeaderFooterPropertiesElement props =
+               * (StyleHeaderFooterPropertiesElement) ((OdfElement)
+               * child).getChildElement(StyleHeaderFooterPropertiesElement.ELEMENT_NAME.getUri(),
+               * StyleHeaderFooterPropertiesElement.ELEMENT_NAME.getLocalName()); if (props != null)
+               * { if(isHeaderAttribute) { String marginHeader = props.getFoMarginBottomAttribute();
+               * String minHeightHeader = props.getFoMinHeightAttribute(); String fixedHeightHeader
+               * = props.getSvgHeightAttribute(); if(fixedHeightHeader != null) minHeightHeader =
+               * fixedHeightHeader; if (marginHeader != null &amp;&amp; !marginHeader.isEmpty()) { if
+               * (pagePropsJson == null) { pagePropsJson = new JSONObject(); } try { int
+               * minHeightNormalized = 0; if (minHeightHeader != null &amp;&amp; !minHeightHeader.isEmpty())
+               * { minHeightNormalized = MapHelper.normalizeLength(minHeightHeader); }
+               * pagePropsJson.put(&quot;marginHeader&quot;, MapHelper.normalizeLength(marginHeader) +
+               * minHeightNormalized); } catch (JSONException ex) {
+               * Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null,
+               * ex); } } } else { String marginFooter = props.getFoMarginTopAttribute(); String
+               * fixedHeightFooter = props.getSvgHeightAttribute(); String minHeightFooter =
+               * props.getFoMinHeightAttribute(); if( fixedHeightFooter != null ) { minHeightFooter
+               * = fixedHeightFooter; } if (marginFooter != null &amp;&amp; !marginFooter.isEmpty()) { if
+               * (pagePropsJson == null) { pagePropsJson = new JSONObject(); } try { int
+               * minHeightNormalized = 0; if (minHeightFooter != null &amp;&amp; !minHeightFooter.isEmpty())
+               * { minHeightNormalized = MapHelper.normalizeLength(minHeightFooter); }
+               * pagePropsJson.put(&quot;marginFooter&quot;, MapHelper.normalizeLength(marginFooter) +
+               * minHeightNormalized); } catch (JSONException ex) {
+               * Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null,
+               * ex); } } } } } } } SVANTE REQUIRED
+               */
+<span class="nc bnc" id="L1913" title="All 4 branches missed.">              if (pagePropsJson != null &amp;&amp; pagePropsJson.length() != 0) {</span>
+<span class="nc bnc" id="L1914" title="All 4 branches missed.">                if (styleName.equals(&quot;Standard&quot;) || styleName.equals(&quot;MP0&quot;)) {</span>
+<span class="nc" id="L1915">                  defaultPageProperties = pagePropsJson;</span>
+                  /**
+                   * SVANTE NO LONGER REQUIRED try { //make values fit for the frontend
+                   * if(pagePropsJson.has(&quot;marginHeader&quot;)) { int headerMargin =
+                   * pagePropsJson.getInt(&quot;marginHeader&quot;); int topMargin =
+                   * pagePropsJson.getInt(&quot;marginTop&quot;); pagePropsJson.put(&quot;marginTop&quot;, headerMargin
+                   * + topMargin); pagePropsJson.put(&quot;marginHeader&quot;, topMargin); }
+                   * if(pagePropsJson.has(&quot;marginFooter&quot;)) { int footerMargin =
+                   * pagePropsJson.getInt(&quot;marginFooter&quot;); int bottomMargin =
+                   * pagePropsJson.getInt(&quot;marginBottom&quot;); pagePropsJson.put(&quot;marginBottom&quot;,
+                   * footerMargin + bottomMargin); pagePropsJson.put(&quot;marginFooter&quot;, bottomMargin);
+                   * } } catch (JSONException e) { } break; } else { //
+                   * documentPropsObject.put(&quot;page&quot;, pagePropsJson); SVANTE REQUIRED
+                   */
+                }
+              }
+            }
+          }
+        }
+<span class="nc" id="L1934">      }</span>
+    }
+<span class="nc" id="L1936">    return defaultPageProperties;</span>
+  }
+
+  public void addDocumentProperties(
+      OdfStylesDom stylesDom, Integer defaultTabStopWidth, JSONObject defaultPageStyles) {
+    try {
+<span class="nc" id="L1942">      JSONObject documentPropsObject = new JSONObject();</span>
+<span class="nc" id="L1943">      JSONObject docPropsJson = new JSONObject();</span>
+<span class="nc bnc" id="L1944" title="All 2 branches missed.">      if (defaultTabStopWidth != null) {</span>
+<span class="nc" id="L1945">        docPropsJson.putOpt(&quot;defaultTabStop&quot;, defaultTabStopWidth);</span>
+      }
+<span class="nc bnc" id="L1947" title="All 2 branches missed.">      if (defaultPageStyles != null) {</span>
+<span class="nc" id="L1948">        documentPropsObject.put(&quot;page&quot;, defaultPageStyles);</span>
+      }
+<span class="nc" id="L1950">      docPropsJson.putOpt(&quot;fileFormat&quot;, &quot;odf&quot;);</span>
+<span class="nc" id="L1951">      documentPropsObject.put(&quot;document&quot;, docPropsJson);</span>
+<span class="nc" id="L1952">      addDocumentData(documentPropsObject);</span>
+<span class="nc" id="L1953">    } catch (Exception ex) {</span>
+<span class="nc" id="L1954">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1955">    }</span>
+<span class="nc" id="L1956">  }</span>
+
+  // ToDo: Wird noch immer vererbt?!??
+  // Ersteinmal wird alles \u00fcberschrieben und vererbt
+  // \u00dcberschreiben kann aber auch die gemappten werte, dann w\u00fcrde man ggf. mehrmals
+  // umsonst mappen..
+  private Map&lt;String, String&gt; transformMap(Map&lt;OdfStyleProperty, String&gt; props) {
+<span class="nc" id="L1963">    Map&lt;String, String&gt; odfProps = new HashMap&lt;String, String&gt;();</span>
+<span class="nc bnc" id="L1964" title="All 2 branches missed.">    for (OdfStyleProperty styleProp : props.keySet()) {</span>
+<span class="nc" id="L1965">      odfProps.put(styleProp.getName().getQName(), props.get(styleProp));</span>
+<span class="nc" id="L1966">    }</span>
+<span class="nc" id="L1967">    return odfProps;</span>
+  }
+
+  /** Adding a default footer style operation */
+  public void addHeaderFooter(String contextName, PageArea pageArea, JSONObject attrs) {
+<span class="nc bnc" id="L1972" title="All 2 branches missed.">    if (contextName != null) {</span>
+<span class="nc" id="L1973">      final JSONObject newOperation = new JSONObject(4);</span>
+      try {
+<span class="nc" id="L1975">        newOperation.put(OPK_NAME, OP_HEADER_FOOTER);</span>
+<span class="nc" id="L1976">        newOperation.put(OPK_ID, contextName);</span>
+<span class="nc" id="L1977">        newOperation.put(OPK_TYPE, pageArea.getPageAreaName());</span>
+<span class="nc bnc" id="L1978" title="All 4 branches missed.">        if (attrs != null &amp;&amp; attrs.length() != 0) {</span>
+<span class="nc" id="L1979">          newOperation.put(OPK_ATTRS, attrs);</span>
+        }
+<span class="nc" id="L1981">        mOperationQueue.put(newOperation);</span>
+<span class="nc" id="L1982">        LOG.log(Level.FINEST, OP_HEADER_FOOTER + &quot; component:{0}&quot;, newOperation);</span>
+<span class="nc" id="L1983">      } catch (JSONException e) {</span>
+<span class="nc" id="L1984">        Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1985">      }</span>
+    }
+<span class="nc" id="L1987">  }</span>
+
+  /**
+   * LO/AO does not interpret clipping as in FO/CSS
+   * http://www.w3.org/TR/CSS2/visufx.html#propdef-clip Instead the clip values measure the distance
+   * from each border to the start of the viewed area. The clip vales are taking measure from the
+   * original size, which is not part of the OFD XML, therefore the image have to be loaded for
+   * receiving the size.
+   */
+  public static void calculateCrops(OdfElement image, String href, JSONObject imageProps) {
+    try {
+      // ToDo: Although the streams are cached we might cache the clipping for known href, help if
+      // images occure more than once
+<span class="nc" id="L2000">      OdfPackage pkg = ((OdfFileDom) image.getOwnerDocument()).getDocument().getPackage();</span>
+
+<span class="nc" id="L2002">      InputStream is = pkg.getInputStream(href);</span>
+<span class="nc bnc" id="L2003" title="All 2 branches missed.">      if (is != null) {</span>
+<span class="nc" id="L2004">        BufferedImage bimg = ImageIO.read(is);</span>
+<span class="nc bnc" id="L2005" title="All 2 branches missed.">        if (bimg != null) {</span>
+<span class="nc" id="L2006">          double width =</span>
+<span class="nc" id="L2007">              MapHelper.normalizeLength((bimg.getWidth() / Constants.DOTS_PER_INCH) + &quot;in&quot;);</span>
+<span class="nc" id="L2008">          double height =</span>
+<span class="nc" id="L2009">              MapHelper.normalizeLength((bimg.getHeight() / Constants.DOTS_PER_INCH) + &quot;in&quot;);</span>
+          try {
+            // 2nd half of absolute fo:clip to relative crop (Changes API) mapping
+<span class="nc bnc" id="L2012" title="All 2 branches missed.">            if (imageProps.has(&quot;cropRight&quot;)) {</span>
+<span class="nc" id="L2013">              Number cropRight = (Number) imageProps.get(&quot;cropRight&quot;);</span>
+<span class="nc" id="L2014">              LOG.log(Level.FINEST, &quot;The clipRight is {0}&quot;, cropRight);</span>
+<span class="nc bnc" id="L2015" title="All 2 branches missed.">              if (cropRight != null) {</span>
+<span class="nc bnc" id="L2016" title="All 2 branches missed.">                if (cropRight.doubleValue() != 0.0) {</span>
+<span class="nc" id="L2017">                  imageProps.put(&quot;cropRight&quot;, cropRight.doubleValue() * 100.0 / width);</span>
+<span class="nc" id="L2018">                  LOG.log(</span>
+                      Level.FINEST,
+                      &quot;The cropRight is {0}&quot;,
+<span class="nc" id="L2021">                      cropRight.doubleValue() * 100.0 / width);</span>
+                } else {
+                  // do not set explicitly with 0
+<span class="nc" id="L2024">                  imageProps.remove(&quot;cropRight&quot;);</span>
+                }
+              }
+            }
+<span class="nc bnc" id="L2028" title="All 2 branches missed.">            if (imageProps.has(&quot;cropLeft&quot;)) {</span>
+<span class="nc" id="L2029">              Number cropLeft = (Number) imageProps.get(&quot;cropLeft&quot;);</span>
+<span class="nc" id="L2030">              LOG.log(Level.FINEST, &quot;The clipLeft is {0}&quot;, cropLeft);</span>
+<span class="nc bnc" id="L2031" title="All 2 branches missed.">              if (cropLeft != null) {</span>
+<span class="nc bnc" id="L2032" title="All 2 branches missed.">                if (cropLeft.doubleValue() != 0.0) {</span>
+<span class="nc" id="L2033">                  imageProps.put(&quot;cropLeft&quot;, cropLeft.doubleValue() * 100.0 / width);</span>
+<span class="nc" id="L2034">                  LOG.log(</span>
+<span class="nc" id="L2035">                      Level.FINEST, &quot;The cropLeft is {0}&quot;, cropLeft.doubleValue() * 100.0 / width);</span>
+                } else {
+                  // do not set explicitly with 0
+<span class="nc" id="L2038">                  imageProps.remove(&quot;cropLeft&quot;);</span>
+                }
+              }
+            }
+            // 2nd half of absolute fo:clip to relative crop (Changes API) mapping
+<span class="nc bnc" id="L2043" title="All 2 branches missed.">            if (imageProps.has(&quot;cropTop&quot;)) {</span>
+<span class="nc" id="L2044">              Number cropTop = (Number) imageProps.get(&quot;cropTop&quot;);</span>
+<span class="nc" id="L2045">              LOG.log(Level.FINEST, &quot;The clipTop is {0}&quot;, cropTop);</span>
+<span class="nc" id="L2046">              double d = cropTop.doubleValue();</span>
+<span class="nc bnc" id="L2047" title="All 2 branches missed.">              if (cropTop != null) {</span>
+<span class="nc bnc" id="L2048" title="All 2 branches missed.">                if (cropTop.doubleValue() != 0.0) {</span>
+<span class="nc" id="L2049">                  imageProps.put(&quot;cropTop&quot;, cropTop.doubleValue() * 100.0 / height);</span>
+<span class="nc" id="L2050">                  LOG.log(</span>
+<span class="nc" id="L2051">                      Level.FINEST, &quot;The cropTop is {0}&quot;, cropTop.doubleValue() * 100.0 / height);</span>
+                } else {
+                  // do not set explicitly with 0
+<span class="nc" id="L2054">                  imageProps.remove(&quot;cropTop&quot;);</span>
+                }
+              }
+            }
+<span class="nc bnc" id="L2058" title="All 2 branches missed.">            if (imageProps.has(&quot;cropBottom&quot;)) {</span>
+<span class="nc" id="L2059">              Number cropBottom = (Number) imageProps.get(&quot;cropBottom&quot;);</span>
+<span class="nc" id="L2060">              LOG.log(Level.FINEST, &quot;The clipBottom is {0}&quot;, cropBottom);</span>
+<span class="nc bnc" id="L2061" title="All 2 branches missed.">              if (cropBottom != null) {</span>
+<span class="nc bnc" id="L2062" title="All 2 branches missed.">                if (cropBottom.doubleValue() != 0.0) {</span>
+<span class="nc" id="L2063">                  imageProps.put(&quot;cropBottom&quot;, cropBottom.doubleValue() * 100.0 / height);</span>
+<span class="nc" id="L2064">                  LOG.log(</span>
+                      Level.FINEST,
+                      &quot;The cropBottom is {0}&quot;,
+<span class="nc" id="L2067">                      cropBottom.doubleValue() * 100.0 / height);</span>
+                } else {
+                  // do not set explicitly with 0
+<span class="nc" id="L2070">                  imageProps.remove(&quot;cropBottom&quot;);</span>
+                }
+              }
+            }
+<span class="nc" id="L2074">          } catch (JSONException ex) {</span>
+<span class="nc" id="L2075">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L2076">          }</span>
+<span class="nc" id="L2077">          LOG.log(Level.FINEST, &quot;Width: {0} Height: {1}&quot;, new Object[] {width, height});</span>
+<span class="nc" id="L2078">        } else {</span>
+<span class="nc" id="L2079">          LOG.log(Level.WARNING, &quot;The image ''{0}'' could not be loaded!&quot;, href);</span>
+        }
+<span class="nc" id="L2081">      } else {</span>
+<span class="nc" id="L2082">        LOG.log(Level.WARNING, &quot;The image ''{0}'' could not be loaded!&quot;, href);</span>
+      }
+<span class="nc" id="L2084">    } catch (IOException ex) {</span>
+<span class="nc" id="L2085">      Logger.getLogger(JsonOperationProducer.class.getName())</span>
+<span class="nc" id="L2086">          .log(Level.SEVERE, &quot;Image could not be found at &quot; + href, ex);</span>
+<span class="nc" id="L2087">    }</span>
+<span class="nc" id="L2088">  }</span>
+
+  private static List&lt;Integer&gt; incrementAll(List&lt;Integer&gt; position) {
+<span class="nc bnc" id="L2091" title="All 2 branches missed.">    if (position != null) {</span>
+<span class="nc bnc" id="L2092" title="All 2 branches missed.">      for (int i = 0; i &lt; position.size(); i++) {</span>
+<span class="nc" id="L2093">        position.set(i, position.get(i) + 1);</span>
+      }
+    }
+<span class="nc" id="L2096">    return position;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

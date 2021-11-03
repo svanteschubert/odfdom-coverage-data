@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultiContentHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.rdfa</a> &gt; <span class="el_source">MultiContentHandler.java</span></div><h1>MultiContentHandler.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.rdfa;
+
+import java.util.ArrayList;
+import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.Locator;
+import org.xml.sax.SAXException;
+
+/** A proxy for delegating the parsing events to its sub ContentHandler(s). */
+public class MultiContentHandler implements ContentHandler {
+  ArrayList&lt;ContentHandler&gt; subContentHandlers;
+
+<span class="nc" id="L36">  public MultiContentHandler(ContentHandler... subs) {</span>
+<span class="nc" id="L37">    subContentHandlers = new ArrayList&lt;ContentHandler&gt;();</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">    for (ContentHandler sub : subs) {</span>
+<span class="nc" id="L39">      subContentHandlers.add(sub);</span>
+    }
+<span class="nc" id="L41">  }</span>
+
+  public void setDocumentLocator(Locator locator) {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L45">      sub.setDocumentLocator(locator);</span>
+<span class="nc" id="L46">    }</span>
+<span class="nc" id="L47">  }</span>
+
+  public void startDocument() throws SAXException {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L51">      sub.startDocument();</span>
+<span class="nc" id="L52">    }</span>
+<span class="nc" id="L53">  }</span>
+
+  public void endDocument() throws SAXException {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L57">      sub.endDocument();</span>
+<span class="nc" id="L58">    }</span>
+<span class="nc" id="L59">  }</span>
+
+  public void startPrefixMapping(String prefix, String uri) throws SAXException {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L63">      sub.startPrefixMapping(prefix, uri);</span>
+<span class="nc" id="L64">    }</span>
+<span class="nc" id="L65">  }</span>
+
+  public void endPrefixMapping(String prefix) throws SAXException {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L69">      sub.endPrefixMapping(prefix);</span>
+<span class="nc" id="L70">    }</span>
+<span class="nc" id="L71">  }</span>
+
+  public void startElement(String uri, String localName, String qName, Attributes atts)
+      throws SAXException {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L76">      sub.startElement(uri, localName, qName, atts);</span>
+<span class="nc" id="L77">    }</span>
+<span class="nc" id="L78">  }</span>
+
+  public void endElement(String uri, String localName, String qName) throws SAXException {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L82">      sub.endElement(uri, localName, qName);</span>
+<span class="nc" id="L83">    }</span>
+<span class="nc" id="L84">  }</span>
+
+  public void characters(char[] ch, int start, int length) throws SAXException {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L88">      sub.characters(ch, start, length);</span>
+<span class="nc" id="L89">    }</span>
+<span class="nc" id="L90">  }</span>
+
+  public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L94">      sub.ignorableWhitespace(ch, start, length);</span>
+<span class="nc" id="L95">    }</span>
+<span class="nc" id="L96">  }</span>
+
+  public void processingInstruction(String target, String data) throws SAXException {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L100">      sub.processingInstruction(target, data);</span>
+<span class="nc" id="L101">    }</span>
+<span class="nc" id="L102">  }</span>
+
+  public void skippedEntity(String name) throws SAXException {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    for (ContentHandler sub : subContentHandlers) {</span>
+<span class="nc" id="L106">      sub.skippedEntity(name);</span>
+<span class="nc" id="L107">    }</span>
+<span class="nc" id="L108">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStylableElement.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom.element</a> &gt; <span class="el_source">OdfStylableElement.java</span></div><h1>OdfStylableElement.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom.element;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfSchemaConstraint;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.element.style.StyleStyleElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.OdfStylePropertySet;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfValidationException;
+import org.odftoolkit.odfdom.type.StyleName;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+
+// ToDo: change modifier public to package after refactoring
+public abstract class OdfStylableElement extends OdfElement implements OdfStylePropertySet {
+
+  private static final long serialVersionUID = -7828513537641758879L;
+  // ToDo: Overall StyleRefactoring: DOM Layer reaches to upper layer here...
+  private OdfStyle mAutomaticStyle;
+  protected OdfStyleFamily mFamily;
+  protected OdfName mStyleNameAttrib;
+  private OdfSchemaDocument mOdfSchemaDocument;
+<span class="nc" id="L63">  boolean misAutomaticStyleSet = false;</span>
+  ErrorHandler mErrorHandler;
+
+  /**
+   * Creates a new instance of OdfElementImpl
+   *
+   * @param ownerDocument
+   * @param name
+   * @param family
+   * @param styleNameAttrib
+   * @throws DOMException
+   */
+  public OdfStylableElement(
+      OdfFileDom ownerDocument, OdfName name, OdfStyleFamily family, OdfName styleNameAttrib)
+      throws DOMException {
+<span class="nc" id="L78">    super(ownerDocument, name.getUri(), name.getQName());</span>
+<span class="nc" id="L79">    mFamily = family;</span>
+<span class="nc" id="L80">    mStyleNameAttrib = styleNameAttrib;</span>
+<span class="nc" id="L81">    mOdfSchemaDocument = (OdfSchemaDocument) ownerDocument.getDocument();</span>
+<span class="nc" id="L82">    mErrorHandler = ownerDocument.getDocument().getPackage().getErrorHandler();</span>
+<span class="nc" id="L83">  }</span>
+
+  /**
+   * Retrieve or create unique ODF AutomaticStyle
+   *
+   * @return The &lt;code&gt;StyleStyleElement&lt;/code&gt; element
+   */
+  private StyleStyleElement createAutomaticStyle(
+      Boolean createStyleName, OdfStyleFamily styleFamily) {
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    if (styleFamily == null) {</span>
+<span class="nc" id="L94">      styleFamily = getStyleFamily();</span>
+    }
+
+<span class="nc bnc" id="L97" title="All 4 branches missed.">    if ((mAutomaticStyle == null) || (mAutomaticStyle.getStyleUserCount() &gt; 1)) {</span>
+      // we need a new automatic style
+<span class="nc" id="L99">      OdfOfficeAutomaticStyles automatic_styles = getOrCreateAutomaticStyles();</span>
+      // ToDo: Move into a createAutomaticStyles function
+<span class="nc bnc" id="L101" title="All 2 branches missed.">      if (automatic_styles == null) {</span>
+<span class="nc" id="L102">        OdfFileDom fileDom = ((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L103">        OdfOfficeAutomaticStyles newOfficeAutoStyles =</span>
+<span class="nc" id="L104">            fileDom.newOdfElement(OdfOfficeAutomaticStyles.class);</span>
+<span class="nc" id="L105">        OdfElement rootElement = fileDom.getRootElement();</span>
+<span class="nc" id="L106">        NodeList rootChildren = rootElement.getChildNodes();</span>
+<span class="nc" id="L107">        boolean hasInserted = false;</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        for (int i = 0; i &lt; rootChildren.getLength(); i++) {</span>
+<span class="nc" id="L109">          Node currentNode = rootChildren.item(i);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">          if (currentNode instanceof Element) {</span>
+<span class="nc" id="L111">            String elementName = ((Element) currentNode).getNodeName();</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">            if (elementName.equals(&quot;office:body&quot;) || elementName.equals(&quot;office:master-styles&quot;)) {</span>
+<span class="nc" id="L113">              rootElement.insertBefore(newOfficeAutoStyles, currentNode);</span>
+<span class="nc" id="L114">              hasInserted = true;</span>
+<span class="nc" id="L115">              break;</span>
+            }
+          } else {
+            continue;
+          }
+        }
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (!hasInserted) {</span>
+<span class="nc" id="L122">          rootElement.appendChild(newOfficeAutoStyles);</span>
+        }
+<span class="nc" id="L124">        automatic_styles = newOfficeAutoStyles;</span>
+      }
+<span class="nc bnc" id="L126" title="All 2 branches missed.">      if (automatic_styles != null) {</span>
+<span class="nc" id="L127">        String styleName = getStyleName();</span>
+<span class="nc" id="L128">        String parentName = null;</span>
+<span class="nc" id="L129">        mAutomaticStyle = automatic_styles.getStyle(styleName, styleFamily);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (mAutomaticStyle == null) {</span>
+<span class="nc" id="L131">          mAutomaticStyle = automatic_styles.newStyle(styleFamily);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">          if (!styleName.isEmpty()) {</span>
+<span class="nc" id="L133">            mAutomaticStyle.setStyleParentStyleNameAttribute(styleName);</span>
+          }
+        } else {
+<span class="nc" id="L136">          parentName = mAutomaticStyle.getStyleParentStyleNameAttribute();</span>
+<span class="nc" id="L137">          mAutomaticStyle.removeStyleUser(this);</span>
+<span class="nc" id="L138">          mAutomaticStyle = automatic_styles.makeStyleUnique(mAutomaticStyle);</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">          if (parentName != null &amp;&amp; !parentName.isEmpty()) {</span>
+<span class="nc" id="L140">            mAutomaticStyle.setStyleParentStyleNameAttribute(parentName);</span>
+          }
+        }
+<span class="nc" id="L143">        mAutomaticStyle.addStyleUser(this);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (createStyleName) {</span>
+<span class="nc" id="L145">          setStyleName(mAutomaticStyle.getStyleNameAttribute());</span>
+        }
+      }
+    }
+<span class="nc" id="L149">    return mAutomaticStyle;</span>
+  }
+
+  /**
+   * Retrieve or create unique ODF AutomaticStyle
+   *
+   * @return The &lt;code&gt;StyleStyleElement&lt;/code&gt; element
+   */
+  public StyleStyleElement getOrCreateUnqiueAutomaticStyle() {
+<span class="nc" id="L158">    return createAutomaticStyle(Boolean.TRUE, null);</span>
+  }
+
+  /**
+   * Retrieve or create unique ODF AutomaticStyle
+   *
+   * @return The &lt;code&gt;StyleStyleElement&lt;/code&gt; element
+   */
+  public StyleStyleElement getOrCreateUnqiueAutomaticStyle(
+      Boolean createStyleName, OdfStyleFamily styleFamily) {
+<span class="nc" id="L168">    return createAutomaticStyle(createStyleName, styleFamily);</span>
+  }
+
+  /**
+   * Retrieve ODF OfficeAutomaticStyles
+   *
+   * @return the &lt;code&gt;OdfOfficeAutomaticStyles&lt;/code&gt; element that contains the automatic style for
+   *     this element. A new node will be created if not existent.
+   */
+  public OdfOfficeAutomaticStyles getOrCreateAutomaticStyles() {
+<span class="nc" id="L178">    OdfFileDom fileDom = (OdfFileDom) this.ownerDocument;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">    if (fileDom != null) {</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">      if (fileDom instanceof OdfContentDom) {</span>
+<span class="nc" id="L181">        return ((OdfContentDom) fileDom).getOrCreateAutomaticStyles();</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">      } else if (fileDom instanceof OdfStylesDom) {</span>
+<span class="nc" id="L183">        return ((OdfStylesDom) fileDom).getOrCreateAutomaticStyles();</span>
+      } else {
+        // if not content.xml nor styles.xml
+<span class="nc" id="L186">        return null;</span>
+      }
+    } else {
+      // if the element does not belong to a OdfFileDOM
+<span class="nc" id="L190">      return null;</span>
+    }
+  }
+
+  /**
+   * Retrieve ODF OfficeAutomaticStyles
+   *
+   * @return the &lt;code&gt;OdfOfficeAutomaticStyles&lt;/code&gt; element that contains the automatic style for
+   *     this element, or null if not available.
+   */
+  public OdfOfficeAutomaticStyles getAutomaticStyles() {
+<span class="nc" id="L201">    OdfFileDom fileDom = (OdfFileDom) this.ownerDocument;</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">    if (fileDom != null) {</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">      if (fileDom instanceof OdfContentDom) {</span>
+<span class="nc" id="L204">        return ((OdfContentDom) fileDom).getAutomaticStyles();</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">      } else if (fileDom instanceof OdfStylesDom) {</span>
+<span class="nc" id="L206">        return ((OdfStylesDom) fileDom).getAutomaticStyles();</span>
+      } else {
+        // if not content.xml nor styles.xml
+<span class="nc" id="L209">        return null;</span>
+      }
+    } else {
+      // if the element does not belong to a OdfFileDOM
+<span class="nc" id="L213">      return null;</span>
+    }
+  }
+
+  /**
+   * Set style attribute value with uri and name
+   *
+   * @param uri The namespace uri
+   * @param qname The qualified name of the attribute
+   * @param value The attribute value
+   */
+  @Override
+  public void setAttributeNS(String uri, String qname, String value) {
+<span class="nc" id="L226">    super.setAttributeNS(uri, qname, value);</span>
+
+    // check if style has changed
+<span class="nc bnc" id="L229" title="All 2 branches missed.">    if (mStyleNameAttrib.equals(uri, qname)) {</span>
+<span class="nc" id="L230">      OdfStyle autoStyle = null;</span>
+
+      // optimization: check if we already know this automatic style
+<span class="nc bnc" id="L233" title="All 4 branches missed.">      if ((mAutomaticStyle != null) &amp;&amp; (mAutomaticStyle.getStyleNameAttribute().equals(value))) {</span>
+        // nothing todo
+      } else {
+        // register new automatic style
+<span class="nc" id="L237">        OdfOfficeAutomaticStyles automatic_styles = getAutomaticStyles();</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        if (automatic_styles != null) {</span>
+<span class="nc" id="L239">          autoStyle = automatic_styles.getStyle(value, getStyleFamily());</span>
+        }
+
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        if (mAutomaticStyle != null) {</span>
+<span class="nc" id="L243">          mAutomaticStyle.removeStyleUser(this);</span>
+        }
+
+<span class="nc" id="L246">        mAutomaticStyle = autoStyle;</span>
+
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (mAutomaticStyle != null) {</span>
+<span class="nc" id="L249">          mAutomaticStyle.addStyleUser(this);</span>
+        }
+
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (mErrorHandler != null) {</span>
+          // Is String from type NCName? == http://www.w3.org/TR/xmlschema-2/#NCName
+<span class="nc bnc" id="L254" title="All 2 branches missed.">          if (!StyleName.isValid(value)) {</span>
+            try {
+<span class="nc" id="L256">              mErrorHandler.error(</span>
+                  new OdfValidationException(
+                      OdfSchemaConstraint.DOCUMENT_XML_INVALID_ATTRIBUTE_VALUE, value, &quot;qname&quot;));
+<span class="nc" id="L259">            } catch (SAXException ex) {</span>
+<span class="nc" id="L260">              Logger.getLogger(StyleStyleElement.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L261">            }</span>
+          }
+        }
+      }
+    }
+<span class="nc" id="L266">  }</span>
+
+  /**
+   * Retrieve style name
+   *
+   * @return the style name
+   */
+  public String getStyleName() {
+<span class="nc" id="L274">    return getAttributeNS(mStyleNameAttrib.getUri(), mStyleNameAttrib.getLocalName());</span>
+  }
+
+  /**
+   * Set style name
+   *
+   * @param name The style name
+   */
+  public void setStyleName(String name) {
+<span class="nc" id="L283">    setAttributeNS(mStyleNameAttrib.getUri(), mStyleNameAttrib.getQName(), name);</span>
+    // if the style name is changed, the reference to the style has to be updated as well
+<span class="nc" id="L285">    misAutomaticStyleSet = false;</span>
+<span class="nc" id="L286">  }</span>
+
+  /**
+   * Retrieve ODF AutomaticStyle
+   *
+   * @return the &lt;code&gt;OdfStyle&lt;/code&gt; element
+   */
+  public OdfStyle getAutomaticStyle() {
+<span class="nc bnc" id="L294" title="All 2 branches missed.">    if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L295">      OdfOfficeAutomaticStyles automatic_styles = getAutomaticStyles();</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">      if (automatic_styles != null) {</span>
+<span class="nc" id="L297">        mAutomaticStyle = automatic_styles.getStyle(getStyleName(), getStyleFamily());</span>
+      }
+<span class="nc" id="L299">      misAutomaticStyleSet = true;</span>
+    }
+<span class="nc" id="L301">    return mAutomaticStyle;</span>
+  }
+
+  /**
+   * Judge if there is an automatic style, not necessary including properties
+   *
+   * @return true if there is an automatic style
+   */
+  public boolean hasAutomaticStyle() {
+<span class="nc bnc" id="L310" title="All 2 branches missed.">    if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L311">      getAutomaticStyle();</span>
+    }
+<span class="nc bnc" id="L313" title="All 2 branches missed.">    return mAutomaticStyle != null;</span>
+  }
+
+  /*
+   * public void setLocalStyleProperties(OdfStyle style) { mAutomaticStyle =
+   * style.getAsLocalStyle(); setStyleName(style.getName()); }
+   */
+  /**
+   * Returns a DocumentStyle if there is no local style
+   *
+   * @return The &lt;code&gt;OdfStyle&lt;/code&gt; element
+   */
+  public OdfStyle reuseDocumentStyle(String styleName) {
+<span class="nc" id="L326">    OdfStyle style = null;</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">    if (styleName != null) {</span>
+<span class="nc" id="L328">      style = mOdfSchemaDocument.getDocumentStyles().getStyle(styleName, getStyleFamily());</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">      if (style != null) {</span>
+<span class="nc" id="L330">        setDocumentStyle(style);</span>
+      }
+    }
+<span class="nc" id="L333">    return style;</span>
+  }
+
+  /**
+   * Set ODF DocumentStyle
+   *
+   * @param style The document style
+   */
+  public void setDocumentStyle(OdfStyle style) {
+    // when there is a local style, the document style becomes the parent
+    // of the local style
+<span class="nc bnc" id="L344" title="All 2 branches missed.">    if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L345">      getAutomaticStyle();</span>
+    }
+<span class="nc bnc" id="L347" title="All 2 branches missed.">    if (mAutomaticStyle != null) {</span>
+<span class="nc" id="L348">      mAutomaticStyle.setStyleParentStyleNameAttribute(style.getStyleNameAttribute());</span>
+    } else {
+<span class="nc" id="L350">      setStyleName(style.getStyleNameAttribute());</span>
+    }
+<span class="nc" id="L352">  }</span>
+
+  // protected static final String LOCAL_STYLE_PREFIX = &quot;#local-style&quot;;
+
+  /*
+   * public OdfStyle newDocumentStyle(String name) { OdfStyle newDocStyle =
+   * mFamily.newStyle(name, mOdfSchemaDocument.getDocumentStyles());
+   * setDocumentStyle(newDocStyle); return newDocStyle; }
+   */
+  /**
+   * Retrieve ODF DocumentStyle
+   *
+   * @return the document style
+   */
+  public OdfStyle getDocumentStyle() {
+<span class="nc" id="L367">    OdfStyle odfStyle = null;</span>
+<span class="nc" id="L368">    String styleName = getDocumentStyleName();</span>
+<span class="nc" id="L369">    OdfOfficeStyles documentStyles = mOdfSchemaDocument.getDocumentStyles();</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">    if (documentStyles != null) {</span>
+<span class="nc" id="L371">      odfStyle = documentStyles.getStyle(styleName, getStyleFamily());</span>
+    }
+<span class="nc" id="L373">    return odfStyle;</span>
+  }
+
+  public String getDocumentStyleName() {
+<span class="nc" id="L377">    String styleName = null;</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">    if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L379">      getAutomaticStyle();</span>
+    }
+<span class="nc bnc" id="L381" title="All 2 branches missed.">    if (mAutomaticStyle != null) {</span>
+<span class="nc" id="L382">      styleName = mAutomaticStyle.getStyleParentStyleNameAttribute();</span>
+    } else {
+<span class="nc" id="L384">      String automaticStyleName = getStyleName();</span>
+<span class="nc" id="L385">      OdfOfficeStyles officeStyles = mOdfSchemaDocument.getDocumentStyles();</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">      if (officeStyles != null</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">          &amp;&amp; officeStyles.getStyle(automaticStyleName, getStyleFamily()) != null) {</span>
+<span class="nc" id="L388">        styleName = automaticStyleName;</span>
+      }
+    }
+<span class="nc" id="L391">    return styleName;</span>
+  }
+
+  /** @return true if there is a document style. */
+  public boolean hasDocumentStyle() {
+<span class="nc" id="L396">    String documentStyleName = getDocumentStyleName();</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">    return documentStyleName != null</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">        &amp;&amp; !documentStyleName.isEmpty()</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">        &amp;&amp; !documentStyleName.equals(&quot;null&quot;);</span>
+  }
+
+  /*
+   * public OdfStyle getAutomaticStyle() { if (mAutomaticStyle == null) {
+   * mAutomaticStyle = mFamily.newStyle(LOCAL_STYLE_PREFIX, null); // if there
+   * is already a document style, but no local style String styleName = null;
+   * if ((styleName = getStyleName()) != null) {
+   * mAutomaticStyle.setParentName(styleName); } } return mAutomaticStyle; }
+   */
+  /**
+   * Retrieve ODF style family
+   *
+   * @return the style family.
+   */
+  public OdfStyleFamily getStyleFamily() {
+<span class="nc" id="L415">    return mFamily;</span>
+  }
+
+  /*
+   * public OdfStyle getMergedStyle() { OdfStyle merged = new
+   * OdfStyle(&quot;#merged-style&quot;, getStyleFamily()); OdfStyle docStyle =
+   * getDocumentStyle(); if (mAutomaticStyle != null) { // a document style
+   * may be referenced indirectly from the local style... if (docStyle ==
+   * null) { docStyle =
+   * mOdfSchemaDocument.getDocumentStyles().getStyle(mAutomaticStyle
+   * .getParentName()); } // copy local style to merged style
+   * mAutomaticStyle.copyTo(merged, true,false); }
+   *
+   * // copy doc style to merged style // copyTo only copies properties that
+   * are not already set at the // target style if (docStyle != null) {
+   * docStyle.copyTo(merged, true,false); }
+   *
+   * return merged; }
+   */
+  /**
+   * Retrieve ODF style property
+   *
+   * @param property The style property
+   * @return string for a property.
+   */
+  @Override
+  public String getProperty(OdfStyleProperty property) {
+    // first try automatic style
+<span class="nc bnc" id="L443" title="All 2 branches missed.">    if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L444">      getAutomaticStyle();</span>
+    }
+<span class="nc" id="L446">    StyleStyleElement style = mAutomaticStyle;</span>
+
+<span class="nc bnc" id="L448" title="All 2 branches missed.">    if (style == null) {</span>
+<span class="nc" id="L449">      style = getOfficeStyle();</span>
+    }
+
+<span class="nc bnc" id="L452" title="All 2 branches missed.">    if (style != null) {</span>
+<span class="nc" id="L453">      return style.getProperty(property);</span>
+    }
+
+<span class="nc" id="L456">    return null;</span>
+  }
+
+  /**
+   * Retrieve the set of ODF style proerties
+   *
+   * @param properties
+   * @return a map of all the properties.
+   */
+  @Override
+  public Map&lt;OdfStyleProperty, String&gt; getProperties(Set&lt;OdfStyleProperty&gt; properties) {
+<span class="nc" id="L467">    HashMap&lt;OdfStyleProperty, String&gt; map = new HashMap&lt;OdfStyleProperty, String&gt;();</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">    for (OdfStyleProperty property : properties) {</span>
+<span class="nc" id="L469">      map.put(property, getProperty(property));</span>
+<span class="nc" id="L470">    }</span>
+
+<span class="nc" id="L472">    return map;</span>
+  }
+
+  /**
+   * Retrieve the set of strict ODF properties
+   *
+   * @return a set of all the properties from the style family.
+   */
+  @Override
+  public Set&lt;OdfStyleProperty&gt; getStrictProperties() {
+<span class="nc" id="L482">    return getStyleFamily().getProperties();</span>
+  }
+
+  /**
+   * Judge if there is an automatic style with this property
+   *
+   * @param property
+   * @return true if there is an automatic style with this property.
+   */
+  @Override
+  public boolean hasProperty(OdfStyleProperty property) {
+<span class="nc bnc" id="L493" title="All 2 branches missed.">    if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L494">      getAutomaticStyle();</span>
+    }
+<span class="nc bnc" id="L496" title="All 4 branches missed.">    return (mAutomaticStyle != null) &amp;&amp; mAutomaticStyle.hasProperty(property);</span>
+  }
+
+  /**
+   * Remove the ODF property
+   *
+   * @param property
+   */
+  @Override
+  public void removeProperty(OdfStyleProperty property) {
+<span class="nc bnc" id="L506" title="All 2 branches missed.">    if (mAutomaticStyle != null) {</span>
+<span class="nc" id="L507">      mAutomaticStyle.removeProperty(property);</span>
+    }
+<span class="nc" id="L509">  }</span>
+
+  /**
+   * Set ODF properties
+   *
+   * @param properties
+   */
+  @Override
+  public void setProperties(Map&lt;OdfStyleProperty, String&gt; properties) {
+<span class="nc bnc" id="L518" title="All 2 branches missed.">    for (Map.Entry&lt;OdfStyleProperty, String&gt; entry : properties.entrySet()) {</span>
+<span class="nc" id="L519">      setProperty(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L520">    }</span>
+<span class="nc" id="L521">  }</span>
+
+  /**
+   * Set ODF style property with value
+   *
+   * @param property
+   * @param value
+   */
+  @Override
+  public void setProperty(OdfStyleProperty property, String value) {
+<span class="nc" id="L531">    getOrCreateUnqiueAutomaticStyle().setProperty(property, value);</span>
+<span class="nc" id="L532">  }</span>
+
+  @Override
+  protected void onInsertNode() {
+    // whenever a OdfStyleableElement is inserted into content.xml or styles.xml,
+<span class="nc" id="L537">    super.onInsertNode();</span>
+
+<span class="nc" id="L539">    String stylename = getStyleName();</span>
+    // if it has the stylename
+<span class="nc bnc" id="L541" title="All 2 branches missed.">    if (stylename.length() != 0) {</span>
+      //            if (!misAutomaticStyleSet) {
+      //                getAutomaticStyle();
+      //            }
+      //            if (mAutomaticStyle != null) {
+      //                // and the style belongs to automatic style
+      //                if (mAutomaticStyle.getStyleNameAttribute().equals(stylename)) {
+      //                    // add a user to the style
+      //                    mAutomaticStyle.addStyleUser(this);
+      //                    return;
+      //                }
+      //                mAutomaticStyle.removeStyleUser(this);
+      //                mAutomaticStyle = null;
+      //            }
+
+<span class="nc" id="L556">      OdfOfficeAutomaticStyles automatic_styles = this.getAutomaticStyles();</span>
+      // sthe style belongs to automatic style
+<span class="nc bnc" id="L558" title="All 2 branches missed.">      if (automatic_styles != null) {</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">        if (!misAutomaticStyleSet) {</span>
+<span class="nc" id="L560">          getAutomaticStyle();</span>
+        }
+<span class="nc bnc" id="L562" title="All 2 branches missed.">        if (mAutomaticStyle != null) {</span>
+<span class="nc" id="L563">          mAutomaticStyle.addStyleUser(this);</span>
+        }
+      }
+    }
+<span class="nc" id="L567">  }</span>
+
+  /** */
+  @Override
+  protected void onRemoveNode() {
+<span class="nc" id="L572">    super.onInsertNode();</span>
+
+<span class="nc bnc" id="L574" title="All 2 branches missed.">    if (this.mAutomaticStyle != null) {</span>
+<span class="nc" id="L575">      this.mAutomaticStyle.removeStyleUser(this);</span>
+<span class="nc" id="L576">      this.mAutomaticStyle = null;</span>
+<span class="nc" id="L577">      misAutomaticStyleSet = false;</span>
+    }
+<span class="nc" id="L579">  }</span>
+
+  // todo: rename after newName rid of deprecated getDocumentStyle()
+  private OdfStyle getOfficeStyle() {
+<span class="nc" id="L583">    OdfOfficeStyles styles = this.mOdfSchemaDocument.getDocumentStyles();</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">    if (styles != null) {</span>
+<span class="nc" id="L585">      return styles.getStyle(getStyleName(), getStyleFamily());</span>
+    } else {
+<span class="nc" id="L587">      return null;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

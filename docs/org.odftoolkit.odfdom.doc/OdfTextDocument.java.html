@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc</a> &gt; <span class="el_source">OdfTextDocument.java</span></div><h1>OdfTextDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.dom.OdfSettingsDom;
+import org.odftoolkit.odfdom.dom.element.office.OfficeTextElement;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
+import org.odftoolkit.odfdom.pkg.MediaType;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+import org.xml.sax.SAXException;
+
+/** This class represents an empty ODF text document. */
+public class OdfTextDocument extends OdfDocument {
+
+  private static final String EMPTY_TEXT_DOCUMENT_PATH = &quot;/OdfTextDocument.odt&quot;;
+<span class="nc" id="L46">  static final Resource EMPTY_TEXT_DOCUMENT_RESOURCE = new Resource(EMPTY_TEXT_DOCUMENT_PATH);</span>
+<span class="nc" id="L47">  private Boolean hasTabsRelativeToIndent = null;</span>
+
+  /** This enum contains all possible media types of OdfSpreadsheetDocument documents. */
+<span class="nc" id="L50">  public enum OdfMediaType implements MediaType {</span>
+<span class="nc" id="L51">    TEXT(OdfDocument.OdfMediaType.TEXT),</span>
+<span class="nc" id="L52">    TEXT_TEMPLATE(OdfDocument.OdfMediaType.TEXT_TEMPLATE),</span>
+<span class="nc" id="L53">    TEXT_MASTER(OdfDocument.OdfMediaType.TEXT_MASTER),</span>
+<span class="nc" id="L54">    TEXT_WEB(OdfDocument.OdfMediaType.TEXT_WEB);</span>
+    private final OdfDocument.OdfMediaType mMediaType;
+
+<span class="nc" id="L57">    OdfMediaType(OdfDocument.OdfMediaType mediaType) {</span>
+<span class="nc" id="L58">      this.mMediaType = mediaType;</span>
+<span class="nc" id="L59">    }</span>
+
+    /** @return the media type of this document */
+    public String getMediaTypeString() {
+<span class="nc" id="L63">      return mMediaType.getMediaTypeString();</span>
+    }
+
+    /** @return the ODF file suffix of this document */
+    public String getSuffix() {
+<span class="nc" id="L68">      return mMediaType.getSuffix();</span>
+    }
+
+    /**
+     * @param mediaType string defining an ODF document
+     * @return the according OdfMediatype encapsulating the given string and the suffix
+     */
+    public static OdfDocument.OdfMediaType getOdfMediaType(String mediaType) {
+<span class="nc" id="L76">      return OdfDocument.OdfMediaType.getOdfMediaType(mediaType);</span>
+    }
+  }
+
+  /**
+   * Creates an empty text document.
+   *
+   * @return ODF text document based on a default template
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfTextDocument newTextDocument() throws Exception {
+<span class="nc" id="L87">    return (OdfTextDocument)</span>
+<span class="nc" id="L88">        OdfDocument.loadTemplate(EMPTY_TEXT_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.TEXT);</span>
+  }
+
+  /**
+   * Creates an empty text document.
+   *
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return ODF text document based on a default template
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfTextDocument newTextDocument(Boolean enableCollaboration) throws Exception {
+<span class="nc" id="L99">    return (OdfTextDocument)</span>
+<span class="nc" id="L100">        OdfDocument.loadTemplate(</span>
+            EMPTY_TEXT_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.TEXT, enableCollaboration);
+  }
+
+  /**
+   * Creates an empty text document.
+   *
+   * @return ODF text document based on a default template
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfTextDocument newTextDocument(OdfTextDocument.OdfMediaType mimeType)
+      throws Exception {
+<span class="nc" id="L112">    return (OdfTextDocument)</span>
+<span class="nc" id="L113">        OdfDocument.loadTemplate(EMPTY_TEXT_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.TEXT);</span>
+  }
+
+  /**
+   * Creates an empty text template.
+   *
+   * @return ODF text template based on a default
+   * @throws java.lang.Exception - if the template could not be created
+   */
+  public static OdfTextDocument newTextTemplateDocument() throws Exception {
+<span class="nc" id="L123">    return (OdfTextDocument)</span>
+<span class="nc" id="L124">        OdfDocument.loadTemplate(</span>
+            EMPTY_TEXT_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.TEXT_TEMPLATE);
+  }
+
+  /**
+   * Creates an empty text master document.
+   *
+   * @return ODF text master based on a default
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfTextDocument newTextMasterDocument() throws Exception {
+<span class="nc" id="L135">    OdfTextDocument doc =</span>
+        (OdfTextDocument)
+<span class="nc" id="L137">            OdfDocument.loadTemplate(</span>
+                EMPTY_TEXT_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.TEXT_MASTER);
+<span class="nc" id="L139">    doc.changeMode(OdfMediaType.TEXT_MASTER);</span>
+<span class="nc" id="L140">    return doc;</span>
+  }
+
+  /**
+   * Creates an empty text web.
+   *
+   * @return ODF text web based on a default
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfTextDocument newTextWebDocument() throws Exception {
+<span class="nc" id="L150">    OdfTextDocument doc =</span>
+        (OdfTextDocument)
+<span class="nc" id="L152">            OdfDocument.loadTemplate(</span>
+                EMPTY_TEXT_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.TEXT_WEB);
+<span class="nc" id="L154">    doc.changeMode(OdfMediaType.TEXT_WEB);</span>
+<span class="nc" id="L155">    return doc;</span>
+  }
+
+  /**
+   * Creates an OdfTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfTextDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF text document, ClassCastException might be thrown.
+   *
+   * @param inputStream - the InputStream of the ODF text document.
+   * @return the text document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfTextDocument loadDocument(InputStream inputStream) throws Exception {
+<span class="nc" id="L173">    return (OdfTextDocument) OdfDocument.loadDocument(inputStream);</span>
+  }
+
+  /**
+   * Creates an OdfTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfTextDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF text document, ClassCastException might be thrown.
+   *
+   * @param inputStream - the InputStream of the ODF text document.
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the text document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfTextDocument loadDocument(InputStream inputStream, Boolean enableCollaboration)
+      throws Exception {
+<span class="nc" id="L193">    return (OdfTextDocument) OdfDocument.loadDocument(inputStream, enableCollaboration);</span>
+  }
+
+  /**
+   * Creates an OdfTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfTextDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF text document, ClassCastException might be thrown.
+   *
+   * @param inputStream - the InputStream of the ODF text document.
+   * @param configuration - key/value pairs of user given run-time settings (configuration)
+   * @return the text document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfTextDocument loadDocument(
+      InputStream inputStream, Map&lt;String, Object&gt; configuration) throws Exception {
+<span class="nc" id="L213">    return (OdfTextDocument) OdfDocument.loadDocument(inputStream, configuration);</span>
+  }
+
+  /**
+   * Creates an OdfTextDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfTextDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF text document, ClassCastException might be thrown.
+   *
+   * @param inputStream - the InputStream of the ODF text document.
+   * @param configuration - key/value pairs of user given run-time settings (configuration)
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the text document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfTextDocument loadDocument(
+      InputStream inputStream, Map&lt;String, Object&gt; configuration, Boolean enableCollaboration)
+      throws Exception {
+<span class="nc" id="L235">    return (OdfTextDocument)</span>
+<span class="nc" id="L236">        OdfDocument.loadDocument(inputStream, configuration, enableCollaboration);</span>
+  }
+
+  /**
+   * Loads an OdfTextDocument from the provided path.
+   *
+   * &lt;p&gt;OdfTextDocument relies on the file being available for read access over the whole life-cycle
+   * of OdfTextDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF text document, ClassCastException might be thrown.
+   *
+   * @param documentPath - the path from where the document can be loaded
+   * @return the text document from the given path or NULL if the media type is not supported by
+   *     ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfTextDocument loadDocument(String documentPath) throws Exception {
+<span class="nc" id="L253">    return (OdfTextDocument) OdfDocument.loadDocument(documentPath);</span>
+  }
+
+  /**
+   * Creates an OdfTextDocument from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfTextDocument relies on the file being available for read access over the whole lifecycle
+   * of OdfTextDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF text document, ClassCastException might be thrown.
+   *
+   * @param file - a file representing the ODF text document.
+   * @return the text document created from the given File
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfTextDocument loadDocument(File file) throws Exception {
+<span class="nc" id="L269">    return (OdfTextDocument) OdfDocument.loadDocument(file);</span>
+  }
+
+  /**
+   * To avoid data duplication a new document is only created, if not already opened. A document is
+   * cached by this constructor using the internal path as key.
+   */
+  protected OdfTextDocument(
+      OdfPackage pkg,
+      String internalPath,
+      OdfTextDocument.OdfMediaType odfMediaType,
+      Boolean enableCollaboration)
+      throws SAXException {
+<span class="nc" id="L282">    super(pkg, internalPath, odfMediaType.mMediaType);</span>
+<span class="nc" id="L283">    mHasCollaboration = enableCollaboration;</span>
+<span class="nc" id="L284">  }</span>
+
+  /**
+   * To avoid data duplication a new document is only created, if not already opened. A document is
+   * cached by this constructor using the internal path as key.
+   */
+  protected OdfTextDocument(
+      OdfPackage pkg, String internalPath, OdfTextDocument.OdfMediaType odfMediaType)
+      throws SAXException {
+<span class="nc" id="L293">    super(pkg, internalPath, odfMediaType.mMediaType);</span>
+<span class="nc" id="L294">  }</span>
+
+  /**
+   * Get the content root of a text document. Start here to get or create new elements of a text
+   * document like paragraphs, headings, tables or lists.
+   *
+   * @return content root, representing the office:text tag
+   * @throws Exception if the file DOM could not be created.
+   */
+  @Override
+  public OfficeTextElement getContentRoot() throws Exception {
+<span class="nc" id="L305">    return super.getContentRoot(OfficeTextElement.class);</span>
+  }
+
+  /**
+   * Creates a new paragraph and append text
+   *
+   * @param text
+   * @return the new paragraph
+   * @throws Exception if the file DOM could not be created.
+   */
+  public OdfTextParagraph newParagraph(String text) throws Exception {
+<span class="nc" id="L316">    OdfTextParagraph para = newParagraph();</span>
+<span class="nc" id="L317">    para.addContent(text);</span>
+<span class="nc" id="L318">    return para;</span>
+  }
+
+  /**
+   * Creates a new paragraph
+   *
+   * @return The new paragraph
+   * @throws Exception if the file DOM could not be created.
+   */
+  public OdfTextParagraph newParagraph() throws Exception {
+<span class="nc" id="L328">    OfficeTextElement odfText = getContentRoot();</span>
+<span class="nc" id="L329">    return (OdfTextParagraph) odfText.newTextPElement();</span>
+  }
+
+  /**
+   * Append text to the end of a text document. If there is no paragraph at the end of a document, a
+   * new one will be created.
+   *
+   * @param text initial text for the paragraph.
+   * @return The paragraph at the end of the text document, where the text has been added to.
+   * @throws Exception if the file DOM could not be created.
+   */
+  public OdfTextParagraph addText(String text) throws Exception {
+<span class="nc" id="L341">    OfficeTextElement odfText = getContentRoot();</span>
+<span class="nc" id="L342">    Node n = odfText.getLastChild();</span>
+    OdfTextParagraph para;
+<span class="nc bnc" id="L344" title="All 2 branches missed.">    if (OdfTextParagraph.class.isInstance(n)) {</span>
+<span class="nc" id="L345">      para = (OdfTextParagraph) n;</span>
+    } else {
+<span class="nc" id="L347">      para = newParagraph();</span>
+    }
+<span class="nc" id="L349">    para.addContent(text);</span>
+<span class="nc" id="L350">    return para;</span>
+  }
+
+  /**
+   * Changes the document to the given mediatype. This method can only be used to convert a document
+   * to a related mediatype, e.g. template.
+   *
+   * @param mediaType the related ODF mimetype
+   */
+  public void changeMode(OdfMediaType mediaType) {
+<span class="nc" id="L360">    setOdfMediaType(mediaType.mMediaType);</span>
+<span class="nc" id="L361">  }</span>
+
+  /**
+   * In LO/AO Tabs are counted from the start of text and the fo:left-margin have to be added.
+   * Microsoft Office does not behave this way. For the filter a compatibility flag was added to the
+   * settings.xml &lt;config:config-item config:name=&quot;TabsRelativeToIndent&quot;
+   * config:type=&quot;boolean&quot;&gt;false&lt;/config:config-item&gt;
+   */
+  public Boolean hasTabsRelativeToIndent() {
+<span class="nc bnc" id="L370" title="All 2 branches missed.">    if (hasTabsRelativeToIndent == null) {</span>
+      try {
+<span class="nc" id="L372">        OdfSettingsDom settingsDom = this.getSettingsDom();</span>
+        // if there is a settings.xml in the document..
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (settingsDom != null) {</span>
+          // 1) Find the correct collection &quot;ooo:configuration-settings&quot;
+<span class="nc" id="L376">          NodeList configItemSets =</span>
+              settingsDom
+<span class="nc" id="L378">                  .getRootElement()</span>
+<span class="nc" id="L379">                  .getElementsByTagNameNS(</span>
+                      &quot;urn:oasis:names:tc:opendocument:xmlns:config:1.0&quot;, &quot;config-item-set&quot;);
+<span class="nc" id="L381">          Element configElement = null;</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">          for (int i = 0; i &lt; configItemSets.getLength(); i++) {</span>
+<span class="nc" id="L383">            Node config = configItemSets.item(i);</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            if (config instanceof Element) {</span>
+<span class="nc" id="L385">              configElement = (Element) config;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">              if (configElement.getLocalName().equals(&quot;config-item-set&quot;)</span>
+                  &amp;&amp; configElement
+<span class="nc" id="L388">                      .getAttributeNS(&quot;urn:oasis:names:tc:opendocument:xmlns:config:1.0&quot;, &quot;name&quot;)</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">                      .equals(&quot;ooo:configuration-settings&quot;)) {</span>
+<span class="nc" id="L390">                break;</span>
+              } else {
+<span class="nc" id="L392">                configElement = null;</span>
+              }
+            }
+          }
+          // 1) Within the collection find the correct configuration &quot;ooo:configuration-settings&quot;
+<span class="nc bnc" id="L397" title="All 2 branches missed.">          if (configElement != null) {</span>
+<span class="nc" id="L398">            NodeList configItems =</span>
+<span class="nc" id="L399">                configElement.getElementsByTagNameNS(</span>
+                    &quot;urn:oasis:names:tc:opendocument:xmlns:config:1.0&quot;, &quot;config-item&quot;);
+<span class="nc bnc" id="L401" title="All 2 branches missed.">            for (int i = 0; i &lt; configItems.getLength(); i++) {</span>
+<span class="nc" id="L402">              Node config = configItems.item(i);</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">              if (config instanceof Element) {</span>
+<span class="nc" id="L404">                configElement = (Element) config;</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">                if (configElement.getLocalName().equals(&quot;config-item&quot;)</span>
+                    &amp;&amp; configElement
+<span class="nc" id="L407">                        .getAttributeNS(&quot;urn:oasis:names:tc:opendocument:xmlns:config:1.0&quot;, &quot;name&quot;)</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">                        .equals(&quot;TabsRelativeToIndent&quot;)) {</span>
+<span class="nc" id="L409">                  Node child = configElement.getFirstChild();</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">                  if (child instanceof Text) {</span>
+<span class="nc" id="L411">                    hasTabsRelativeToIndent = ((Text) child).getTextContent().equals(&quot;true&quot;);</span>
+                  }
+                  break;
+                }
+              }
+            }
+          }
+        }
+<span class="nc" id="L419">      } catch (Exception ex) {</span>
+<span class="nc" id="L420">        Logger.getLogger(OdfTextDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L421">      }</span>
+      // there is nothing set, use the LO/AO default behavior
+<span class="nc bnc" id="L423" title="All 2 branches missed.">      if (hasTabsRelativeToIndent == null) {</span>
+<span class="nc" id="L424">        hasTabsRelativeToIndent = true;</span>
+      }
+    }
+<span class="nc" id="L427">    return hasTabsRelativeToIndent;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

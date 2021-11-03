@@ -1,0 +1,942 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfOfficeMeta.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.meta</a> &gt; <span class="el_source">OdfOfficeMeta.java</span></div><h1>OdfOfficeMeta.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.meta;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import org.odftoolkit.odfdom.dom.element.dc.DcCreatorElement;
+import org.odftoolkit.odfdom.dom.element.dc.DcDateElement;
+import org.odftoolkit.odfdom.dom.element.dc.DcDescriptionElement;
+import org.odftoolkit.odfdom.dom.element.dc.DcLanguageElement;
+import org.odftoolkit.odfdom.dom.element.dc.DcSubjectElement;
+import org.odftoolkit.odfdom.dom.element.dc.DcTitleElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaAutoReloadElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaCreationDateElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaDocumentStatisticElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaEditingCyclesElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaEditingDurationElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaGeneratorElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaHyperlinkBehaviourElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaInitialCreatorElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaKeywordElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaPrintDateElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaPrintedByElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaTemplateElement;
+import org.odftoolkit.odfdom.dom.element.meta.MetaUserDefinedElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeDocumentMetaElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeMetaElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.type.Duration;
+
+/**
+ * &lt;code&gt;OdfOfficeMeta&lt;/code&gt; represent the meta data feature in the ODF document.
+ *
+ * &lt;p&gt;It provides convenient method to get meta data info.
+ */
+public class OdfOfficeMeta {
+
+  private OfficeMetaElement mOfficeMetaElement;
+<span class="nc" id="L64">  private boolean mAutomaticUpdate = true;</span>
+
+  /**
+   * Constructor of &lt;code&gt;OdfOfficeMeta&lt;/code&gt; feature.
+   *
+   * @param metaDom the file DOM element of meta.xml
+   */
+<span class="nc" id="L71">  public OdfOfficeMeta(OdfFileDom metaDom) {</span>
+<span class="nc" id="L72">    OfficeDocumentMetaElement metaEle =</span>
+<span class="nc" id="L73">        OdfElement.findFirstChildNode(OfficeDocumentMetaElement.class, metaDom);</span>
+<span class="nc" id="L74">    mOfficeMetaElement = OdfElement.findFirstChildNode(OfficeMetaElement.class, metaEle);</span>
+<span class="nc" id="L75">  }</span>
+
+  /**
+   * Get the instance of &lt;code&gt;OfficeMetaElement&lt;/code&gt; which represents this feature.
+   *
+   * @return the instance of OfficeMetaElement
+   */
+  public OfficeMetaElement getOfficeMetaElement() {
+<span class="nc" id="L83">    return mOfficeMetaElement;</span>
+  }
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaGeneratorElement&lt;/code&gt; , See
+   * {@odf.element meta:generator}.
+   *
+   * @return the generator info of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getGenerator() {
+<span class="nc" id="L94">    MetaGeneratorElement metaGenerator =</span>
+<span class="nc" id="L95">        OdfElement.findFirstChildNode(MetaGeneratorElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    if (metaGenerator != null) {</span>
+<span class="nc" id="L97">      return metaGenerator.getTextContent();</span>
+    }
+<span class="nc" id="L99">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaGeneratorElement&lt;/code&gt; , See
+   * {@odf.element meta:generator}.
+   *
+   * @param generator set the specified document generator. NULL will remove the element from the
+   *     meta.xml.
+   */
+  public void setGenerator(String generator) {
+<span class="nc" id="L110">    MetaGeneratorElement metaGeneratorEle =</span>
+<span class="nc" id="L111">        OdfElement.findFirstChildNode(MetaGeneratorElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    if (generator == null) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">      if (metaGeneratorEle != null) {</span>
+<span class="nc" id="L114">        mOfficeMetaElement.removeChild(metaGeneratorEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">      if (metaGeneratorEle == null) {</span>
+<span class="nc" id="L118">        metaGeneratorEle = mOfficeMetaElement.newMetaGeneratorElement();</span>
+      }
+<span class="nc" id="L120">      metaGeneratorEle.setTextContent(generator);</span>
+    }
+<span class="nc" id="L122">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;DcTitleElement&lt;/code&gt; , See
+   * {@odf.element dc:title}.
+   *
+   * @return the title of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getTitle() {
+
+<span class="nc" id="L133">    DcTitleElement titleEle =</span>
+<span class="nc" id="L134">        OdfElement.findFirstChildNode(DcTitleElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">    if (titleEle != null) {</span>
+<span class="nc" id="L136">      return titleEle.getTextContent();</span>
+    }
+<span class="nc" id="L138">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;DcTitleElement&lt;/code&gt; , See
+   * {@odf.element dc:title}.
+   *
+   * @param title set the specified document title. NULL will remove the element from the meta.xml.
+   */
+  public void setTitle(String title) {
+<span class="nc" id="L148">    DcTitleElement titleEle =</span>
+<span class="nc" id="L149">        OdfElement.findFirstChildNode(DcTitleElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">    if (title == null) {</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">      if (titleEle != null) {</span>
+<span class="nc" id="L152">        mOfficeMetaElement.removeChild(titleEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">      if (titleEle == null) {</span>
+<span class="nc" id="L156">        titleEle = mOfficeMetaElement.newDcTitleElement();</span>
+      }
+<span class="nc" id="L158">      titleEle.setTextContent(title);</span>
+    }
+<span class="nc" id="L160">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;DcDescriptionElement&lt;/code&gt; , See
+   * {@odf.element dc:description}.
+   *
+   * @return the description of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getDescription() {
+<span class="nc" id="L170">    DcDescriptionElement descEle =</span>
+<span class="nc" id="L171">        OdfElement.findFirstChildNode(DcDescriptionElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">    if (descEle != null) {</span>
+<span class="nc" id="L173">      return descEle.getTextContent();</span>
+    }
+<span class="nc" id="L175">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;DcDescriptionElement&lt;/code&gt; , See
+   * {@odf.element dc:description}.
+   *
+   * @param description set the specified document description. NULL will remove the element from
+   *     the meta.xml.
+   */
+  public void setDescription(String description) {
+<span class="nc" id="L186">    DcDescriptionElement descEle =</span>
+<span class="nc" id="L187">        OdfElement.findFirstChildNode(DcDescriptionElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">    if (description == null) {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">      if (descEle != null) {</span>
+<span class="nc" id="L190">        mOfficeMetaElement.removeChild(descEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L193" title="All 2 branches missed.">      if (descEle == null) {</span>
+<span class="nc" id="L194">        descEle = mOfficeMetaElement.newDcDescriptionElement();</span>
+      }
+<span class="nc" id="L196">      descEle.setTextContent(description);</span>
+    }
+<span class="nc" id="L198">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;DcSubjectElement&lt;/code&gt; , See
+   * {@odf.element dc:subject}.
+   *
+   * @return the subject of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getSubject() {
+<span class="nc" id="L208">    DcSubjectElement subjectEle =</span>
+<span class="nc" id="L209">        OdfElement.findFirstChildNode(DcSubjectElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">    if (subjectEle != null) {</span>
+<span class="nc" id="L211">      return subjectEle.getTextContent();</span>
+    }
+<span class="nc" id="L213">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;DcSubjectElement&lt;/code&gt; , See
+   * {@odf.element dc:subject}.
+   *
+   * @param subject set the specified document subject. NULL will remove the element from the
+   *     meta.xml.
+   */
+  public void setSubject(String subject) {
+<span class="nc" id="L224">    DcSubjectElement subjectEle =</span>
+<span class="nc" id="L225">        OdfElement.findFirstChildNode(DcSubjectElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">    if (subject == null) {</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">      if (subjectEle != null) {</span>
+<span class="nc" id="L228">        mOfficeMetaElement.removeChild(subjectEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">      if (subjectEle == null) {</span>
+<span class="nc" id="L232">        subjectEle = mOfficeMetaElement.newDcSubjectElement();</span>
+      }
+<span class="nc" id="L234">      subjectEle.setTextContent(subject);</span>
+    }
+<span class="nc" id="L236">  }</span>
+
+  /**
+   * Receives the list value of the ODFDOM element representation &lt;code&gt;MetaKeywordElement&lt;/code&gt; ,
+   * See {@odf.element meta:keyword}.
+   *
+   * @return the keywords of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public List&lt;String&gt; getKeywords() {
+<span class="nc" id="L246">    List&lt;String&gt; keywords = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L247">    MetaKeywordElement keywordEle =</span>
+<span class="nc" id="L248">        OdfElement.findFirstChildNode(MetaKeywordElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">    if (keywordEle != null) {</span>
+<span class="nc" id="L250">      keywords.add(keywordEle.getTextContent());</span>
+      MetaKeywordElement keywordNext;
+<span class="nc bnc" id="L252" title="All 2 branches missed.">      while ((keywordNext = OdfElement.findNextChildNode(MetaKeywordElement.class, keywordEle))</span>
+          != null) {
+<span class="nc" id="L254">        keywords.add(keywordNext.getTextContent());</span>
+<span class="nc" id="L255">        keywordEle = keywordNext;</span>
+      }
+<span class="nc" id="L257">      return keywords;</span>
+    } else {
+<span class="nc" id="L259">      return null;</span>
+    }
+  }
+
+  /**
+   * Sets the list value of the ODFDOM element representation &lt;code&gt;MetaKeywordElement&lt;/code&gt; , See
+   * {@odf.element meta:keyword}.
+   *
+   * @param keyList set the specified list of keywords
+   */
+  public void setKeywords(List&lt;String&gt; keyList) {
+<span class="nc" id="L270">    MetaKeywordElement keywordEle =</span>
+<span class="nc" id="L271">        OdfElement.findFirstChildNode(MetaKeywordElement.class, mOfficeMetaElement);</span>
+<span class="nc" id="L272">    List&lt;MetaKeywordElement&gt; toBeDeleted = new ArrayList&lt;MetaKeywordElement&gt;();</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">    if (keywordEle != null) {</span>
+      MetaKeywordElement keywordTmp;
+<span class="nc" id="L275">      toBeDeleted.add(keywordEle);</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">      while ((keywordTmp = OdfElement.findNextChildNode(MetaKeywordElement.class, keywordEle))</span>
+          != null) {
+<span class="nc" id="L278">        keywordEle = keywordTmp;</span>
+<span class="nc" id="L279">        toBeDeleted.add(keywordTmp);</span>
+      }
+    }
+
+    // remove the original
+<span class="nc bnc" id="L284" title="All 2 branches missed.">    for (MetaKeywordElement keyele : toBeDeleted) {</span>
+<span class="nc" id="L285">      mOfficeMetaElement.removeChild(keyele);</span>
+<span class="nc" id="L286">    }</span>
+    // add new
+<span class="nc bnc" id="L288" title="All 2 branches missed.">    for (int i = 0; i &lt; keyList.size(); i++) {</span>
+<span class="nc" id="L289">      MetaKeywordElement keywordElement = mOfficeMetaElement.newMetaKeywordElement();</span>
+<span class="nc" id="L290">      keywordElement.setTextContent(keyList.get(i));</span>
+    }
+<span class="nc" id="L292">  }</span>
+
+  /**
+   * Add the keyword to the current document. Create child element {@odf.element meta:keyword}.
+   *
+   * @param keyword the value of child element {@odf.element meta:keyword}.
+   */
+  public void addKeyword(String keyword) {
+<span class="nc" id="L300">    MetaKeywordElement keywordElement = mOfficeMetaElement.newMetaKeywordElement();</span>
+<span class="nc" id="L301">    keywordElement.setTextContent(keyword);</span>
+<span class="nc" id="L302">  }</span>
+
+  /**
+   * Receives the list value of the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement
+   * &lt;/code&gt; , See {@odf.element meta:user-defined}.
+   *
+   * @return get the list of user-defined metadata names;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public List&lt;String&gt; getUserDefinedDataNames() {
+<span class="nc" id="L312">    List&lt;String&gt; definedNames = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L313">    MetaUserDefinedElement definedEle =</span>
+<span class="nc" id="L314">        OdfElement.findFirstChildNode(MetaUserDefinedElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">    if (definedEle != null) {</span>
+
+<span class="nc" id="L317">      definedNames.add(definedEle.getMetaNameAttribute());</span>
+      MetaUserDefinedElement definedNext;
+<span class="nc bnc" id="L319" title="All 2 branches missed.">      while ((definedNext = OdfElement.findNextChildNode(MetaUserDefinedElement.class, definedEle))</span>
+          != null) {
+
+<span class="nc" id="L322">        definedNames.add(definedNext.getMetaNameAttribute());</span>
+
+<span class="nc" id="L324">        definedEle = definedNext;</span>
+      }
+<span class="nc" id="L326">      return definedNames;</span>
+    } else {
+<span class="nc" id="L328">      return null;</span>
+    }
+  }
+
+  /**
+   * Receives the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; by attribute
+   * name, See {@odf.element meta:user-defined}.
+   *
+   * @param name the name of the user-defined metadata
+   * @return the &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; which is identified by the specified name;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public MetaUserDefinedElement getUserDefinedElementByAttributeName(String name) {
+<span class="nc" id="L341">    MetaUserDefinedElement definedEle =</span>
+<span class="nc" id="L342">        OdfElement.findFirstChildNode(MetaUserDefinedElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">    if (definedEle != null) {</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">      if (definedEle.getMetaNameAttribute().equals(name)) {</span>
+<span class="nc" id="L345">        return definedEle;</span>
+      }
+      MetaUserDefinedElement definedNext;
+<span class="nc bnc" id="L348" title="All 2 branches missed.">      while ((definedNext = OdfElement.findNextChildNode(MetaUserDefinedElement.class, definedEle))</span>
+          != null) {
+
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (definedNext.getMetaNameAttribute().equals(name)) {</span>
+<span class="nc" id="L352">          return definedNext;</span>
+        }
+
+<span class="nc" id="L355">        definedEle = definedNext;</span>
+      }
+<span class="nc" id="L357">      return null;</span>
+    } else {
+<span class="nc" id="L359">      return null;</span>
+    }
+  }
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; by
+   * attribute name, See {@odf.element meta:user-defined}.
+   *
+   * @param name the name of the user-defined metadata
+   * @return the value of the user-defined metadata with the specified name;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getUserDefinedDataValue(String name) {
+<span class="nc" id="L372">    MetaUserDefinedElement definedElement = getUserDefinedElementByAttributeName(name);</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">    if (definedElement != null) {</span>
+<span class="nc" id="L374">      return definedElement.getTextContent();</span>
+    }
+<span class="nc" id="L376">    return null;</span>
+  }
+
+  /**
+   * Receives the data type of the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt;
+   * by attribute name, See {@odf.element meta:user-defined}.
+   *
+   * @param name the name of the user-defined metadata
+   * @return the data type of the user-defined metadata with the specified name;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getUserDefinedDataType(String name) {
+<span class="nc" id="L388">    MetaUserDefinedElement definedElement = getUserDefinedElementByAttributeName(name);</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">    if (definedElement != null) {</span>
+<span class="nc" id="L390">      return definedElement.getMetaValueTypeAttribute();</span>
+    }
+<span class="nc" id="L392">    return null;</span>
+  }
+
+  /**
+   * Remove the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; by attribute name,
+   * See {@odf.element meta:user-defined}.
+   *
+   * @param name the name of the user-defined metadata
+   */
+  public void removeUserDefinedDataByName(String name) {
+<span class="nc" id="L402">    MetaUserDefinedElement definedElement = getUserDefinedElementByAttributeName(name);</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">    if (definedElement != null) {</span>
+<span class="nc" id="L404">      mOfficeMetaElement.removeChild(definedElement);</span>
+    }
+<span class="nc" id="L406">  }</span>
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; by
+   * attribute name, See {@odf.element meta:user-defined}.
+   *
+   * @param name the name need to set for the user-defined metadata
+   * @param value the value need to set for the user-defined metadata
+   */
+  public void setUserDefinedDataValue(String name, String value) {
+<span class="nc" id="L416">    MetaUserDefinedElement definedElement = getUserDefinedElementByAttributeName(name);</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">    if (definedElement != null) {</span>
+<span class="nc" id="L418">      definedElement.setTextContent(value);</span>
+    }
+<span class="nc" id="L420">  }</span>
+
+  /**
+   * Sets the data type of the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; by
+   * attribute name, See {@odf.element meta:user-defined}.
+   *
+   * @param name the name need to set for the user-defined metadata
+   * @param value the value need to set for the user-defined metadata
+   */
+  public void setUserDefinedDataType(String name, String value) {
+<span class="nc" id="L430">    MetaUserDefinedElement definedElement = getUserDefinedElementByAttributeName(name);</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">    if (definedElement != null) {</span>
+<span class="nc" id="L432">      definedElement.setMetaValueTypeAttribute(value);</span>
+    }
+<span class="nc" id="L434">  }</span>
+
+  /**
+   * Sets the ODFDOM element representation &lt;code&gt;MetaUserDefinedElement&lt;/code&gt; , See {@odf.element
+   * meta:user-defined} if the element with the attribute name exists,then update;or create a new
+   * element if type or value is null,the original will not be updated.
+   *
+   * @param name the name need to set for the user-defined metadata
+   * @param type the data type need to set for the user-defined metadata
+   * @param value the value need to set for the user-defined metadata
+   */
+  public void setUserDefinedData(String name, String type, String value) {
+    // test if name exists
+<span class="nc" id="L447">    MetaUserDefinedElement definedElement = getUserDefinedElementByAttributeName(name);</span>
+    // if exists, then update,if parameter is null, then don't change
+<span class="nc bnc" id="L449" title="All 2 branches missed.">    if (definedElement != null) {</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">      if (type != null) {</span>
+<span class="nc" id="L451">        definedElement.setMetaValueTypeAttribute(type);</span>
+      }
+<span class="nc bnc" id="L453" title="All 2 branches missed.">      if (value != null) {</span>
+<span class="nc" id="L454">        definedElement.setTextContent(value);</span>
+      }
+    } else {
+      // if not exists, add
+<span class="nc" id="L458">      definedElement = mOfficeMetaElement.newMetaUserDefinedElement(name, type);</span>
+<span class="nc" id="L459">      definedElement.setTextContent(value);</span>
+    }
+<span class="nc" id="L461">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaInitialCreatorElement&lt;/code&gt;
+   * , See {@odf.element meta:initial-creator}.
+   *
+   * @return get the initial creator of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getInitialCreator() {
+<span class="nc" id="L471">    MetaInitialCreatorElement iniCreatorEle =</span>
+<span class="nc" id="L472">        OdfElement.findFirstChildNode(MetaInitialCreatorElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">    if (iniCreatorEle != null) {</span>
+<span class="nc" id="L474">      return iniCreatorEle.getTextContent();</span>
+    }
+<span class="nc" id="L476">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaInitialCreatorElement&lt;/code&gt; ,
+   * See {@odf.element meta:initial-creator}.
+   *
+   * @param initialCreator set the specified initial creator. NULL will remove the element from the
+   *     meta.xml.
+   */
+  public void setInitialCreator(String initialCreator) {
+<span class="nc" id="L487">    MetaInitialCreatorElement initialCreatorEle =</span>
+<span class="nc" id="L488">        OdfElement.findFirstChildNode(MetaInitialCreatorElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">    if (initialCreator == null) {</span>
+<span class="nc bnc" id="L490" title="All 2 branches missed.">      if (initialCreatorEle != null) {</span>
+<span class="nc" id="L491">        mOfficeMetaElement.removeChild(initialCreatorEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L494" title="All 2 branches missed.">      if (initialCreatorEle == null) {</span>
+<span class="nc" id="L495">        initialCreatorEle = mOfficeMetaElement.newMetaInitialCreatorElement();</span>
+      }
+<span class="nc" id="L497">      initialCreatorEle.setTextContent(initialCreator);</span>
+    }
+<span class="nc" id="L499">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;DcCreatorElement&lt;/code&gt; , See
+   * {@odf.element dc:creator}
+   *
+   * @return the creator of the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getCreator() {
+<span class="nc" id="L509">    DcCreatorElement creatorEle =</span>
+<span class="nc" id="L510">        OdfElement.findFirstChildNode(DcCreatorElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L511" title="All 2 branches missed.">    if (creatorEle != null) {</span>
+<span class="nc" id="L512">      return creatorEle.getTextContent();</span>
+    }
+<span class="nc" id="L514">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;DcCreatorElement&lt;/code&gt; , See
+   * {@odf.element dc:creator}.
+   *
+   * @param creator set the specified creator. NULL will remove the element from the meta.xml.
+   */
+  public void setCreator(String creator) {
+<span class="nc" id="L524">    DcCreatorElement creatorEle =</span>
+<span class="nc" id="L525">        OdfElement.findFirstChildNode(DcCreatorElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L526" title="All 2 branches missed.">    if (creator == null) {</span>
+<span class="nc bnc" id="L527" title="All 2 branches missed.">      if (creatorEle != null) {</span>
+<span class="nc" id="L528">        mOfficeMetaElement.removeChild(creatorEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L531" title="All 2 branches missed.">      if (creatorEle == null) {</span>
+<span class="nc" id="L532">        creatorEle = mOfficeMetaElement.newDcCreatorElement();</span>
+      }
+<span class="nc" id="L534">      creatorEle.setTextContent(creator);</span>
+    }
+<span class="nc" id="L536">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaPrintedByElement&lt;/code&gt; , See
+   * {@odf.element meta:printed-by}
+   *
+   * @return the name of the last person who printed the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if element is not set
+   */
+  public String getPrintedBy() {
+<span class="nc" id="L546">    MetaPrintedByElement printedByEle =</span>
+<span class="nc" id="L547">        OdfElement.findFirstChildNode(MetaPrintedByElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L548" title="All 2 branches missed.">    if (printedByEle != null) {</span>
+<span class="nc" id="L549">      return printedByEle.getTextContent();</span>
+    }
+<span class="nc" id="L551">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaPrintedByElement&lt;/code&gt; , See
+   * {@odf.element meta:printed-by}.
+   *
+   * @param printedBy the name need to set for the last person who printed the current document.
+   *     NULL will remove the element from the meta.xml.
+   */
+  public void setPrintedBy(String printedBy) {
+<span class="nc" id="L562">    MetaPrintedByElement printedByEle =</span>
+<span class="nc" id="L563">        OdfElement.findFirstChildNode(MetaPrintedByElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">    if (printedBy == null) {</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">      if (printedByEle != null) {</span>
+<span class="nc" id="L566">        mOfficeMetaElement.removeChild(printedByEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L569" title="All 2 branches missed.">      if (printedByEle == null) {</span>
+<span class="nc" id="L570">        printedByEle = mOfficeMetaElement.newMetaPrintedByElement();</span>
+      }
+<span class="nc" id="L572">      printedByEle.setTextContent(printedBy);</span>
+    }
+<span class="nc" id="L574">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaCreationDateElement&lt;/code&gt; ,
+   * See {@odf.element meta:creation-date}
+   *
+   * @return the date and time when the document was created initially;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if element is not set
+   */
+  public Calendar getCreationDate() {
+<span class="nc" id="L584">    MetaCreationDateElement creationDateEle =</span>
+<span class="nc" id="L585">        OdfElement.findFirstChildNode(MetaCreationDateElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">    if (creationDateEle != null) {</span>
+<span class="nc" id="L587">      return stringToCalendar(creationDateEle.getTextContent());</span>
+    }
+<span class="nc" id="L589">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaCreationDateElement&lt;/code&gt; , See
+   * {@odf.element meta:creation-date}.
+   *
+   * @param creationDate the date and time need to set. NULL will remove the element from the
+   *     meta.xml.
+   */
+  public void setCreationDate(Calendar creationDate) {
+<span class="nc" id="L600">    MetaCreationDateElement creationDateEle =</span>
+<span class="nc" id="L601">        OdfElement.findFirstChildNode(MetaCreationDateElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L602" title="All 2 branches missed.">    if (creationDate == null) {</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">      if (creationDateEle != null) {</span>
+<span class="nc" id="L604">        mOfficeMetaElement.removeChild(creationDateEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L607" title="All 2 branches missed.">      if (creationDateEle == null) {</span>
+<span class="nc" id="L608">        creationDateEle = mOfficeMetaElement.newMetaCreationDateElement();</span>
+      }
+<span class="nc" id="L610">      creationDateEle.setTextContent(calendarToString(creationDate));</span>
+    }
+<span class="nc" id="L612">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;DcDateElement&lt;/code&gt; , See
+   * {@odf.element dc:date}.
+   *
+   * @return the date and time when the document was last modified;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public Calendar getDate() {
+<span class="nc" id="L622">    DcDateElement dcDateEle =</span>
+<span class="nc" id="L623">        OdfElement.findFirstChildNode(DcDateElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L624" title="All 2 branches missed.">    if (dcDateEle != null) {</span>
+<span class="nc" id="L625">      return stringToCalendar(dcDateEle.getTextContent());</span>
+    }
+<span class="nc" id="L627">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;DcDateElement&lt;/code&gt; , See
+   * {@odf.element dc:date}.
+   *
+   * @param date the date and time need to set. NULL will remove the element from the meta.xml.
+   */
+  public void setDate(Calendar date) {
+<span class="nc" id="L637">    DcDateElement dcDateEle =</span>
+<span class="nc" id="L638">        OdfElement.findFirstChildNode(DcDateElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">    if (date == null) {</span>
+<span class="nc bnc" id="L640" title="All 2 branches missed.">      if (dcDateEle != null) {</span>
+<span class="nc" id="L641">        mOfficeMetaElement.removeChild(dcDateEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L644" title="All 2 branches missed.">      if (dcDateEle == null) {</span>
+<span class="nc" id="L645">        dcDateEle = mOfficeMetaElement.newDcDateElement();</span>
+      }
+<span class="nc" id="L647">      dcDateEle.setTextContent(calendarToString(date));</span>
+    }
+<span class="nc" id="L649">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaPrintDateElement&lt;/code&gt; , See
+   * {@odf.element meta:print-date}.
+   *
+   * @return the date and time when the document was last printed;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public Calendar getPrintDate() {
+<span class="nc" id="L659">    MetaPrintDateElement printDateEle =</span>
+<span class="nc" id="L660">        OdfElement.findFirstChildNode(MetaPrintDateElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L661" title="All 2 branches missed.">    if (printDateEle != null) {</span>
+<span class="nc" id="L662">      return stringToCalendar(printDateEle.getTextContent());</span>
+    }
+<span class="nc" id="L664">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaPrintDateElement&lt;/code&gt; , See
+   * {@odf.element meta:print-date}.
+   *
+   * @param printDate the date and time need to set. NULL will remove the element from the meta.xml.
+   */
+  public void setPrintDate(Calendar printDate) {
+<span class="nc" id="L674">    MetaPrintDateElement printDateEle =</span>
+<span class="nc" id="L675">        OdfElement.findFirstChildNode(MetaPrintDateElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L676" title="All 2 branches missed.">    if (printDate == null) {</span>
+<span class="nc bnc" id="L677" title="All 2 branches missed.">      if (printDateEle != null) {</span>
+<span class="nc" id="L678">        mOfficeMetaElement.removeChild(printDateEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L681" title="All 2 branches missed.">      if (printDateEle == null) {</span>
+<span class="nc" id="L682">        printDateEle = mOfficeMetaElement.newMetaPrintDateElement();</span>
+      }
+<span class="nc" id="L684">      printDateEle.setTextContent(calendarToString(printDate));</span>
+    }
+<span class="nc" id="L686">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;DcLanguageElement&lt;/code&gt; , See
+   * {@odf.element dc:language}.
+   *
+   * @return the default language of the document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public String getLanguage() {
+<span class="nc" id="L696">    DcLanguageElement languageEle =</span>
+<span class="nc" id="L697">        OdfElement.findFirstChildNode(DcLanguageElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L698" title="All 2 branches missed.">    if (languageEle != null) {</span>
+<span class="nc" id="L699">      return languageEle.getTextContent();</span>
+    }
+<span class="nc" id="L701">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;DcLanguageElement&lt;/code&gt; , See
+   * {@odf.element dc:language}.
+   *
+   * @param language the default language need to set fo the current document. NULL will remove the
+   *     element from the meta.xml.
+   */
+  public void setLanguage(String language) {
+<span class="nc" id="L712">    DcLanguageElement languageEle =</span>
+<span class="nc" id="L713">        OdfElement.findFirstChildNode(DcLanguageElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L714" title="All 2 branches missed.">    if (language == null) {</span>
+<span class="nc bnc" id="L715" title="All 2 branches missed.">      if (languageEle != null) {</span>
+<span class="nc" id="L716">        mOfficeMetaElement.removeChild(languageEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L719" title="All 2 branches missed.">      if (languageEle == null) {</span>
+<span class="nc" id="L720">        languageEle = mOfficeMetaElement.newDcLanguageElement();</span>
+      }
+<span class="nc" id="L722">      languageEle.setTextContent(language);</span>
+    }
+<span class="nc" id="L724">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaEditingCyclesElement&lt;/code&gt; ,
+   * See {@odf.element meta:editing-cycles}.
+   *
+   * @return the number of times that the document has been edited;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public Integer getEditingCycles() {
+<span class="nc" id="L734">    MetaEditingCyclesElement editingCyclesEle =</span>
+<span class="nc" id="L735">        OdfElement.findFirstChildNode(MetaEditingCyclesElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L736" title="All 2 branches missed.">    if (editingCyclesEle != null) {</span>
+<span class="nc" id="L737">      return Integer.valueOf(editingCyclesEle.getTextContent());</span>
+    }
+<span class="nc" id="L739">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaEditingCyclesElement&lt;/code&gt; , See
+   * {@odf.element meta:editing-cycles}.
+   *
+   * @param editingCycles set the specified edit times. NULL will remove the element from the
+   *     meta.xml.
+   */
+  public void setEditingCycles(Integer editingCycles) {
+<span class="nc" id="L750">    MetaEditingCyclesElement editingCyclesEle =</span>
+<span class="nc" id="L751">        OdfElement.findFirstChildNode(MetaEditingCyclesElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L752" title="All 2 branches missed.">    if (editingCycles == null) {</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">      if (editingCyclesEle != null) {</span>
+<span class="nc" id="L754">        mOfficeMetaElement.removeChild(editingCyclesEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L757" title="All 2 branches missed.">      if (editingCyclesEle == null) {</span>
+<span class="nc" id="L758">        editingCyclesEle = mOfficeMetaElement.newMetaEditingCyclesElement();</span>
+      }
+<span class="nc" id="L760">      editingCyclesEle.setTextContent(String.valueOf(editingCycles));</span>
+    }
+<span class="nc" id="L762">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM element representation &lt;code&gt;MetaEditingDurationElement&lt;/code&gt;
+   * , See {@odf.element meta:editing-duration}.
+   *
+   * @return the total time spent editing the document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the element is not set.
+   */
+  public Duration getEditingDuration() {
+<span class="nc" id="L772">    MetaEditingDurationElement editiingDurationEle =</span>
+<span class="nc" id="L773">        OdfElement.findFirstChildNode(MetaEditingDurationElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L774" title="All 2 branches missed.">    if (editiingDurationEle != null) {</span>
+<span class="nc" id="L775">      return Duration.valueOf(editiingDurationEle.getTextContent());</span>
+    }
+<span class="nc" id="L777">    return null;</span>
+  }
+
+  /**
+   * Sets the value of the ODFDOM element representation &lt;code&gt;MetaEditingDurationElement&lt;/code&gt; ,
+   * See {@odf.element meta:editing-duration}.
+   *
+   * @param editingDuration the time need to set. NULL will remove the element from the meta.xml.
+   */
+  public void setEditingDuration(Duration editingDuration) {
+<span class="nc" id="L787">    MetaEditingDurationElement editingDurationEle =</span>
+<span class="nc" id="L788">        OdfElement.findFirstChildNode(MetaEditingDurationElement.class, mOfficeMetaElement);</span>
+<span class="nc bnc" id="L789" title="All 2 branches missed.">    if (editingDuration == null) {</span>
+<span class="nc bnc" id="L790" title="All 2 branches missed.">      if (editingDurationEle != null) {</span>
+<span class="nc" id="L791">        mOfficeMetaElement.removeChild(editingDurationEle);</span>
+      }
+    } else {
+<span class="nc bnc" id="L794" title="All 2 branches missed.">      if (editingDurationEle == null) {</span>
+<span class="nc" id="L795">        editingDurationEle = mOfficeMetaElement.newMetaEditingDurationElement();</span>
+      }
+<span class="nc" id="L797">      editingDurationEle.setTextContent(editingDuration.toString());</span>
+    }
+<span class="nc" id="L799">  }</span>
+
+  /**
+   * Receives the sub feature of OdfMetaDocumentStatistic.
+   *
+   * @return the statistics about the document which can be represented by &lt;code&gt;
+   *     OdfMetaDocumentStatistic&lt;/code&gt; feature;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the feature is not exist.
+   */
+  public OdfMetaDocumentStatistic getDocumentStatistic() {
+<span class="nc" id="L809">    MetaDocumentStatisticElement element = getDocumentStatisticElement();</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">    if (element != null) {</span>
+<span class="nc" id="L811">      return new OdfMetaDocumentStatistic(element);</span>
+    } else {
+<span class="nc" id="L813">      return null;</span>
+    }
+  }
+
+  /**
+   * Receives the OdfMetaHyperlinkBehaviour feature.
+   *
+   * @return the default behavior of hyperlinks in the current document which can be represented by
+   *     &lt;code&gt;OdfMetaHyperlinkBehaviour&lt;/code&gt; feature;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the feature is not exist.
+   */
+  public OdfMetaHyperlinkBehaviour getHyperlinkBehaviour() {
+<span class="nc" id="L825">    MetaHyperlinkBehaviourElement element = getHyperlinkBehaviourElement();</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">    if (element != null) {</span>
+<span class="nc" id="L827">      return new OdfMetaHyperlinkBehaviour(element);</span>
+    } else {
+<span class="nc" id="L829">      return null;</span>
+    }
+  }
+
+  /**
+   * Receives the OdfMetaAutoReload feature.
+   *
+   * @return the information whether the document is reloaded or replaced by another document after
+   *     a certain period of time has elapsed.
+   *     &lt;p&gt;It can be represented by &lt;code&gt;OdfMetaAutoReload&lt;/code&gt; feature;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the feature is not exist.
+   */
+  public OdfMetaAutoReload getAutoReload() {
+<span class="nc" id="L842">    MetaAutoReloadElement element = getAutoReloadElement();</span>
+<span class="nc bnc" id="L843" title="All 2 branches missed.">    if (element != null) {</span>
+<span class="nc" id="L844">      return new OdfMetaAutoReload(element);</span>
+    } else {
+<span class="nc" id="L846">      return null;</span>
+    }
+  }
+
+  /**
+   * Receives the OdfMetaTemplate feature.
+   *
+   * @return the information specified the URL for the document that was used to create a document.
+   *     &lt;p&gt;It can be represented by &lt;code&gt;OdfMetaTemplate&lt;/code&gt; feature;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the feature is not exist.
+   */
+  public OdfMetaTemplate getTemplate() {
+<span class="nc" id="L858">    MetaTemplateElement element = getTemplateElement();</span>
+<span class="nc bnc" id="L859" title="All 2 branches missed.">    if (element != null) {</span>
+<span class="nc" id="L860">      return new OdfMetaTemplate(element);</span>
+    } else {
+<span class="nc" id="L862">      return null;</span>
+    }
+  }
+
+  private MetaDocumentStatisticElement getDocumentStatisticElement() {
+<span class="nc" id="L867">    return OdfElement.findFirstChildNode(MetaDocumentStatisticElement.class, mOfficeMetaElement);</span>
+  }
+
+  private MetaHyperlinkBehaviourElement getHyperlinkBehaviourElement() {
+<span class="nc" id="L871">    return OdfElement.findFirstChildNode(MetaHyperlinkBehaviourElement.class, mOfficeMetaElement);</span>
+  }
+
+  private MetaAutoReloadElement getAutoReloadElement() {
+<span class="nc" id="L875">    return OdfElement.findFirstChildNode(MetaAutoReloadElement.class, mOfficeMetaElement);</span>
+  }
+
+  private MetaTemplateElement getTemplateElement() {
+<span class="nc" id="L879">    return OdfElement.findFirstChildNode(MetaTemplateElement.class, mOfficeMetaElement);</span>
+  }
+
+  /**
+   * Change valid string of calendar to Calendar type.
+   *
+   * @param baseDate the string of a calender
+   * @return the object of Calender
+   */
+  private Calendar stringToCalendar(String baseDate) {
+    // Calendar calendar=new GregorianCalendar();
+<span class="nc" id="L890">    Calendar calendar = Calendar.getInstance();</span>
+<span class="nc" id="L891">    Date d1 = null;</span>
+<span class="nc" id="L892">    SimpleDateFormat sdf = new SimpleDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;);</span>
+
+    try {
+<span class="nc" id="L895">      d1 = sdf.parse(baseDate);</span>
+<span class="nc" id="L896">    } catch (Exception e) {</span>
+      // invalid format or null value in meta.xml
+      // d1=new Date();
+<span class="nc" id="L899">    }</span>
+
+<span class="nc" id="L901">    calendar.setTime(d1);</span>
+<span class="nc" id="L902">    return calendar;</span>
+  }
+
+  /**
+   * Convert a &lt;code&gt;Canlender&lt;/code&gt; object to &lt;code&gt;String&lt;/code&gt; object.
+   *
+   * @param calendar an instanceof &lt;code&gt;Canlender&lt;/code&gt;
+   * @return the String format(yyyy-MM-dd'T'HH:mm:ss) of Calendar.
+   */
+  private String calendarToString(Calendar calendar) {
+<span class="nc" id="L912">    return new SimpleDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;).format(calendar.getTime());</span>
+  }
+
+  /**
+   * @param enableAutomaticUpdate If the automatic update of metadata is enabled, metadata such as
+   *     last modified data is set during saving the document. The default is &lt;code&gt;true&lt;/code&gt;,
+   *     disabling the default allows to load and save a document without changing any data.
+   */
+  public void setAutomaticUpdate(boolean enableAutomaticUpdate) {
+<span class="nc" id="L921">    mAutomaticUpdate = enableAutomaticUpdate;</span>
+<span class="nc" id="L922">  }</span>
+
+  /**
+   * @return If the automatic update of metadata is enabled, metadata such as last modified data is
+   *     set during saving the document. The default is &lt;code&gt;true&lt;/code&gt;, disabling the default
+   *     allows to load and save a document without changing any data.
+   */
+  public boolean hasAutomaticUpdate() {
+<span class="nc" id="L930">    return mAutomaticUpdate;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc bnc" id="L935" title="All 2 branches missed.">    if (mOfficeMetaElement != null) {</span>
+<span class="nc" id="L936">      return mOfficeMetaElement.toString();</span>
+    } else {
+<span class="nc" id="L938">      return null;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

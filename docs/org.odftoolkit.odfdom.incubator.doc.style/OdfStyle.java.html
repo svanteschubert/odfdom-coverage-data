@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.style</a> &gt; <span class="el_source">OdfStyle.java</span></div><h1>OdfStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.style;
+
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.OdfStylePropertiesBase;
+import org.odftoolkit.odfdom.dom.element.style.StyleStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Attr;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public class OdfStyle extends StyleStyleElement {
+
+<span class="nc" id="L49">  private static final Logger LOG = Logger.getLogger(OdfStyle.class.getName());</span>
+  /** */
+  private static final long serialVersionUID = 1114614579014922410L;
+
+  public OdfStyle(OdfFileDom ownerDoc) {
+<span class="nc" id="L54">    super(ownerDoc);</span>
+<span class="nc" id="L55">  }</span>
+
+  @Override
+  public OdfStyleBase getParentStyle() {
+<span class="nc" id="L59">    String parent = this.getStyleParentStyleNameAttribute();</span>
+<span class="nc" id="L60">    OdfStyleBase parentStyle = null;</span>
+<span class="nc bnc" id="L61" title="All 4 branches missed.">    if ((parent != null) &amp;&amp; (parent.length() != 0)) {</span>
+<span class="nc" id="L62">      parentStyle =</span>
+<span class="nc" id="L63">          ((OdfSchemaDocument) mPackageDocument).getDocumentStyles().getStyle(parent, getFamily());</span>
+    } else {
+<span class="nc" id="L65">      OdfOfficeStyles documentStyles = ((OdfSchemaDocument) mPackageDocument).getDocumentStyles();</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">      if (documentStyles != null) {</span>
+<span class="nc" id="L67">        parentStyle = documentStyles.getDefaultStyle(getFamily());</span>
+      }
+    }
+<span class="nc" id="L70">    return parentStyle;</span>
+  }
+
+  @Override
+  public OdfStyleFamily getFamily() {
+<span class="nc" id="L75">    String family = getStyleFamilyAttribute();</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">    if (family != null) {</span>
+<span class="nc" id="L77">      return OdfStyleFamily.valueOf(family);</span>
+    } else {
+<span class="nc" id="L79">      return null;</span>
+    }
+  }
+
+  /**
+   * @return true if there is a property other than the style:family, style:name and
+   *     style:parent-style-name with a value other than &quot;null&quot;, or a similar attribute on the
+   *     properties element
+   */
+  public boolean hasPropertyAttribute() {
+<span class="nc" id="L89">    boolean hasPropertyAttributes = false;</span>
+<span class="nc" id="L90">    NodeList children = this.getChildNodes();</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">    for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L92">      Node child = children.item(i);</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">      if ((child != null) &amp;&amp; OdfStylePropertiesBase.class.isInstance(child)) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (hasPropertyAttributes((OdfElement) child)) {</span>
+<span class="nc" id="L95">          hasPropertyAttributes = true;</span>
+<span class="nc" id="L96">          break;</span>
+        }
+      }
+    }
+<span class="nc" id="L100">    return hasPropertyAttributes;</span>
+  }
+
+  /**
+   * If a property element has more than the three default attributes style:parent-style-name,
+   * style:name and style:family, it is considered not empty!
+   */
+  private static boolean hasPropertyAttributes(OdfElement propsElement) {
+<span class="nc" id="L108">    boolean hasPropertyAttributes = false;</span>
+
+<span class="nc" id="L110">    NamedNodeMap attrs = propsElement.getAttributes();</span>
+<span class="nc" id="L111">    int attrsCount = attrs.getLength();</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    for (int i = 0; i &lt; attrsCount; i++) {</span>
+<span class="nc" id="L113">      Attr a = (Attr) attrs.item(i);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">      if (a.getNamespaceURI().equals(OdfDocumentNamespace.STYLE.getUri())) {</span>
+        // none of the below should be in here, as we are looking at teh properties..
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (!(a.getLocalName().equals(&quot;family&quot;)</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            || a.getLocalName().equals(&quot;name&quot;)</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            || a.getLocalName().equals(&quot;parent-style-name&quot;))) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">          if (!a.getValue().equals(&quot;null&quot;)) {</span>
+<span class="nc" id="L120">            hasPropertyAttributes = true;</span>
+<span class="nc" id="L121">            break;</span>
+          }
+        }
+      } else {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (!a.getValue().equals(&quot;null&quot;)) {</span>
+<span class="nc" id="L126">          hasPropertyAttributes = true;</span>
+<span class="nc" id="L127">          break;</span>
+        }
+      }
+    }
+<span class="nc" id="L131">    return hasPropertyAttributes;</span>
+  }
+
+  /**
+   * Two spans having the same range will be provided, only one will remain, styles are being
+   * merged.
+   *
+   * &lt;p&gt;Merges the automatic styles of the two given spans, uses one template style. The styles from
+   * the inner span have the higher priority. The outer span will be deleted afterwards.
+   *
+   * @return the remaining stylableElement of the two
+   */
+  // ToDo: Refactoring - the style changs are only dependent on the state of the style-dominant span
+  // (refactor with method below)
+  public static OdfStylableElement mergeSelectionWithSameRange(
+      OdfStylableElement higherPrioSpan, OdfStylableElement lowerPrioSpan) {
+    // only do the merging of both spans, if they really exist
+<span class="nc bnc" id="L148" title="All 4 branches missed.">    if (higherPrioSpan != null &amp;&amp; lowerPrioSpan != null) {</span>
+<span class="nc" id="L149">      boolean innerHasAutomatic = higherPrioSpan.hasAutomaticStyle();</span>
+<span class="nc" id="L150">      boolean innerHasTemplate = higherPrioSpan.hasDocumentStyle();</span>
+<span class="nc" id="L151">      boolean outerHasAutomatic = lowerPrioSpan.hasAutomaticStyle();</span>
+<span class="nc" id="L152">      boolean outerHasTemplate = lowerPrioSpan.hasDocumentStyle();</span>
+
+<span class="nc" id="L154">      OdfOfficeAutomaticStyles autoStyles = lowerPrioSpan.getOrCreateAutomaticStyles();</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">      if (autoStyles == null) {</span>
+<span class="nc" id="L156">        OdfFileDom fileDom = ((OdfFileDom) lowerPrioSpan.getOwnerDocument());</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (fileDom instanceof OdfContentDom) {</span>
+<span class="nc" id="L158">          autoStyles = ((OdfContentDom) fileDom).getOrCreateAutomaticStyles();</span>
+        } else {
+<span class="nc" id="L160">          autoStyles = ((OdfStylesDom) fileDom).getOrCreateAutomaticStyles();</span>
+        }
+      }
+<span class="nc" id="L163">      OdfStyle innerAutoStyle = higherPrioSpan.getAutomaticStyle();</span>
+<span class="nc" id="L164">      OdfStyle outerAutoStyle = lowerPrioSpan.getAutomaticStyle();</span>
+<span class="nc" id="L165">      StyleTextPropertiesElement innerPropsElement = null;</span>
+      StyleTextPropertiesElement outerPropsElement;
+      // in case there is an automatic style, make sure there is a property element
+<span class="nc bnc" id="L168" title="All 2 branches missed.">      if (innerAutoStyle != null) {</span>
+<span class="nc" id="L169">        innerPropsElement =</span>
+            (StyleTextPropertiesElement)
+<span class="nc" id="L171">                innerAutoStyle.getChildElement(</span>
+<span class="nc" id="L172">                    StyleTextPropertiesElement.ELEMENT_NAME.getUri(),</span>
+<span class="nc" id="L173">                    StyleTextPropertiesElement.ELEMENT_NAME.getLocalName(),</span>
+                    0);
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (innerPropsElement != null) {</span>
+<span class="nc" id="L176">          NodeList textPropsChildren = innerPropsElement.getChildNodes();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">          if (textPropsChildren == null</span>
+<span class="nc bnc" id="L178" title="All 4 branches missed.">              || textPropsChildren.getLength() == 0 &amp;&amp; !hasPropertyAttributes(innerPropsElement)) {</span>
+<span class="nc" id="L179">            innerHasAutomatic = false;</span>
+          }
+<span class="nc" id="L181">        } else {</span>
+<span class="nc" id="L182">          innerAutoStyle.appendChild(</span>
+<span class="nc" id="L183">              new StyleTextPropertiesElement((OdfFileDom) higherPrioSpan.getOwnerDocument()));</span>
+<span class="nc" id="L184">          innerHasAutomatic = false;</span>
+        }
+      } else {
+<span class="nc" id="L187">        innerHasAutomatic = false;</span>
+      }
+<span class="nc bnc" id="L189" title="All 2 branches missed.">      if (outerAutoStyle != null) {</span>
+<span class="nc" id="L190">        outerPropsElement =</span>
+            (StyleTextPropertiesElement)
+<span class="nc" id="L192">                outerAutoStyle.getChildElement(</span>
+<span class="nc" id="L193">                    StyleTextPropertiesElement.ELEMENT_NAME.getUri(),</span>
+<span class="nc" id="L194">                    StyleTextPropertiesElement.ELEMENT_NAME.getLocalName(),</span>
+                    0);
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        if (outerPropsElement != null) {</span>
+<span class="nc" id="L197">          NodeList textPropsChildren = outerPropsElement.getChildNodes();</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">          if (textPropsChildren == null</span>
+<span class="nc bnc" id="L199" title="All 4 branches missed.">              || textPropsChildren.getLength() == 0 &amp;&amp; !hasPropertyAttributes(outerPropsElement)) {</span>
+<span class="nc" id="L200">            outerHasAutomatic = false;</span>
+          }
+<span class="nc" id="L202">        } else {</span>
+<span class="nc" id="L203">          outerAutoStyle.appendChild(</span>
+<span class="nc" id="L204">              new StyleTextPropertiesElement((OdfFileDom) lowerPrioSpan.getOwnerDocument()));</span>
+<span class="nc" id="L205">          outerHasAutomatic = false;</span>
+        }
+      } else {
+<span class="nc" id="L208">        outerHasAutomatic = false;</span>
+      }
+      // if one of the styles has no style
+<span class="nc bnc" id="L211" title="All 8 branches missed.">      if (!innerHasAutomatic &amp;&amp; !innerHasTemplate || !outerHasAutomatic &amp;&amp; !outerHasTemplate) {</span>
+        // if the outer has no style, do nothing as it will be deleted
+<span class="nc bnc" id="L213" title="All 4 branches missed.">        if (!outerHasAutomatic &amp;&amp; !outerHasTemplate) {</span>
+          // KEEP INNER - delete OUTER STYLE &amp; SPAN
+          // Done as the deletion is after these conditions
+        } else { // the inner has no style, so just reference inner span to the outer style
+          // KEEP INNER SPAN (ALWAYS - due to the content)
+          // point to the new style with @style:name
+<span class="nc" id="L219">          higherPrioSpan.setStyleName(lowerPrioSpan.getStyleName());</span>
+        }
+<span class="nc bnc" id="L221" title="All 4 branches missed.">      } else if (innerHasAutomatic &amp;&amp; !innerHasTemplate) { // *** INNER ONLY AUTO</span>
+<span class="nc bnc" id="L222" title="All 4 branches missed.">        if (outerHasAutomatic &amp;&amp; !outerHasTemplate) { // *** INNER ONLY AUTO &amp; OUTER ONLY AUTO</span>
+          // KEEP OUTER STYLE:
+          // override OUTER properties
+<span class="nc" id="L225">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(outerAutoStyle);</span>
+<span class="nc" id="L226">          StyleTextPropertiesElement newPropsElement =</span>
+              (StyleTextPropertiesElement)
+<span class="nc" id="L228">                  newAutoStyle.getChildElement(</span>
+<span class="nc" id="L229">                      StyleTextPropertiesElement.ELEMENT_NAME.getUri(),</span>
+<span class="nc" id="L230">                      StyleTextPropertiesElement.ELEMENT_NAME.getLocalName(),</span>
+                      0);
+<span class="nc" id="L232">          OdfElement.copyAttributes(innerPropsElement, newPropsElement);</span>
+
+          // KEEP INNER SPAN (ALWAYS - due to the content)
+          // point to the new style with @style:name
+<span class="nc" id="L236">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+
+<span class="nc bnc" id="L238" title="All 4 branches missed.">        } else if (!outerHasAutomatic</span>
+            &amp;&amp; outerHasTemplate) { // *** INNER ONLY AUTO &amp; OUTER ONLY TEMPLATE
+          // KEEP INNER STYLE:
+          // overtake OUTER template style parent
+<span class="nc" id="L242">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(innerAutoStyle);</span>
+          String parentStyle;
+<span class="nc bnc" id="L244" title="All 2 branches missed.">          if (outerAutoStyle == null) {</span>
+            // if there is no empty automatic style, take the template style name from the span
+<span class="nc" id="L246">            parentStyle = lowerPrioSpan.getStyleName();</span>
+          } else {
+            // if there is an empty automatic style, take the template style name from the style
+<span class="nc" id="L249">            parentStyle = outerAutoStyle.getStyleParentStyleNameAttribute();</span>
+          }
+<span class="nc" id="L251">          newAutoStyle.setStyleParentStyleNameAttribute(parentStyle);</span>
+<span class="nc" id="L252">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L253">        } else { // *** INNER ONLY AUTO &amp; OUTER BOTH</span>
+          // KEEP OUTER STYLE:
+          // override OUTER properties
+<span class="nc" id="L256">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(outerAutoStyle);</span>
+<span class="nc" id="L257">          StyleTextPropertiesElement newPropsElement =</span>
+              (StyleTextPropertiesElement)
+<span class="nc" id="L259">                  newAutoStyle.getChildElement(</span>
+<span class="nc" id="L260">                      StyleTextPropertiesElement.ELEMENT_NAME.getUri(),</span>
+<span class="nc" id="L261">                      StyleTextPropertiesElement.ELEMENT_NAME.getLocalName(),</span>
+                      0);
+<span class="nc" id="L263">          OdfElement.copyAttributes(innerPropsElement, newPropsElement);</span>
+          // overtake OUTER template style parent
+<span class="nc" id="L265">          newAutoStyle.setStyleParentStyleNameAttribute(</span>
+<span class="nc" id="L266">              innerAutoStyle.getStyleParentStyleNameAttribute());</span>
+
+          // overtake OUTER span @style:name
+<span class="nc" id="L269">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L270">        }</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">      } else if (!innerHasAutomatic &amp;&amp; innerHasTemplate) { // *** INNER ONLY TEMPLATE</span>
+<span class="nc bnc" id="L272" title="All 4 branches missed.">        if (outerHasAutomatic &amp;&amp; !outerHasTemplate) { // *** INNER ONLY TEMPLATE &amp; OUTER ONLY AUTO</span>
+          // KEEP INNER
+          // create INNER automatic styles
+<span class="nc" id="L275">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(outerAutoStyle);</span>
+<span class="nc" id="L276">          newAutoStyle.setStyleParentStyleNameAttribute(higherPrioSpan.getStyleName());</span>
+<span class="nc" id="L277">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+
+<span class="nc bnc" id="L279" title="All 4 branches missed.">        } else if (!outerHasAutomatic</span>
+            &amp;&amp; outerHasTemplate) { // *** INNER ONLY TEMPLATE &amp; OUTER ONLY TEMPLATE
+          // KEEP INNER - delete OUTER STYLE &amp; SPAN
+          // Done as the deletion of span is after these conditions
+        } else { // *** INNER ONLY TEMPLATE &amp; OUTER BOTH
+          // KEEP INNER
+          // overtake OUTER properties element, by cloning OUTER style
+<span class="nc" id="L286">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(outerAutoStyle);</span>
+          // overtake INNER template style parent
+<span class="nc" id="L288">          newAutoStyle.setStyleParentStyleNameAttribute(higherPrioSpan.getStyleName());</span>
+<span class="nc" id="L289">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L290">        }</span>
+      } else { // *** INNER BOTH
+<span class="nc bnc" id="L292" title="All 4 branches missed.">        if (outerHasAutomatic &amp;&amp; !outerHasTemplate) { // *** INNER BOTH &amp; OUTER ONLY AUTO</span>
+          // KEEP OUTER:
+          // overtake OUTER properties element, by cloning OUTER style
+<span class="nc" id="L295">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(outerAutoStyle);</span>
+
+<span class="nc" id="L297">          StyleTextPropertiesElement newPropsElement =</span>
+              (StyleTextPropertiesElement)
+<span class="nc" id="L299">                  newAutoStyle.getChildElement(</span>
+<span class="nc" id="L300">                      StyleTextPropertiesElement.ELEMENT_NAME.getUri(),</span>
+<span class="nc" id="L301">                      StyleTextPropertiesElement.ELEMENT_NAME.getLocalName(),</span>
+                      0);
+<span class="nc" id="L303">          OdfElement.copyAttributes(innerPropsElement, newPropsElement);</span>
+          // overtake INNER template style parent
+<span class="nc" id="L305">          newAutoStyle.setStyleParentStyleNameAttribute(</span>
+<span class="nc" id="L306">              innerAutoStyle.getStyleParentStyleNameAttribute());</span>
+<span class="nc" id="L307">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+<span class="nc bnc" id="L308" title="All 4 branches missed.">        } else if (!outerHasAutomatic &amp;&amp; outerHasTemplate) { // *** INNER BOTH &amp; OUTER ONLY TEMPLATE</span>
+          // KEEP INNER - delete OUTER STYLE &amp; SPAN
+          // Done as the deletion is after these conditions
+        } else { // *** INNER BOTH &amp; OUTER BOTH
+          // KEEP OUTER
+          // overtake OUTER properties element, by cloning OUTER style
+<span class="nc" id="L314">          OdfStyle newAutoStyle = autoStyles.makeStyleUnique(outerAutoStyle);</span>
+
+<span class="nc" id="L316">          StyleTextPropertiesElement newPropsElement =</span>
+              (StyleTextPropertiesElement)
+<span class="nc" id="L318">                  newAutoStyle.getChildElement(</span>
+<span class="nc" id="L319">                      StyleTextPropertiesElement.ELEMENT_NAME.getUri(),</span>
+<span class="nc" id="L320">                      StyleTextPropertiesElement.ELEMENT_NAME.getLocalName(),</span>
+                      0);
+<span class="nc" id="L322">          OdfElement.copyAttributes(innerPropsElement, newPropsElement);</span>
+          // overtake INNER template style parent
+<span class="nc" id="L324">          newAutoStyle.setStyleParentStyleNameAttribute(</span>
+<span class="nc" id="L325">              innerAutoStyle.getStyleParentStyleNameAttribute());</span>
+<span class="nc" id="L326">          higherPrioSpan.setStyleName(newAutoStyle.getStyleNameAttribute());</span>
+        }
+      }
+<span class="nc" id="L329">      OdfElement.removeSingleElement(lowerPrioSpan);</span>
+    }
+<span class="nc" id="L331">    return higherPrioSpan;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L336">    return &quot;[name: &quot;</span>
+<span class="nc" id="L337">        + this.getStyleNameAttribute()</span>
+        + &quot; family: &quot;
+<span class="nc" id="L339">        + this.getStyleFamilyAttribute()</span>
+        + &quot;]&quot;;
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

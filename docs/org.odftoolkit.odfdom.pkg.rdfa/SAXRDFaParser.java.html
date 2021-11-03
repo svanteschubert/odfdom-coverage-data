@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SAXRDFaParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.rdfa</a> &gt; <span class="el_source">SAXRDFaParser.java</span></div><h1>SAXRDFaParser.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.rdfa;
+
+import java.util.Collection;
+import javax.xml.stream.XMLEventFactory;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.events.XMLEvent;
+import net.rootdev.javardfa.uri.IRIResolver;
+import org.xml.sax.Attributes;
+import org.xml.sax.Locator;
+import org.xml.sax.SAXException;
+
+/** A RDFa parser for SAX */
+public class SAXRDFaParser extends RDFaParser {
+
+  public static SAXRDFaParser createInstance(JenaSink sink) {
+<span class="nc" id="L39">    URIExtractor extractor = new URIExtractorImpl(new IRIResolver(), true);</span>
+<span class="nc" id="L40">    sink.setExtractor(extractor);</span>
+<span class="nc" id="L41">    return new SAXRDFaParser(</span>
+<span class="nc" id="L42">        sink, XMLOutputFactory.newInstance(), XMLEventFactory.newInstance(), extractor);</span>
+  }
+
+  private SAXRDFaParser(
+      JenaSink sink,
+      XMLOutputFactory outputFactory,
+      XMLEventFactory eventFactory,
+      URIExtractor extractor) {
+<span class="nc" id="L50">    super(sink, outputFactory, eventFactory, extractor);</span>
+<span class="nc" id="L51">  }</span>
+
+  public void emitTriples(String subj, Collection&lt;String&gt; props, String obj) {
+<span class="nc bnc" id="L54" title="All 2 branches missed.">    for (String prop : props) {</span>
+<span class="nc" id="L55">      sink.addObject(subj, prop, obj);</span>
+<span class="nc" id="L56">    }</span>
+<span class="nc" id="L57">  }</span>
+
+  public void emitTriplesPlainLiteral(
+      String subj, Collection&lt;String&gt; props, String lex, String language) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">    for (String prop : props) {</span>
+<span class="nc" id="L62">      sink.addLiteral(subj, prop, lex, language, null);</span>
+<span class="nc" id="L63">    }</span>
+<span class="nc" id="L64">  }</span>
+
+  public void emitTriplesDatatypeLiteral(
+      String subj, Collection&lt;String&gt; props, String lex, String datatype) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    for (String prop : props) {</span>
+<span class="nc" id="L69">      sink.addLiteral(subj, prop, lex, null, datatype);</span>
+<span class="nc" id="L70">    }</span>
+<span class="nc" id="L71">  }</span>
+
+  public void setDocumentLocator(Locator arg0) {
+<span class="nc" id="L74">    this.locator = arg0;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">    if (locator.getSystemId() != null) this.setBase(arg0.getSystemId());</span>
+<span class="nc" id="L76">  }</span>
+
+  public void startDocument() throws SAXException {
+<span class="nc" id="L79">    sink.start();</span>
+<span class="nc" id="L80">  }</span>
+
+  public void endDocument() throws SAXException {
+<span class="nc" id="L83">    sink.end();</span>
+<span class="nc" id="L84">    sink.setContext(context);</span>
+<span class="nc" id="L85">  }</span>
+
+  public void startPrefixMapping(String arg0, String arg1) throws SAXException {
+<span class="nc" id="L88">    context.setNamespaceURI(arg0, arg1);</span>
+<span class="nc" id="L89">    extractor.setNamespaceURI(arg0, arg1);</span>
+<span class="nc" id="L90">    sink.addPrefix(arg0, arg1);</span>
+<span class="nc" id="L91">  }</span>
+
+<span class="nc" id="L93">  public void endPrefixMapping(String arg0) throws SAXException {}</span>
+
+  public void startElement(String arg0, String localname, String qname, Attributes arg3)
+      throws SAXException {
+<span class="nc" id="L97">    super.beginRDFaElement(arg0, localname, qname, arg3);</span>
+<span class="nc" id="L98">  }</span>
+
+  public void endElement(String arg0, String localname, String qname) throws SAXException {
+<span class="nc" id="L101">    super.endRDFaElement(arg0, localname, qname);</span>
+<span class="nc" id="L102">  }</span>
+
+  public void characters(char[] arg0, int arg1, int arg2) throws SAXException {
+<span class="nc" id="L105">    super.writeCharacters(String.valueOf(arg0, arg1, arg2));</span>
+<span class="nc" id="L106">  }</span>
+
+  public void ignorableWhitespace(char[] arg0, int arg1, int arg2) throws SAXException {
+    // System.err.println(&quot;Whitespace...&quot;);
+<span class="nc bnc" id="L110" title="All 2 branches missed.">    if (literalCollector.isCollecting()) {</span>
+<span class="nc" id="L111">      XMLEvent e = eventFactory.createIgnorableSpace(String.valueOf(arg0, arg1, arg2));</span>
+<span class="nc" id="L112">      literalCollector.handleEvent(e);</span>
+    }
+<span class="nc" id="L114">  }</span>
+
+<span class="nc" id="L116">  public void processingInstruction(String arg0, String arg1) throws SAXException {}</span>
+
+<span class="nc" id="L118">  public void skippedEntity(String arg0) throws SAXException {}</span>
+}
+
+/*
+ * (c) Copyright 2009 University of Bristol All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer. 2. Redistributions in
+ * binary form must reproduce the above copyright notice, this list of
+ * conditions and the following disclaimer in the documentation and/or other
+ * materials provided with the distribution. 3. The name of the author may not
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

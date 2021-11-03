@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfXMLHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfXMLHelper.java</span></div><h1>OdfXMLHelper.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Templates;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import org.odftoolkit.odfdom.pkg.rdfa.Util;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentType;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+
+<span class="nc" id="L52">class OdfXMLHelper {</span>
+
+  /**
+   * create an XMLReader with a Resolver set to parse content in a ODF Package
+   *
+   * @param pkg the ODF Package
+   * @return a SAX XMLReader
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public XMLReader newXMLReader(OdfPackage pkg) throws SAXException, ParserConfigurationException {
+<span class="nc" id="L63">    XMLReader xmlReader = pkg.getXMLReader();</span>
+<span class="nc" id="L64">    xmlReader.setEntityResolver(pkg.getEntityResolver());</span>
+<span class="nc" id="L65">    return xmlReader;</span>
+  }
+
+  /**
+   * use SAX parser to parse content of package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param contentHandler a SAX Content handler to receive SAX Events
+   * @param errorHandler a SAX Error handler to be called on errors during parsing
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   */
+  public void parse(
+      OdfPackage pkg, String path, ContentHandler contentHandler, ErrorHandler errorHandler)
+      throws SAXException, ParserConfigurationException, IOException, IllegalArgumentException,
+          TransformerConfigurationException, TransformerException {
+
+<span class="nc" id="L87">    InputStream is = null;</span>
+    try {
+<span class="nc" id="L89">      is = pkg.getInputStream(path);</span>
+<span class="nc" id="L90">      XMLReader reader = newXMLReader(pkg);</span>
+
+<span class="nc" id="L92">      String uri = pkg.getBaseURI() + path;</span>
+
+<span class="nc bnc" id="L94" title="All 2 branches missed.">      if (contentHandler != null) {</span>
+<span class="nc" id="L95">        reader.setContentHandler(contentHandler);</span>
+      }
+<span class="nc bnc" id="L97" title="All 2 branches missed.">      if (errorHandler != null) {</span>
+<span class="nc" id="L98">        reader.setErrorHandler(errorHandler);</span>
+      }
+
+<span class="nc" id="L101">      InputSource ins = new InputSource(is);</span>
+<span class="nc" id="L102">      ins.setSystemId(uri);</span>
+
+<span class="nc" id="L104">      reader.parse(ins);</span>
+<span class="nc" id="L105">    } catch (Exception ex) {</span>
+<span class="nc" id="L106">      Logger.getLogger(OdfXMLHelper.class.getName()).log(Level.SEVERE, null, ex);</span>
+    } finally {
+      try {
+<span class="nc" id="L109">        is.close();</span>
+<span class="nc" id="L110">      } catch (IOException ex) {</span>
+<span class="nc" id="L111">        Logger.getLogger(OdfXMLHelper.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L112">      }</span>
+    }
+<span class="nc" id="L114">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templatePath a path to a file in the filesystem containing an XSL Template
+   * @param outPath a path in the filesystem for the output of the XSL Transformation
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, String templatePath, String outPath)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+
+<span class="nc" id="L134">    transform(pkg, path, new File(templatePath), new File(outPath));</span>
+<span class="nc" id="L135">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templateSource TraX Source of an XSL Transformation Template
+   * @param outPath path to an output file for the XSL Transformation
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, Source templateSource, String outPath)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+
+<span class="nc" id="L155">    transform(pkg, path, templateSource, new File(outPath));</span>
+<span class="nc" id="L156">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templateSource TraX Source of an XSL Transformation
+   * @param out an output File
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, Source templateSource, File out)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+
+<span class="nc" id="L176">    transform(pkg, path, templateSource, new StreamResult(out));</span>
+<span class="nc" id="L177">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package insert result back to package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templatePath path inside the filesystem to an XSL template file
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, String templatePath)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+<span class="nc" id="L195">    transform(pkg, path, new File(templatePath));</span>
+<span class="nc" id="L196">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param template File containing an XSLT Template
+   * @param out File for the XSLT ouput
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, File template, File out)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+
+<span class="nc" id="L216">    TransformerFactory transformerfactory = TransformerFactory.newInstance();</span>
+
+<span class="nc" id="L218">    Templates templates = transformerfactory.newTemplates(new StreamSource(template));</span>
+<span class="nc" id="L219">    transform(pkg, path, templates, new StreamResult(out));</span>
+<span class="nc" id="L220">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package insert result back to package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param template a File containing an XSLT Template
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, File template)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+
+<span class="nc" id="L239">    TransformerFactory transformerfactory = TransformerFactory.newInstance();</span>
+
+<span class="nc" id="L241">    Templates templates = transformerfactory.newTemplates(new StreamSource(template));</span>
+<span class="nc" id="L242">    transform(pkg, path, templates);</span>
+<span class="nc" id="L243">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templateSource TraX Source of an XSLT Template
+   * @param result TraX Result of XSL-Tranformation
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, Source templateSource, Result result)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+<span class="nc" id="L262">    TransformerFactory transformerfactory = TransformerFactory.newInstance();</span>
+<span class="nc" id="L263">    transformerfactory.setURIResolver(pkg.getURIResolver());</span>
+
+<span class="nc" id="L265">    Templates templates = transformerfactory.newTemplates(templateSource);</span>
+<span class="nc" id="L266">    transform(pkg, path, templates, result);</span>
+<span class="nc" id="L267">  }</span>
+
+  /**
+   * Does an XSL-Transformation on content contained in package.&lt;br&gt;
+   * &lt;br&gt;
+   * There are three default parameters provided to the transformation: There are three default
+   * parameters provided to the transformation:
+   *
+   * &lt;ol&gt;
+   *   &lt;li&gt;&lt;b&gt;sourceURL:&lt;/b&gt; the URL of the source directory
+   *   &lt;li&gt;&lt;b&gt;sourceBaseURL:&lt;/b&gt; baseURL of the source file (the package). This URL necessary to
+   *       access any content within the package from the XSLT scripts. The relative package path
+   *       will concatenated after the 'sourceBaseURL'.
+   *   &lt;li&gt;&lt;b&gt;targetURL:&lt;/b&gt; the URL of the target directory
+   *   &lt;li&gt;&lt;b&gt;targetBaseURL:&lt;/b&gt;the baseURL of the target file
+   * &lt;/ol&gt;
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templates TraX XSLT Template
+   * @param result TraX XSLT Result
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, Templates templates, Result result)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+    try {
+
+<span class="nc" id="L300">      Source source = null;</span>
+<span class="nc" id="L301">      String uri = pkg.getBaseURI() + path;</span>
+<span class="nc" id="L302">      Document doc = pkg.getDom(path);</span>
+<span class="nc" id="L303">      source = new DOMSource(doc);</span>
+<span class="nc" id="L304">      Transformer transformer = templates.newTransformer();</span>
+<span class="nc" id="L305">      transformer.setURIResolver(pkg.getURIResolver());</span>
+
+<span class="nc" id="L307">      transformer.setParameter(&quot;sourceURL&quot;, uri);</span>
+      // switch to this, for odf2rdf.xsl grddl transformation
+<span class="nc" id="L309">      transformer.setParameter(&quot;sourceBaseURL&quot;, Util.getRDFBaseUri(pkg.getBaseURI(), path));</span>
+
+<span class="nc" id="L311">      uri = result.getSystemId();</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">      if (uri != null) {</span>
+<span class="nc" id="L313">        transformer.setParameter(&quot;targetURL&quot;, uri);</span>
+<span class="nc" id="L314">        int i = uri.lastIndexOf('/');</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (i &gt; 0) {</span>
+<span class="nc" id="L316">          uri = uri.substring(0, i + 1);</span>
+<span class="nc" id="L317">          transformer.setParameter(&quot;targetBaseURL&quot;, uri);</span>
+        }
+      }
+<span class="nc" id="L320">      DocumentType doctype = doc.getDoctype();</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">      if (doctype != null) {</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">        if (doctype.getPublicId() != null) {</span>
+<span class="nc" id="L323">          transformer.setParameter(&quot;publicType&quot;, doctype.getPublicId());</span>
+        }
+<span class="nc bnc" id="L325" title="All 2 branches missed.">        if (doctype.getSystemId() != null) {</span>
+<span class="nc" id="L326">          transformer.setParameter(&quot;systemType&quot;, doctype.getSystemId());</span>
+        }
+      }
+
+<span class="nc" id="L330">      transformer.transform(source, result);</span>
+<span class="nc" id="L331">    } catch (Exception ex) {</span>
+<span class="nc" id="L332">      Logger.getLogger(OdfXMLHelper.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);</span>
+<span class="nc" id="L333">    }</span>
+<span class="nc" id="L334">  }</span>
+
+  /**
+   * Do XSL-Transformation on content contained in package and insert result back to package
+   *
+   * @param pkg a OdfPackage
+   * @param path a path inside the OdfPackage, eg. to a contained content.xml stream
+   * @param templates Trax XSLT Template
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   */
+  public void transform(OdfPackage pkg, String path, Templates templates)
+      throws TransformerConfigurationException, TransformerException, IOException,
+          IllegalArgumentException, SAXException, ParserConfigurationException {
+
+<span class="nc" id="L353">    Result result = null;</span>
+<span class="nc" id="L354">    ByteArrayOutputStream baos = null;</span>
+
+    //		if (pkg.isDomCached(path)) {
+    //			result = new DOMResult();
+    //		} else {
+<span class="nc" id="L359">    baos = new ByteArrayOutputStream();</span>
+<span class="nc" id="L360">    result = new StreamResult(baos);</span>
+    //		}
+
+<span class="nc" id="L363">    transform(pkg, path, templates, result);</span>
+
+    //		if (pkg.isDomCached(path)) {
+    //			try {
+    //				pkg.insert((Document) ((DOMResult) result).getNode(), path, null);
+    //			} catch (Exception ex) {
+    //				Logger.getLogger(OdfXMLHelper.class.getName()).log(Level.SEVERE, null, ex);
+    //			}
+    //		} else {
+    try {
+<span class="nc" id="L373">      byte[] data = baos.toByteArray();</span>
+<span class="nc" id="L374">      pkg.insert(data, path, &quot;text/xml&quot;);</span>
+<span class="nc" id="L375">    } catch (Exception ex) {</span>
+<span class="nc" id="L376">      Logger.getLogger(OdfXMLHelper.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L377">    }</span>
+    //		}
+
+<span class="nc" id="L380">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

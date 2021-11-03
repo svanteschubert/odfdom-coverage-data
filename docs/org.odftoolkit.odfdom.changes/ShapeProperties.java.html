@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShapeProperties.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">ShapeProperties.java</span></div><h1>ShapeProperties.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.changes;
+
+import static org.odftoolkit.odfdom.changes.OperationConstants.*;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.dom.element.draw.DrawFrameElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.w3c.dom.Node;
+
+/** The status of frames */
+public class ShapeProperties extends CachedComponent {
+
+  private static final long serialVersionUID = 1L;
+  // *** FRAME PROPERTIES ***
+  // Required as the component draw frame can only be delayed created,
+  // After the first child has been parsed.. And should ONLY ONCE created!
+<span class="nc" id="L48">  DrawFrameElement mDrawFrameElement = null;</span>
+<span class="nc" id="L49">  public List&lt;Integer&gt; mShapePosition = null;</span>
+<span class="nc" id="L50">  public Map&lt;String, Object&gt; mShapeHardFormatations = null;</span>
+<span class="nc" id="L51">  List&lt;OdfElement&gt; mFrameChildren = null;</span>
+<span class="nc" id="L52">  int mFrameChildrenNumber = 0;</span>
+<span class="nc" id="L53">  boolean mIsImageFrame = false;</span>
+<span class="nc" id="L54">  boolean mIsGroup = false;</span>
+<span class="nc" id="L55">  public Integer mVertOffsetMin = null;</span>
+<span class="nc" id="L56">  public Integer mHoriOffsetMin = null;</span>
+<span class="nc" id="L57">  public Integer mVertOffsetMax = null;</span>
+<span class="nc" id="L58">  public Integer mHoriOffsetMax = null;</span>
+
+  public DrawFrameElement getDrawFrameElement() {
+<span class="nc" id="L61">    return mDrawFrameElement;</span>
+  }
+
+  //        private ShapeProperties() {
+  //        }
+<span class="nc" id="L66">  public ShapeProperties(List&lt;Integer&gt; start, Map&lt;String, Object&gt; hardFormatations) {</span>
+    // Maps are being reused, for upcoming components, therefore the collections have to be cloned
+<span class="nc" id="L68">    mShapePosition = new LinkedList&lt;Integer&gt;(start);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">    if (hardFormatations != null) {</span>
+<span class="nc" id="L70">      mShapeHardFormatations = new HashMap&lt;String, Object&gt;();</span>
+<span class="nc" id="L71">      mShapeHardFormatations.putAll(hardFormatations);</span>
+<span class="nc" id="L72">      JSONObject originalDrawingProps = (JSONObject) hardFormatations.get(&quot;drawing&quot;);</span>
+      // Unfortunately the JSON lib being used, does not support deep cloning
+<span class="nc" id="L74">      JSONObject newDrawingProps = new JSONObject();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">      if (originalDrawingProps != null) {</span>
+        // copying hard
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (String key : originalDrawingProps.keySet()) {</span>
+          try {
+<span class="nc" id="L79">            newDrawingProps.put(key, originalDrawingProps.get(key));</span>
+<span class="nc" id="L80">          } catch (JSONException ex) {</span>
+<span class="nc" id="L81">            Logger.getLogger(ShapeProperties.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L82">          }</span>
+<span class="nc" id="L83">        }</span>
+<span class="nc" id="L84">        mShapeHardFormatations.put(&quot;drawing&quot;, newDrawingProps);</span>
+      }
+<span class="nc" id="L86">      JSONObject originalImageProps = (JSONObject) hardFormatations.get(&quot;image&quot;);</span>
+      // Unfortunately the JSON lib being used, does not support deep cloning
+<span class="nc" id="L88">      JSONObject newImageProps = new JSONObject();</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">      if (originalImageProps != null) {</span>
+        // copying hard
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (String key : originalImageProps.keySet()) {</span>
+          try {
+<span class="nc" id="L93">            newImageProps.put(key, originalImageProps.get(key));</span>
+<span class="nc" id="L94">          } catch (JSONException ex) {</span>
+<span class="nc" id="L95">            Logger.getLogger(ShapeProperties.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L96">          }</span>
+<span class="nc" id="L97">        }</span>
+<span class="nc" id="L98">        mShapeHardFormatations.put(&quot;image&quot;, newImageProps);</span>
+      }
+    }
+<span class="nc" id="L101">  }</span>
+
+  /**
+   * If the frame has one or more image elements this method dispatches an operation for the first
+   * image
+   *
+   * @param desc description of the image
+   */
+  public void createShapeOperation(
+      ChangesFileSaxHandler saxHandler,
+      Stack&lt;CachedComponent&gt; mComponentStack,
+      String desc,
+      ShapeType shapeType,
+      String context) {
+<span class="nc bnc" id="L115" title="All 4 branches missed.">    if (desc != null &amp;&amp; !desc.isEmpty()) {</span>
+<span class="nc" id="L116">      JSONObject drawingProps = (JSONObject) this.mShapeHardFormatations.get(&quot;drawing&quot;);</span>
+      try {
+<span class="nc" id="L118">        drawingProps.put(&quot;description&quot;, desc);</span>
+<span class="nc" id="L119">      } catch (JSONException ex) {</span>
+<span class="nc" id="L120">        Logger.getLogger(ShapeProperties.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L121">      }</span>
+    }
+    CachedComponent parentComponent;
+<span class="nc bnc" id="L124" title="All 2 branches missed.">    if (isGroupShape()) {</span>
+      try {
+<span class="nc" id="L126">        JSONObject drawingProps = (JSONObject) mShapeHardFormatations.get(&quot;drawing&quot;);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (mVertOffsetMin != null) {</span>
+<span class="nc" id="L128">          drawingProps.put(&quot;anchorVertOffset&quot;, mVertOffsetMin);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">          if (mVertOffsetMax != null) {</span>
+<span class="nc" id="L130">            drawingProps.put(&quot;height&quot;, mVertOffsetMax - mVertOffsetMin);</span>
+          }
+        }
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (mHoriOffsetMin != null) {</span>
+<span class="nc" id="L134">          drawingProps.put(&quot;anchorHorOffset&quot;, mHoriOffsetMin);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">          if (mHoriOffsetMax != null) {</span>
+<span class="nc" id="L136">            drawingProps.put(&quot;width&quot;, mHoriOffsetMax - mHoriOffsetMin);</span>
+          }
+        }
+<span class="nc" id="L139">      } catch (JSONException ex) {</span>
+<span class="nc" id="L140">        Logger.getLogger(ShapeProperties.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L141">      }</span>
+    }
+<span class="nc bnc" id="L143" title="All 2 branches missed.">    if (!mComponentStack.empty()</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        &amp;&amp; (parentComponent = mComponentStack.peek()) instanceof ShapeProperties</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        &amp;&amp; ((ShapeProperties) parentComponent).isGroupShape()) {</span>
+<span class="nc" id="L146">      JSONObject drawingProps = (JSONObject) mShapeHardFormatations.get(&quot;drawing&quot;);</span>
+<span class="nc" id="L147">      ((ShapeProperties) parentComponent)</span>
+<span class="nc" id="L148">          .addMemberPosSize(</span>
+<span class="nc" id="L149">              drawingProps.opt(&quot;anchorHorOffset&quot;),</span>
+<span class="nc" id="L150">              drawingProps.opt(&quot;anchorVertOffset&quot;),</span>
+<span class="nc" id="L151">              drawingProps.opt(&quot;width&quot;),</span>
+<span class="nc" id="L152">              drawingProps.opt(&quot;height&quot;));</span>
+    }
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    if (getDrawFrameElement() != null) {</span>
+<span class="nc" id="L155">      Object fill = mShapeHardFormatations.get(&quot;fill&quot;);</span>
+      try {
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (fill == null) {</span>
+<span class="nc" id="L158">          fill = new JSONObject(1);</span>
+<span class="nc" id="L159">          mShapeHardFormatations.put(&quot;fill&quot;, fill);</span>
+<span class="nc" id="L160">          ((JSONObject) fill).put(&quot;color&quot;, &quot;ffffff&quot;);</span>
+        }
+<span class="nc" id="L162">      } catch (JSONException e) {</span>
+<span class="nc" id="L163">      }</span>
+    }
+<span class="nc bnc" id="L165" title="All 4 branches missed.">    switch (shapeType) {</span>
+      case ImageShape:
+<span class="nc" id="L167">        saxHandler.cacheOperation(</span>
+            false,
+            OperationConstants.IMAGE,
+            this.mShapePosition,
+            false,
+            this.mShapeHardFormatations,
+            context);
+<span class="nc" id="L174">        break;</span>
+      case NormalShape:
+        {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">          if (mShapeHardFormatations.get(OPK_STYLE_ID) == null) {</span>
+<span class="nc" id="L178">            Object lineObject = mShapeHardFormatations.get(&quot;line&quot;);</span>
+            // shapes require a default line setting
+            try {
+<span class="nc bnc" id="L181" title="All 2 branches missed.">              if (lineObject == null) {</span>
+<span class="nc" id="L182">                lineObject = new JSONObject(1);</span>
+<span class="nc" id="L183">                mShapeHardFormatations.put(&quot;line&quot;, lineObject);</span>
+              }
+<span class="nc bnc" id="L185" title="All 2 branches missed.">              if (!((JSONObject) lineObject).has(&quot;style&quot;)) {</span>
+<span class="nc" id="L186">                ((JSONObject) lineObject).put(OPK_TYPE, &quot;solid&quot;);</span>
+<span class="nc" id="L187">                ((JSONObject) lineObject).put(&quot;width&quot;, 1);</span>
+<span class="nc" id="L188">                ((JSONObject) lineObject).put(&quot;style&quot;, &quot;solid&quot;);</span>
+              }
+<span class="nc" id="L190">            } catch (JSONException e) {</span>
+<span class="nc" id="L191">            }</span>
+          }
+<span class="nc" id="L193">          saxHandler.cacheOperation(</span>
+              false,
+              OperationConstants.SHAPE,
+              this.mShapePosition,
+              false,
+              this.mShapeHardFormatations,
+              context);
+        }
+<span class="nc" id="L201">        break;</span>
+      case GroupShape:
+<span class="nc" id="L203">        saxHandler.cacheOperation(</span>
+            false,
+            OperationConstants.SHAPE_GROUP,
+            this.mShapePosition,
+            false,
+            this.mShapeHardFormatations,
+            context);
+        break;
+    }
+<span class="nc" id="L212">  }</span>
+
+  public void setDrawFrameElement(DrawFrameElement drawFrameElement) {
+<span class="nc" id="L215">    mDrawFrameElement = drawFrameElement;</span>
+<span class="nc" id="L216">  }</span>
+
+  public Map&lt;String, Object&gt; getShapeHardFormatting() {
+<span class="nc" id="L219">    return mShapeHardFormatations;</span>
+  }
+
+  public boolean hasImageSibling() {
+<span class="nc" id="L223">    return mIsImageFrame;</span>
+  }
+
+  public void declareImage() {
+<span class="nc" id="L227">    mIsImageFrame = true;</span>
+<span class="nc" id="L228">  }</span>
+
+  public void setGroupShape() {
+<span class="nc" id="L231">    mIsGroup = true;</span>
+<span class="nc" id="L232">  }</span>
+
+  public boolean isGroupShape() {
+<span class="nc" id="L235">    return mIsGroup;</span>
+  }
+
+  public void addMemberPosSize(Object horiOffset, Object vertOffset, Object width, Object height) {
+<span class="nc bnc" id="L239" title="All 2 branches missed.">    if (vertOffset != null) {</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">      if (mVertOffsetMin == null) {</span>
+<span class="nc" id="L241">        mVertOffsetMin = (Integer) vertOffset;</span>
+      } else {
+<span class="nc" id="L243">        mVertOffsetMin = Math.min(mVertOffsetMin, ((Integer) vertOffset).intValue());</span>
+      }
+    }
+<span class="nc bnc" id="L246" title="All 2 branches missed.">    if (horiOffset != null) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">      if (mHoriOffsetMin == null) {</span>
+<span class="nc" id="L248">        mHoriOffsetMin = (Integer) horiOffset;</span>
+      } else {
+<span class="nc" id="L250">        mHoriOffsetMin = Math.min(mHoriOffsetMin, ((Integer) horiOffset).intValue());</span>
+      }
+    }
+<span class="nc bnc" id="L253" title="All 2 branches missed.">    if (width != null) {</span>
+<span class="nc" id="L254">      Integer maxHori = (Integer) width;</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">      if (horiOffset != null) {</span>
+<span class="nc" id="L256">        maxHori += (Integer) horiOffset;</span>
+      }
+<span class="nc bnc" id="L258" title="All 2 branches missed.">      if (mHoriOffsetMax == null) {</span>
+<span class="nc" id="L259">        mHoriOffsetMax = maxHori;</span>
+      } else {
+<span class="nc" id="L261">        mHoriOffsetMax = Math.max(mHoriOffsetMax, maxHori);</span>
+      }
+    }
+<span class="nc bnc" id="L264" title="All 2 branches missed.">    if (height != null) {</span>
+<span class="nc" id="L265">      Integer maxVert = (Integer) height;</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">      if (vertOffset != null) {</span>
+<span class="nc" id="L267">        maxVert += (Integer) vertOffset;</span>
+      }
+<span class="nc bnc" id="L269" title="All 2 branches missed.">      if (mVertOffsetMax == null) {</span>
+<span class="nc" id="L270">        mVertOffsetMax = maxVert;</span>
+      } else {
+<span class="nc" id="L272">        mVertOffsetMax = Math.max(mVertOffsetMax, maxVert);</span>
+      }
+    }
+<span class="nc" id="L275">  }</span>
+
+  /**
+   * In a frame there might be multiple objects, but only the first applicable is shown. For
+   * instance, there are replacement images after an OLE object *
+   */
+  public int incrementChildNumber() {
+<span class="nc" id="L282">    return ++mFrameChildrenNumber;</span>
+  }
+
+  public int decrementChildNumber() {
+<span class="nc" id="L286">    return --mFrameChildrenNumber;</span>
+  }
+
+  public int getChildNumber() {
+<span class="nc" id="L290">    return mFrameChildrenNumber;</span>
+  }
+
+<span class="nc" id="L293">  public Node mOwnNode = null;</span>
+<span class="nc" id="L294">  public String mDescription = null;</span>
+<span class="nc" id="L295">  public String mContext = null;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

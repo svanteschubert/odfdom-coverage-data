@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfValidationException.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfValidationException.java</span></div><h1>OdfValidationException.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import org.xml.sax.SAXParseException;
+
+/**
+ * This ODF specific validation excpetion faciliates the usage of a SAXParseException for none XML
+ * validation, used by an &lt;code&gt;ErrorHandler&lt;/code&gt;.
+ */
+public class OdfValidationException extends SAXParseException {
+
+  private ValidationConstraint mConstraint;
+  private static final String NO_SOURCE = &quot;&quot;;
+  private static final String SOURCE_PREFIX = &quot; '&quot;;
+  private static final String SOURCE_SUFFIX = &quot;'&quot;;
+
+  /**
+   * An OdfValidationException should be used for any validation result related to an ODF package.
+   * This constructor should only be used for SaxParseExceptions unrelated to XML. This constructor
+   * sets the public and system ID for XML and line and column number of the super class will be set
+   * to be invalid.
+   *
+   * @param constraint the predefined constaint message
+   */
+  public OdfValidationException(ValidationConstraint constraint) {
+    // The constraint convention is the first parameter to be the sourcePath of the ODF
+    // document/package causing the exception
+<span class="nc" id="L50">    super(String.format(constraint.getMessage(), NO_SOURCE), null, null, -1, -1);</span>
+<span class="nc" id="L51">    mConstraint = constraint;</span>
+<span class="nc" id="L52">  }</span>
+
+  /**
+   * An OdfValidationException should be used for any validation result related to an ODF package.
+   * This constructor should only be used for SaxParseExceptions unrelated to XML. This constructor
+   * sets the public and system ID for XML and line and column number of the super class will be set
+   * to be invalid.
+   *
+   * @param constraint the predefined constaint message
+   * @param sourcePath the source path of the exception. For instance, it might be an ODF package or
+   *     ODF document.
+   * @param messageParameters allow the customization of a constraint message with parameters.
+   */
+  public OdfValidationException(
+      ValidationConstraint constraint, String sourcePath, Object... messageParameters) {
+    // The constraint convention is the first parameter to be the sourcePath of the ODF
+    // document/package causing the exception
+<span class="nc" id="L69">    super(formatMessage(constraint, sourcePath, messageParameters), null, null, -1, -1);</span>
+<span class="nc" id="L70">    mConstraint = constraint;</span>
+<span class="nc" id="L71">  }</span>
+
+  /**
+   * An OdfValidationException should be used for any validation result related to an ODF package.
+   * This constructor should only be used for SaxParseExceptions unrelated to XML. This constructor
+   * sets the public and system ID for XML and line and column number of the super class will be set
+   * to be invalid.
+   *
+   * @param e root exception to be embeddded
+   * @param constraint the predefined constaint message
+   * @param sourcePath the source path of the exception. For instance, it might be an ODF package or
+   *     ODF document.
+   * @param messageParameters allow the customization of a constraint message with parameters.
+   */
+  public OdfValidationException(
+      ValidationConstraint constraint,
+      String sourcePath,
+      Exception e,
+      Object... messageParameters) {
+    // The constraint convention is the first parameter to be the sourcePath of the ODF
+    // document/package causing the exception
+<span class="nc" id="L92">    super(formatMessage(constraint, sourcePath, messageParameters), null, null, -1, -1, e);</span>
+<span class="nc" id="L93">    mConstraint = constraint;</span>
+<span class="nc" id="L94">  }</span>
+
+  /** @return constraint belonging to this exception */
+  public ValidationConstraint getConstraint() {
+<span class="nc" id="L98">    return mConstraint;</span>
+  }
+
+  private static String formatMessage(
+      ValidationConstraint constraint, String sourcePath, Object... messageParameters) {
+<span class="nc" id="L103">    String formattedString = NO_SOURCE;</span>
+<span class="nc" id="L104">    int varCount = 0;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    if (messageParameters != null) {</span>
+<span class="nc" id="L106">      varCount = messageParameters.length;</span>
+    }
+<span class="nc bnc" id="L108" title="All 7 branches missed.">    switch (varCount) {</span>
+      case 0:
+<span class="nc" id="L110">        formattedString =</span>
+<span class="nc" id="L111">            String.format(</span>
+<span class="nc" id="L112">                constraint.getMessage(),</span>
+<span class="nc bnc" id="L113" title="All 4 branches missed.">                sourcePath == null || sourcePath.equals(NO_SOURCE)</span>
+<span class="nc" id="L114">                    ? NO_SOURCE</span>
+<span class="nc" id="L115">                    : SOURCE_PREFIX + sourcePath + SOURCE_SUFFIX);</span>
+<span class="nc" id="L116">        break;</span>
+      case 1:
+<span class="nc" id="L118">        formattedString =</span>
+<span class="nc" id="L119">            String.format(</span>
+<span class="nc" id="L120">                constraint.getMessage(),</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">                sourcePath == null || sourcePath.equals(NO_SOURCE)</span>
+<span class="nc" id="L122">                    ? NO_SOURCE</span>
+<span class="nc" id="L123">                    : SOURCE_PREFIX + sourcePath + SOURCE_SUFFIX,</span>
+                messageParameters[0]);
+<span class="nc" id="L125">        break;</span>
+      case 2:
+<span class="nc" id="L127">        formattedString =</span>
+<span class="nc" id="L128">            String.format(</span>
+<span class="nc" id="L129">                constraint.getMessage(),</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">                sourcePath == null || sourcePath.equals(NO_SOURCE)</span>
+<span class="nc" id="L131">                    ? NO_SOURCE</span>
+<span class="nc" id="L132">                    : SOURCE_PREFIX + sourcePath + SOURCE_SUFFIX,</span>
+                messageParameters[0],
+                messageParameters[1]);
+<span class="nc" id="L135">        break;</span>
+      case 3:
+<span class="nc" id="L137">        formattedString =</span>
+<span class="nc" id="L138">            String.format(</span>
+<span class="nc" id="L139">                constraint.getMessage(),</span>
+<span class="nc bnc" id="L140" title="All 4 branches missed.">                sourcePath == null || sourcePath.equals(NO_SOURCE)</span>
+<span class="nc" id="L141">                    ? NO_SOURCE</span>
+<span class="nc" id="L142">                    : SOURCE_PREFIX + sourcePath + SOURCE_SUFFIX,</span>
+                messageParameters[0],
+                messageParameters[1],
+                messageParameters[2]);
+<span class="nc" id="L146">        break;</span>
+      case 4:
+<span class="nc" id="L148">        formattedString =</span>
+<span class="nc" id="L149">            String.format(</span>
+<span class="nc" id="L150">                constraint.getMessage(),</span>
+<span class="nc bnc" id="L151" title="All 4 branches missed.">                sourcePath == null || sourcePath.equals(NO_SOURCE)</span>
+<span class="nc" id="L152">                    ? NO_SOURCE</span>
+<span class="nc" id="L153">                    : SOURCE_PREFIX + sourcePath + SOURCE_SUFFIX,</span>
+                messageParameters[0],
+                messageParameters[1],
+                messageParameters[2],
+                messageParameters[3]);
+<span class="nc" id="L158">        break;</span>
+      case 5:
+<span class="nc" id="L160">        formattedString =</span>
+<span class="nc" id="L161">            String.format(</span>
+<span class="nc" id="L162">                constraint.getMessage(),</span>
+<span class="nc bnc" id="L163" title="All 4 branches missed.">                sourcePath == null || sourcePath.equals(NO_SOURCE)</span>
+<span class="nc" id="L164">                    ? NO_SOURCE</span>
+<span class="nc" id="L165">                    : SOURCE_PREFIX + sourcePath + SOURCE_SUFFIX,</span>
+                messageParameters[0],
+                messageParameters[1],
+                messageParameters[2],
+                messageParameters[3],
+                messageParameters[4]);
+        break;
+    }
+<span class="nc" id="L173">    return formattedString;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

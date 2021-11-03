@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextExtractor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfTextExtractor.java</span></div><h1>OdfTextExtractor.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import org.odftoolkit.odfdom.dom.DefaultElementVisitor;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.text.TextHElement;
+import org.odftoolkit.odfdom.dom.element.text.TextLineBreakElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.element.text.TextSElement;
+import org.odftoolkit.odfdom.dom.element.text.TextTabElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.w3c.dom.Node;
+
+/**
+ * It's a sub class of DefaultElementVisitor. It provides a method to get the display text of a
+ * single element.
+ *
+ * &lt;p&gt;If you pass the content root as the parameter, the whole document content will be returned,
+ * without any tag information.
+ *
+ * &lt;p&gt;It implements part of white space handling fuctions: text:p, text:h, text:s, text:tab,
+ * text:linebreak are processed according to ODF specification.
+ */
+public class OdfTextExtractor extends DefaultElementVisitor {
+
+  protected StringBuilder mTextBuilder;
+  OdfElement mElement;
+  protected static final char NewLineChar = '\r';
+  protected static final char TabChar = '\t';
+
+  /** Default constructor */
+<span class="nc" id="L49">  protected OdfTextExtractor() {}</span>
+
+  /**
+   * Constructor with an ODF element as paramter
+   *
+   * @param element the ODF element whose text would be extracted.
+   */
+<span class="nc" id="L56">  protected OdfTextExtractor(OdfElement element) {</span>
+<span class="nc" id="L57">    mTextBuilder = new StringBuilder();</span>
+<span class="nc" id="L58">    mElement = element;</span>
+<span class="nc" id="L59">  }</span>
+
+  /**
+   * Append the text content of this element to string buffer.
+   *
+   * @param ele the ODF element whose text will be appended.
+   */
+  protected void appendElementText(OdfElement ele) {
+<span class="nc" id="L67">    Node node = ele.getFirstChild();</span>
+
+<span class="nc bnc" id="L69" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc" id="L71">        mTextBuilder.append(node.getNodeValue());</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="nc" id="L73">        OdfElement element = (OdfElement) node;</span>
+<span class="nc" id="L74">        element.accept(this);</span>
+      }
+<span class="nc" id="L76">      node = node.getNextSibling();</span>
+    }
+<span class="nc" id="L78">  }</span>
+
+  /**
+   * An instance of OdfTextExtractor will be created to extract the text content of an ODF element.
+   *
+   * @param element the ODF element whose text will be extracted.
+   * @return An instance of OdfTextExtractor
+   */
+  public static OdfTextExtractor newOdfTextExtractor(OdfElement element) {
+<span class="nc" id="L87">    return new OdfTextExtractor(element);</span>
+  }
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.pkg.OdfElement)
+   */
+  @Override
+  public void visit(OdfElement element) {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    if (element.getNamespaceURI().equals(OdfDocumentNamespace.META.getUri())</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        || element.getNamespaceURI().equals(OdfDocumentNamespace.DC.getUri())) {</span>
+<span class="nc" id="L97">      mTextBuilder.append(NewLineChar);</span>
+    }
+<span class="nc" id="L99">    appendElementText(element);</span>
+<span class="nc" id="L100">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextPElement)
+   */
+  @Override
+  public void visit(TextPElement ele) {
+<span class="nc" id="L107">    mTextBuilder.append(NewLineChar);</span>
+<span class="nc" id="L108">    appendElementText(ele);</span>
+<span class="nc" id="L109">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextHElement)
+   */
+  @Override
+  public void visit(TextHElement ele) {
+<span class="nc" id="L116">    mTextBuilder.append(NewLineChar);</span>
+<span class="nc" id="L117">    appendElementText(ele);</span>
+<span class="nc" id="L118">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextSElement)
+   */
+  @Override
+  public void visit(TextSElement ele) {
+<span class="nc" id="L125">    Integer count = ele.getTextCAttribute();</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">    if (count == null) {</span>
+<span class="nc" id="L127">      count = 1;</span>
+    }
+<span class="nc bnc" id="L129" title="All 2 branches missed.">    for (int i = 0; i &lt; count; i++) {</span>
+<span class="nc" id="L130">      mTextBuilder.append(' ');</span>
+    }
+<span class="nc" id="L132">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextTabElement)
+   */
+  @Override
+  public void visit(TextTabElement ele) {
+<span class="nc" id="L139">    mTextBuilder.append(TabChar);</span>
+<span class="nc" id="L140">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextLineBreakElement)
+   */
+  @Override
+  public void visit(TextLineBreakElement ele) {
+<span class="nc" id="L147">    mTextBuilder.append(NewLineChar);</span>
+<span class="nc" id="L148">    appendElementText(ele);</span>
+<span class="nc" id="L149">  }</span>
+
+  /**
+   * Return the text content as a string
+   *
+   * @return the text content as a string
+   */
+  public String getText() {
+<span class="nc" id="L157">    visit(mElement);</span>
+<span class="nc" id="L158">    return mTextBuilder.toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

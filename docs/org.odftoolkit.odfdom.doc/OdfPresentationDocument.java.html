@@ -1,0 +1,1605 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfPresentationDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc</a> &gt; <span class="el_source">OdfPresentationDocument.java</span></div><h1>OdfPresentationDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import org.odftoolkit.odfdom.doc.presentation.OdfSlide;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.attribute.presentation.PresentationClassAttribute;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.draw.DrawFrameElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPageElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPageThumbnailElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficePresentationElement;
+import org.odftoolkit.odfdom.dom.element.presentation.PresentationNotesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleGraphicPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StylePresentationPageLayoutElement;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.pkg.MediaType;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfNamespace;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.odftoolkit.odfdom.pkg.OdfPackageDocument;
+import org.odftoolkit.odfdom.pkg.manifest.OdfFileEntry;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+/** This class represents an empty ODF presentation. */
+public class OdfPresentationDocument extends OdfDocument {
+
+  private static final String EMPTY_PRESENTATION_DOCUMENT_PATH = &quot;/OdfPresentationDocument.odp&quot;;
+<span class="nc" id="L71">  static final Resource EMPTY_PRESENTATION_DOCUMENT_RESOURCE =</span>
+      new Resource(EMPTY_PRESENTATION_DOCUMENT_PATH);
+
+  /** This enum contains all possible media types of OdfPresentationDocument documents. */
+<span class="nc" id="L75">  public enum OdfMediaType implements MediaType {</span>
+<span class="nc" id="L76">    PRESENTATION(OdfDocument.OdfMediaType.PRESENTATION),</span>
+<span class="nc" id="L77">    PRESENTATION_TEMPLATE(OdfDocument.OdfMediaType.PRESENTATION_TEMPLATE);</span>
+    private final OdfDocument.OdfMediaType mMediaType;
+
+<span class="nc" id="L80">    OdfMediaType(OdfDocument.OdfMediaType mediaType) {</span>
+<span class="nc" id="L81">      this.mMediaType = mediaType;</span>
+<span class="nc" id="L82">    }</span>
+
+    /** @return the ODF mediatype of this document */
+    public OdfDocument.OdfMediaType getOdfMediaType() {
+<span class="nc" id="L86">      return mMediaType;</span>
+    }
+
+    /** @return the mediatype of this document */
+    public String getMediaTypeString() {
+<span class="nc" id="L91">      return mMediaType.getMediaTypeString();</span>
+    }
+
+    /** @return the ODF filesuffix of this document */
+    public String getSuffix() {
+<span class="nc" id="L96">      return mMediaType.getSuffix();</span>
+    }
+
+    /**
+     * @param mediaType string defining an ODF document
+     * @return the according OdfMediatype encapuslating the given string and the suffix
+     */
+    public static OdfDocument.OdfMediaType getOdfMediaType(String mediaType) {
+<span class="nc" id="L104">      return OdfDocument.OdfMediaType.getOdfMediaType(mediaType);</span>
+    }
+  }
+
+  /**
+   * Creates an empty presentation document.
+   *
+   * @return ODF presentation document based on a default template
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfPresentationDocument newPresentationDocument() throws Exception {
+<span class="nc" id="L115">    return (OdfPresentationDocument)</span>
+<span class="nc" id="L116">        OdfDocument.loadTemplate(</span>
+            EMPTY_PRESENTATION_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.PRESENTATION);
+  }
+
+  /**
+   * Creates an empty presentation template.
+   *
+   * @return ODF presentation template based on a default
+   * @throws Exception - if the template could not be created
+   */
+  public static OdfPresentationDocument newPresentationTemplateDocument() throws Exception {
+<span class="nc" id="L127">    OdfPresentationDocument doc =</span>
+        (OdfPresentationDocument)
+<span class="nc" id="L129">            OdfDocument.loadTemplate(</span>
+                EMPTY_PRESENTATION_DOCUMENT_RESOURCE,
+                OdfDocument.OdfMediaType.PRESENTATION_TEMPLATE);
+<span class="nc" id="L132">    doc.changeMode(OdfMediaType.PRESENTATION_TEMPLATE);</span>
+<span class="nc" id="L133">    return doc;</span>
+  }
+
+  /**
+   * To avoid data duplication a new document is only created, if not already opened. A document is
+   * cached by this constructor using the internalpath as key.
+   */
+  protected OdfPresentationDocument(
+      OdfPackage pkg, String internalPath, OdfPresentationDocument.OdfMediaType odfMediaType)
+      throws SAXException {
+<span class="nc" id="L143">    super(pkg, internalPath, odfMediaType.mMediaType);</span>
+<span class="nc" id="L144">  }</span>
+
+  /**
+   * Creates an OdfPresentationDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequentiell) read access needed by
+   * OdfPresentationDocument, the InputStream is cached. This usually takes more time compared to
+   * the other createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF presentation document, ClassCastException might be
+   * thrown.
+   *
+   * @param inputStream - the InputStream of the ODF presentation document.
+   * @return the presentation document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfPresentationDocument loadDocument(InputStream inputStream) throws Exception {
+<span class="nc" id="L162">    return (OdfPresentationDocument) OdfDocument.loadDocument(inputStream);</span>
+  }
+
+  /**
+   * Loads an OdfPresentationDocument from the provided path.
+   *
+   * &lt;p&gt;OdfPresentationDocument relies on the file being available for read access over the whole
+   * lifecycle of OdfPresentationDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF presentation document, ClassCastException might be
+   * thrown.
+   *
+   * @param documentPath - the path from where the document can be loaded
+   * @return the presentation document from the given path or NULL if the media type is not
+   *     supported by ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfPresentationDocument loadDocument(String documentPath) throws Exception {
+<span class="nc" id="L180">    return (OdfPresentationDocument) OdfDocument.loadDocument(documentPath);</span>
+  }
+
+  /**
+   * Creates an OdfPresentationDocument from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfPresentationDocument relies on the file being available for read access over the whole
+   * lifecycle of OdfPresentationDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF presentation document, ClassCastException might be
+   * thrown.
+   *
+   * @param file - a file representing the ODF presentation document.
+   * @return the presentation document created from the given File
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfPresentationDocument loadDocument(File file) throws Exception {
+<span class="nc" id="L197">    return (OdfPresentationDocument) OdfDocument.loadDocument(file);</span>
+  }
+
+  /**
+   * Get the content root of a presentation document.
+   *
+   * @return content root, representing the office:presentation tag
+   * @throws Exception if the file DOM could not be created.
+   */
+  @Override
+  public OfficePresentationElement getContentRoot() throws Exception {
+<span class="nc" id="L208">    return super.getContentRoot(OfficePresentationElement.class);</span>
+  }
+
+  /**
+   * Switches this instance to the given type. This method can be used to e.g. convert a document
+   * instance to a template and vice versa. Changes take affect in the package when saving the
+   * document.
+   *
+   * @param type the compatible ODF mediatype.
+   */
+  public void changeMode(OdfMediaType type) {
+<span class="nc" id="L219">    setOdfMediaType(type.mMediaType);</span>
+<span class="nc" id="L220">  }</span>
+
+<span class="nc" id="L222">  private boolean hasCheckSlideName = false;</span>
+  // if the copy foreign slide for several times,
+  // the same style might be copied for several times with the different name
+  // so use styleRenameMap to keep track the renamed style so we can reuse the style,
+  // rather than new several styles which only have the different style names.
+  // while if the style elements really have the same style name but with different content
+  // such as that these style elements are from different document
+  // so the value for each key should be a list
+<span class="nc" id="L230">  private HashMap&lt;String, List&lt;String&gt;&gt; styleRenameMap = new HashMap&lt;String, List&lt;String&gt;&gt;();</span>
+  // the map is used to record if the renamed style name is appended to the current dom
+<span class="nc" id="L232">  private HashMap&lt;String, Boolean&gt; styleAppendMap = new HashMap&lt;String, Boolean&gt;();</span>
+  // the object rename map for image.
+  // can not easily recognize if the embedded document are the same.
+  //	private HashMap&lt;String, String&gt; objectRenameMap = new HashMap&lt;String, String&gt;();
+
+  /**
+   * Return the slide at a specified position in this presentation. Return null if the index is out
+   * of range.
+   *
+   * @param index the index of the slide to be returned
+   * @return a draw slide at the specified position
+   */
+  public OdfSlide getSlideByIndex(int index) {
+<span class="nc" id="L245">    checkAllSlideName();</span>
+<span class="nc" id="L246">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L248">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L249">    } catch (Exception e) {</span>
+<span class="nc" id="L250">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L251">      return null;</span>
+<span class="nc" id="L252">    }</span>
+<span class="nc" id="L253">    NodeList slideNodes =</span>
+<span class="nc" id="L254">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc bnc" id="L255" title="All 4 branches missed.">    if ((index &gt;= slideNodes.getLength()) || (index &lt; 0)) {</span>
+<span class="nc" id="L256">      return null;</span>
+    }
+<span class="nc" id="L258">    DrawPageElement slideElement = (DrawPageElement) slideNodes.item(index);</span>
+<span class="nc" id="L259">    return OdfSlide.getInstance(slideElement);</span>
+  }
+
+  /**
+   * Get the number of the slides in this presentation.
+   *
+   * @return the number of slides
+   */
+  public int getSlideCount() {
+<span class="nc" id="L268">    checkAllSlideName();</span>
+<span class="nc" id="L269">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L271">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L272">    } catch (Exception e) {</span>
+<span class="nc" id="L273">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L274">      return 0;</span>
+<span class="nc" id="L275">    }</span>
+<span class="nc" id="L276">    NodeList slideNodes =</span>
+<span class="nc" id="L277">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc" id="L278">    return slideNodes.getLength();</span>
+  }
+
+  /**
+   * Return the slide which have a specified slide name in this presentation.
+   *
+   * &lt;p&gt;According to the odf specification &quot;The draw:name attribute specifies a name by which this
+   * element can be referenced. It is optional but if present, must be unique within the document
+   * instance. If not present, an application may generate a unique name.&quot;
+   *
+   * &lt;p&gt;If the name is null, then return null because all the slide must has its own unique name.
+   *
+   * @param name the specified slide name
+   * @return the slide whose name equals to the specified name
+   */
+  public OdfSlide getSlideByName(String name) {
+<span class="nc" id="L294">    checkAllSlideName();</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">    if (name == null) {</span>
+<span class="nc" id="L296">      return null;</span>
+    }
+<span class="nc" id="L298">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L300">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L301">    } catch (Exception e) {</span>
+<span class="nc" id="L302">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L303">      return null;</span>
+<span class="nc" id="L304">    }</span>
+<span class="nc" id="L305">    NodeList slideNodes =</span>
+<span class="nc" id="L306">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">    for (int i = 0; i &lt; slideNodes.getLength(); i++) {</span>
+<span class="nc" id="L308">      DrawPageElement slideElement = (DrawPageElement) slideNodes.item(i);</span>
+<span class="nc" id="L309">      OdfSlide slide = OdfSlide.getInstance(slideElement);</span>
+<span class="nc" id="L310">      String slideName = slide.getSlideName();</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">      if (slideName.equals(name)) {</span>
+<span class="nc" id="L312">        return slide;</span>
+      }
+    }
+<span class="nc" id="L315">    return null;</span>
+  }
+
+  // when access slide related method, this function should be called
+  private void checkAllSlideName() {
+    // check if this function is called or not
+<span class="nc bnc" id="L321" title="All 2 branches missed.">    if (hasCheckSlideName) {</span>
+<span class="nc" id="L322">      return;</span>
+    }
+<span class="nc" id="L324">    List&lt;String&gt; slideNameList = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L325">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L327">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L328">    } catch (Exception e) {</span>
+<span class="nc" id="L329">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L330">      return;</span>
+<span class="nc" id="L331">    }</span>
+<span class="nc" id="L332">    NodeList slideNodes =</span>
+<span class="nc" id="L333">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">    for (int i = 0; i &lt; slideNodes.getLength(); i++) {</span>
+<span class="nc" id="L335">      DrawPageElement slideElement = (DrawPageElement) slideNodes.item(i);</span>
+<span class="nc" id="L336">      String slideName = slideElement.getDrawNameAttribute();</span>
+<span class="nc bnc" id="L337" title="All 4 branches missed.">      if ((slideName == null) || slideNameList.contains(slideName)) {</span>
+<span class="nc" id="L338">        slideName = &quot;page&quot; + (i + 1) + &quot;-&quot; + makeUniqueName();</span>
+<span class="nc" id="L339">        slideElement.setDrawNameAttribute(slideName);</span>
+      }
+<span class="nc" id="L341">      slideNameList.add(slideName);</span>
+    }
+<span class="nc" id="L343">    hasCheckSlideName = true;</span>
+<span class="nc" id="L344">  }</span>
+
+  /**
+   * Return a list iterator containing all slides in this presentation.
+   *
+   * @return a list iterator containing all slides in this presentation
+   */
+  public Iterator&lt;OdfSlide&gt; getSlides() {
+<span class="nc" id="L352">    checkAllSlideName();</span>
+<span class="nc" id="L353">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L355">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L356">    } catch (Exception e) {</span>
+<span class="nc" id="L357">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L358">      return null;</span>
+<span class="nc" id="L359">    }</span>
+<span class="nc" id="L360">    ArrayList&lt;OdfSlide&gt; slideList = new ArrayList&lt;OdfSlide&gt;();</span>
+<span class="nc" id="L361">    NodeList slideNodes =</span>
+<span class="nc" id="L362">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">    for (int i = 0; i &lt; slideNodes.getLength(); i++) {</span>
+<span class="nc" id="L364">      DrawPageElement slideElement = (DrawPageElement) slideNodes.item(i);</span>
+<span class="nc" id="L365">      slideList.add(OdfSlide.getInstance(slideElement));</span>
+    }
+<span class="nc" id="L367">    return slideList.iterator();</span>
+  }
+
+  /**
+   * Delete the slide at a specified position in this presentation.
+   *
+   * @param index the index of the slide that need to be delete
+   *     &lt;p&gt;Throw IndexOutOfBoundsException if the slide index is out of the presentation document
+   *     slide count.
+   * @return false if the operation was not successful
+   */
+  public boolean deleteSlideByIndex(int index) {
+<span class="nc" id="L379">    boolean success = true;</span>
+<span class="nc" id="L380">    checkAllSlideName();</span>
+<span class="nc" id="L381">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L383">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L384">    } catch (Exception e) {</span>
+<span class="nc" id="L385">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L386">      success = false;</span>
+<span class="nc" id="L387">      return success;</span>
+<span class="nc" id="L388">    }</span>
+<span class="nc" id="L389">    NodeList slideNodes =</span>
+<span class="nc" id="L390">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc bnc" id="L391" title="All 4 branches missed.">    if ((index &gt;= slideNodes.getLength()) || (index &lt; 0)) {</span>
+<span class="nc" id="L392">      throw new IndexOutOfBoundsException(</span>
+          &quot;the specified Index is out of slide count when call deleteSlideByIndex method.&quot;);
+    }
+<span class="nc" id="L395">    DrawPageElement slideElement = (DrawPageElement) slideNodes.item(index);</span>
+    // remove all the content of the current page
+    // 1. the reference of the path that contained in this slide is 1, then remove it
+<span class="nc" id="L398">    success &amp;= deleteLinkRef(slideElement);</span>
+    // 2.the reference of the style is 1, then remove it
+    // in order to save time, do not delete the style here
+<span class="nc" id="L401">    success &amp;= deleteStyleRef(slideElement);</span>
+    // remove the current page element
+<span class="nc" id="L403">    contentRoot.removeChild(slideElement);</span>
+<span class="nc" id="L404">    adjustNotePageNumber(index);</span>
+<span class="nc" id="L405">    return success;</span>
+  }
+
+  private boolean deleteStyleRef(DrawPageElement slideEle) {
+<span class="nc" id="L409">    boolean success = true;</span>
+    try {
+      // method 1:
+      // 1.1. iterate child element of the content element
+      // 1.2. if the child element is an OdfStylableElement, get the style-name ref count
+      ////////////////
+      // method 2:
+      // 2.1. get the list of the style definition
+<span class="nc" id="L417">      ArrayList&lt;OdfElement&gt; removeStyles = new ArrayList&lt;OdfElement&gt;();</span>
+<span class="nc" id="L418">      OdfOfficeAutomaticStyles autoStyles = getContentDom().getAutomaticStyles();</span>
+
+<span class="nc" id="L420">      NodeList stylesList = autoStyles.getChildNodes();</span>
+<span class="nc" id="L421">      OdfContentDom contentDom = getContentDom();</span>
+<span class="nc" id="L422">      XPath xpath = contentDom.getXPath();</span>
+
+      // 2.2. get the reference of each style which occurred in the current page
+<span class="nc bnc" id="L425" title="All 2 branches missed.">      for (int i = 0; i &lt; stylesList.getLength(); i++) {</span>
+<span class="nc" id="L426">        Node item = stylesList.item(i);</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">        if (item instanceof OdfElement) {</span>
+<span class="nc" id="L428">          OdfElement node = (OdfElement) item;</span>
+<span class="nc" id="L429">          String styleName = node.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;name&quot;);</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">          if (styleName != null) {</span>
+            // search the styleName contained at the current page element
+<span class="nc" id="L432">            NodeList styleNodes =</span>
+                (NodeList)
+<span class="nc" id="L434">                    xpath.evaluate(</span>
+                        &quot;//*[@*='&quot; + styleName + &quot;']&quot;, contentDom, XPathConstants.NODESET);
+<span class="nc" id="L436">            int styleCnt = styleNodes.getLength();</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">            if (styleCnt &gt; 1) {</span>
+              // the first styleName is occurred in the style definition
+              // so check if the second styleName and last styleName is occurred in the current page
+              // element
+              // if yes, then remove it
+<span class="nc" id="L442">              OdfElement elementFirst = (OdfElement) styleNodes.item(1);</span>
+<span class="nc" id="L443">              OdfElement elementLast = (OdfElement) styleNodes.item(styleCnt - 1);</span>
+<span class="nc" id="L444">              boolean isSamePage = false;</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">              if (elementFirst instanceof DrawPageElement) {</span>
+<span class="nc" id="L446">                DrawPageElement tempPage = (DrawPageElement) elementFirst;</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">                if (tempPage.equals(slideEle)) {</span>
+<span class="nc" id="L448">                  isSamePage = true;</span>
+                }
+              }
+<span class="nc" id="L451">              int relationFirst = slideEle.compareDocumentPosition(elementFirst);</span>
+<span class="nc" id="L452">              int relationLast = slideEle.compareDocumentPosition(elementLast);</span>
+              // if slide element contains the child element which has the styleName reference
+<span class="nc bnc" id="L454" title="All 8 branches missed.">              if (((relationFirst &amp; Node.DOCUMENT_POSITION_CONTAINED_BY) &gt; 0</span>
+                      &amp;&amp; (relationLast &amp; Node.DOCUMENT_POSITION_CONTAINED_BY) &gt; 0)
+                  || (isSamePage &amp;&amp; (styleCnt == 1))) {
+<span class="nc bnc" id="L457" title="All 2 branches missed.">                if (node instanceof OdfStyleBase) {</span>
+<span class="nc" id="L458">                  removeStyles.add(node);</span>
+                }
+              }
+            } else {
+              continue;
+            }
+          }
+        }
+      }
+<span class="nc bnc" id="L467" title="All 2 branches missed.">      for (int i = 0; i &lt; removeStyles.size(); i++) {</span>
+<span class="nc" id="L468">        autoStyles.removeChild(removeStyles.get(i));</span>
+      }
+<span class="nc" id="L470">    } catch (Exception e) {</span>
+<span class="nc" id="L471">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L472">      success = false;</span>
+<span class="nc" id="L473">    }</span>
+<span class="nc" id="L474">    return success;</span>
+  }
+
+  // delete all the xlink:href object which is contained in slideElement and does not referred by
+  // other slides
+  private boolean deleteLinkRef(DrawPageElement slideEle) {
+<span class="nc" id="L480">    boolean success = true;</span>
+    try {
+<span class="nc" id="L482">      OdfContentDom contentDom = getContentDom();</span>
+<span class="nc" id="L483">      XPath xpath = contentDom.getXPath();</span>
+<span class="nc" id="L484">      NodeList linkNodes =</span>
+<span class="nc" id="L485">          (NodeList) xpath.evaluate(&quot;//*[@xlink:href]&quot;, contentDom, XPathConstants.NODESET);</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">      for (int i = 0; i &lt; linkNodes.getLength(); i++) {</span>
+<span class="nc" id="L487">        OdfElement object = (OdfElement) linkNodes.item(i);</span>
+<span class="nc" id="L488">        String refObjPath = object.getAttributeNS(OdfDocumentNamespace.XLINK.getUri(), &quot;href&quot;);</span>
+<span class="nc" id="L489">        int relation = slideEle.compareDocumentPosition(object);</span>
+        // if slide element contains the returned element which has the xlink:href reference
+<span class="nc bnc" id="L491" title="All 4 branches missed.">        if ((relation &amp; Node.DOCUMENT_POSITION_CONTAINED_BY) &gt; 0</span>
+            &amp;&amp; refObjPath != null
+<span class="nc bnc" id="L493" title="All 2 branches missed.">            &amp;&amp; refObjPath.length() &gt; 0) {</span>
+          // the path of the object is start with &quot;./&quot;
+<span class="nc" id="L495">          NodeList pathNodes =</span>
+              (NodeList)
+<span class="nc" id="L497">                  xpath.evaluate(</span>
+                      &quot;//*[@xlink:href='&quot; + refObjPath + &quot;']&quot;,
+<span class="nc" id="L499">                      getContentDom(),</span>
+                      XPathConstants.NODESET);
+<span class="nc" id="L501">          int refCount = pathNodes.getLength();</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">          if (refCount == 1) {</span>
+            // delete &quot;./&quot;
+<span class="nc bnc" id="L504" title="All 2 branches missed.">            if (refObjPath.startsWith(&quot;./&quot;)) {</span>
+<span class="nc" id="L505">              refObjPath = refObjPath.substring(2);</span>
+            }
+            // check if the current document contains the same path
+<span class="nc" id="L508">            OdfFileEntry fileEntry = getPackage().getFileEntry(refObjPath);</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">            if (fileEntry != null) {</span>
+              // it is a stream, such as image, binary file
+<span class="nc" id="L511">              getPackage().remove(refObjPath);</span>
+            } else {
+              // note: if refObjPath is a directory, it must end with '/'
+<span class="nc" id="L514">              fileEntry = getPackage().getFileEntry(refObjPath + &quot;/&quot;);</span>
+<span class="nc" id="L515">              removeDocument(refObjPath);</span>
+            }
+          }
+        }
+      }
+<span class="nc" id="L520">    } catch (XPathExpressionException e) {</span>
+<span class="nc" id="L521">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L522">      success = false;</span>
+<span class="nc" id="L523">    } catch (Exception e) {</span>
+<span class="nc" id="L524">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L525">      success = false;</span>
+<span class="nc" id="L526">    }</span>
+<span class="nc" id="L527">    return success;</span>
+  }
+
+  /**
+   * Delete all the slides with a specified name in this presentation.
+   *
+   * @param name the name of the slide that need to be delete
+   * @return false if the operation was not successful
+   */
+  public boolean deleteSlideByName(String name) {
+<span class="nc" id="L537">    boolean success = true;</span>
+<span class="nc" id="L538">    checkAllSlideName();</span>
+<span class="nc" id="L539">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L541">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L542">    } catch (Exception e) {</span>
+<span class="nc" id="L543">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L544">      success = false;</span>
+<span class="nc" id="L545">      return success;</span>
+<span class="nc" id="L546">    }</span>
+<span class="nc" id="L547">    OdfSlide slide = getSlideByName(name);</span>
+<span class="nc" id="L548">    DrawPageElement slideElement = slide.getOdfElement();</span>
+    // remove all the content of the current page
+    // 1. the reference of the path that contained in this slide is 1, then remove its
+<span class="nc" id="L551">    success &amp;= deleteLinkRef(slideElement);</span>
+    // 2.the reference of the style is 1, then remove it
+    // in order to save time, do not delete style here
+<span class="nc" id="L554">    success &amp;= deleteStyleRef(slideElement);</span>
+    // remove the current page element
+<span class="nc" id="L556">    contentRoot.removeChild(slideElement);</span>
+<span class="nc" id="L557">    adjustNotePageNumber(0);</span>
+<span class="nc" id="L558">    return success;</span>
+  }
+
+  /**
+   * Make a copy of the slide at a specified position to another position in this presentation. The
+   * original slide which at the dest index and after the dest index will move after.
+   *
+   * &lt;p&gt;
+   *
+   * @param source the source position of the slide need to be copied
+   * @param dest the destination position of the slide need to be copied
+   * @param newName the new name of the copied slide
+   * @return the new slide at the destination position with the specified name, and it has the same
+   *     content with the slide at the source position.
+   *     &lt;p&gt;Throw IndexOutOfBoundsException if the slide index is out of the presentation document
+   *     slide count. If copy the slide at the end of document, destIndex should set the same value
+   *     with the slide count.
+   */
+  public OdfSlide copySlide(int source, int dest, String newName) {
+<span class="nc" id="L577">    checkAllSlideName();</span>
+<span class="nc" id="L578">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L580">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L581">    } catch (Exception e) {</span>
+<span class="nc" id="L582">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L583">      return null;</span>
+<span class="nc" id="L584">    }</span>
+<span class="nc" id="L585">    NodeList slideList =</span>
+<span class="nc" id="L586">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc" id="L587">    int slideCount = slideList.getLength();</span>
+<span class="nc bnc" id="L588" title="All 8 branches missed.">    if ((source &lt; 0) || (source &gt;= slideCount) || (dest &lt; 0) || (dest &gt; slideCount)) {</span>
+<span class="nc" id="L589">      throw new IndexOutOfBoundsException(</span>
+          &quot;the specified Index is out of slide count when call copySlide method.&quot;);
+    }
+<span class="nc" id="L592">    DrawPageElement sourceSlideElement = (DrawPageElement) slideList.item(source);</span>
+<span class="nc" id="L593">    DrawPageElement cloneSlideElement = (DrawPageElement) sourceSlideElement.cloneNode(true);</span>
+<span class="nc" id="L594">    cloneSlideElement.setDrawNameAttribute(newName);</span>
+<span class="nc bnc" id="L595" title="All 2 branches missed.">    if (dest == slideCount) {</span>
+<span class="nc" id="L596">      contentRoot.appendChild(cloneSlideElement);</span>
+    } else {
+<span class="nc" id="L598">      DrawPageElement refSlide = (DrawPageElement) slideList.item(dest);</span>
+<span class="nc" id="L599">      contentRoot.insertBefore(cloneSlideElement, refSlide);</span>
+    }
+<span class="nc" id="L601">    adjustNotePageNumber(Math.min(source, dest));</span>
+    // in case that the appended new slide have the same name with the original slide
+<span class="nc" id="L603">    hasCheckSlideName = false;</span>
+<span class="nc" id="L604">    checkAllSlideName();</span>
+<span class="nc" id="L605">    return OdfSlide.getInstance(cloneSlideElement);</span>
+  }
+
+  /**
+   * Move the slide at a specified position to the destination position.
+   *
+   * @param source the current index of the slide that need to be moved
+   * @param dest The index of the destination position before the move action
+   *     &lt;p&gt;Throw IndexOutOfBoundsException if the slide index is out of the presentation document
+   *     slide count.
+   */
+  public void moveSlide(int source, int dest) {
+<span class="nc" id="L617">    checkAllSlideName();</span>
+<span class="nc" id="L618">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L620">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L621">    } catch (Exception e) {</span>
+<span class="nc" id="L622">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L623">      return;</span>
+<span class="nc" id="L624">    }</span>
+<span class="nc" id="L625">    NodeList slideList =</span>
+<span class="nc" id="L626">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc" id="L627">    int slideCount = slideList.getLength();</span>
+<span class="nc bnc" id="L628" title="All 8 branches missed.">    if ((source &lt; 0) || (source &gt;= slideCount) || (dest &lt; 0) || (dest &gt; slideCount)) {</span>
+<span class="nc" id="L629">      throw new IndexOutOfBoundsException(</span>
+          &quot;the specified Index is out of slide count when call moveSlide method.&quot;);
+    }
+<span class="nc" id="L632">    DrawPageElement sourceSlide = (DrawPageElement) slideList.item(source);</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">    if (dest == slideCount) {</span>
+<span class="nc" id="L634">      contentRoot.appendChild(sourceSlide);</span>
+    } else {
+<span class="nc" id="L636">      DrawPageElement refSlide = (DrawPageElement) slideList.item(dest);</span>
+<span class="nc" id="L637">      contentRoot.insertBefore(sourceSlide, refSlide);</span>
+    }
+<span class="nc" id="L639">    adjustNotePageNumber(Math.min(source, dest));</span>
+<span class="nc" id="L640">  }</span>
+
+  /**
+   * Append all the slides of the specified presentation document to the current document.
+   *
+   * @param srcDoc the specified &lt;code&gt;OdfPresentationDocument&lt;/code&gt; that need to be appended
+   */
+  public void appendPresentation(OdfPresentationDocument srcDoc) {
+<span class="nc" id="L648">    checkAllSlideName();</span>
+<span class="nc" id="L649">    OfficePresentationElement contentRoot = null;</span>
+<span class="nc" id="L650">    OdfFileDom contentDom = null;</span>
+<span class="nc" id="L651">    OfficePresentationElement srcContentRoot = null;</span>
+    try {
+<span class="nc" id="L653">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L654">      contentDom = getContentDom();</span>
+<span class="nc" id="L655">      srcContentRoot = srcDoc.getContentRoot();</span>
+<span class="nc" id="L656">    } catch (Exception e) {</span>
+<span class="nc" id="L657">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L658">    }</span>
+<span class="nc" id="L659">    NodeList slideList =</span>
+<span class="nc" id="L660">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc" id="L661">    int slideNum = slideList.getLength();</span>
+    // clone the srcContentRoot, and make a modification on this clone node.
+<span class="nc" id="L663">    OfficePresentationElement srcCloneContentRoot =</span>
+<span class="nc" id="L664">        (OfficePresentationElement) srcContentRoot.cloneNode(true);</span>
+    // copy all the referred xlink:href here
+<span class="nc" id="L666">    copyForeignLinkRef(srcCloneContentRoot);</span>
+    // copy all the referred style definition here
+<span class="nc" id="L668">    copyForeignStyleRef(srcCloneContentRoot, srcDoc);</span>
+<span class="nc" id="L669">    Node child = srcCloneContentRoot.getFirstChild();</span>
+<span class="nc bnc" id="L670" title="All 2 branches missed.">    while (child != null) {</span>
+<span class="nc" id="L671">      Node cloneElement = cloneForeignElement(child, contentDom, true);</span>
+<span class="nc" id="L672">      contentRoot.appendChild(cloneElement);</span>
+<span class="nc" id="L673">      child = child.getNextSibling();</span>
+<span class="nc" id="L674">    }</span>
+<span class="nc" id="L675">    adjustNotePageNumber(slideNum - 1);</span>
+
+    // in case that the appended new slide have the same name with the original slide
+<span class="nc" id="L678">    hasCheckSlideName = false;</span>
+<span class="nc" id="L679">    checkAllSlideName();</span>
+<span class="nc" id="L680">  }</span>
+
+  /**
+   * Make a copy of slide which locates at the specified position of the source presentation
+   * document and insert it to the current presentation document at the new position. The original
+   * slide which at the dest index and after the dest index will move after.
+   *
+   * @param destIndex the new position of the copied slide in the current document
+   * @param srcDoc the source document of the copied slide
+   * @param srcIndex the slide index of the source document that need to be copied
+   * @return the new slide which has the same content with the source slide
+   *     &lt;p&gt;Throw IndexOutOfBoundsException if the slide index is out of the presentation document
+   *     slide count If insert the foreign slide at the end of document, destIndex should set the
+   *     same value with the slide count of the current presentation document.
+   */
+  public OdfSlide copyForeignSlide(int destIndex, OdfPresentationDocument srcDoc, int srcIndex) {
+<span class="nc" id="L696">    checkAllSlideName();</span>
+<span class="nc" id="L697">    OfficePresentationElement contentRoot = null;</span>
+<span class="nc" id="L698">    OdfFileDom contentDom = null;</span>
+    try {
+<span class="nc" id="L700">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L701">      contentDom = getContentDom();</span>
+<span class="nc" id="L702">    } catch (Exception e) {</span>
+<span class="nc" id="L703">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L704">      return null;</span>
+<span class="nc" id="L705">    }</span>
+<span class="nc" id="L706">    NodeList slideList =</span>
+<span class="nc" id="L707">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc" id="L708">    int slideCount = slideList.getLength();</span>
+<span class="nc bnc" id="L709" title="All 4 branches missed.">    if ((destIndex &lt; 0) || (destIndex &gt; slideCount)) {</span>
+<span class="nc" id="L710">      throw new IndexOutOfBoundsException(</span>
+          &quot;the specified Index is out of slide count when call copyForeignSlide method.&quot;);
+    }
+<span class="nc" id="L713">    OdfSlide sourceSlide = srcDoc.getSlideByIndex(srcIndex);</span>
+<span class="nc" id="L714">    DrawPageElement sourceSlideElement = sourceSlide.getOdfElement();</span>
+    // clone the sourceSlideEle, and make a modification on this clone node.
+<span class="nc" id="L716">    DrawPageElement sourceCloneSlideElement = (DrawPageElement) sourceSlideElement.cloneNode(true);</span>
+
+    // copy all the referred xlink:href here
+<span class="nc" id="L719">    copyForeignLinkRef(sourceCloneSlideElement);</span>
+    // copy all the referred style definition here
+<span class="nc" id="L721">    copyForeignStyleRef(sourceCloneSlideElement, srcDoc);</span>
+    // clone the sourceCloneSlideEle, and this cloned element should in the current dom tree
+<span class="nc" id="L723">    DrawPageElement cloneSlideElement =</span>
+<span class="nc" id="L724">        (DrawPageElement) cloneForeignElement(sourceCloneSlideElement, contentDom, true);</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">    if (destIndex == slideCount) {</span>
+<span class="nc" id="L726">      contentRoot.appendChild(cloneSlideElement);</span>
+    } else {
+<span class="nc" id="L728">      DrawPageElement refSlide = (DrawPageElement) slideList.item(destIndex);</span>
+<span class="nc" id="L729">      contentRoot.insertBefore(cloneSlideElement, refSlide);</span>
+    }
+<span class="nc" id="L731">    adjustNotePageNumber(destIndex);</span>
+    // in case that the appended new slide have the same name with the original slide
+<span class="nc" id="L733">    hasCheckSlideName = false;</span>
+<span class="nc" id="L734">    checkAllSlideName();</span>
+<span class="nc" id="L735">    return OdfSlide.getInstance(cloneSlideElement);</span>
+  }
+
+  // clone the source clone element's referred object path to the current package
+  // if the current package contains the same name with the referred object path,
+  // rename the object path and path reference of this slide element
+  // notes: the source clone element is the copied one to avoid changing the content of the source
+  // document.
+  private void copyForeignLinkRef(OdfElement sourceCloneEle) {
+    try {
+<span class="nc" id="L745">      OdfFileDom fileDom = (OdfFileDom) sourceCloneEle.getOwnerDocument();</span>
+      XPath xpath;
+<span class="nc bnc" id="L747" title="All 2 branches missed.">      if (fileDom instanceof OdfContentDom) {</span>
+<span class="nc" id="L748">        xpath = ((OdfContentDom) fileDom).getXPath();</span>
+      } else {
+<span class="nc" id="L750">        xpath = ((OdfStylesDom) fileDom).getXPath();</span>
+      }
+<span class="nc" id="L752">      OdfPackageDocument srcDoc = fileDom.getDocument();</span>
+      // new a map to put the original name and the rename string, in case that the same name might
+      // be referred by the slide several times.
+<span class="nc" id="L755">      HashMap&lt;String, String&gt; objectRenameMap = new HashMap&lt;String, String&gt;();</span>
+<span class="nc" id="L756">      NodeList linkNodes =</span>
+<span class="nc" id="L757">          (NodeList) xpath.evaluate(&quot;.//*[@xlink:href]&quot;, sourceCloneEle, XPathConstants.NODESET);</span>
+<span class="nc bnc" id="L758" title="All 2 branches missed.">      for (int i = 0; i &lt;= linkNodes.getLength(); i++) {</span>
+<span class="nc" id="L759">        OdfElement object = null;</span>
+<span class="nc bnc" id="L760" title="All 2 branches missed.">        if (linkNodes.getLength() == i) {</span>
+<span class="nc bnc" id="L761" title="All 2 branches missed.">          if (sourceCloneEle.hasAttributeNS(OdfDocumentNamespace.XLINK.getUri(), &quot;href&quot;)) {</span>
+<span class="nc" id="L762">            object = sourceCloneEle;</span>
+          } else {
+            break;
+          }
+        } else {
+<span class="nc" id="L767">          object = (OdfElement) linkNodes.item(i);</span>
+        }
+<span class="nc" id="L769">        String refObjPath = object.getAttributeNS(OdfDocumentNamespace.XLINK.getUri(), &quot;href&quot;);</span>
+<span class="nc bnc" id="L770" title="All 4 branches missed.">        if (refObjPath != null &amp;&amp; refObjPath.length() &gt; 0) {</span>
+          // the path of the object is start with &quot;./&quot;
+<span class="nc" id="L772">          boolean hasPrefix = false;</span>
+<span class="nc" id="L773">          String prefix = &quot;./&quot;;</span>
+<span class="nc bnc" id="L774" title="All 2 branches missed.">          if (refObjPath.startsWith(prefix)) {</span>
+<span class="nc" id="L775">            refObjPath = refObjPath.substring(2);</span>
+<span class="nc" id="L776">            hasPrefix = true;</span>
+          }
+          // check if the current document contains the same path
+<span class="nc" id="L779">          OdfFileEntry fileEntry = getPackage().getFileEntry(refObjPath);</span>
+          // note: if refObjPath is a directory, it must end with '/'
+<span class="nc bnc" id="L781" title="All 2 branches missed.">          if (fileEntry == null) {</span>
+<span class="nc" id="L782">            fileEntry = getPackage().getFileEntry(refObjPath + &quot;/&quot;);</span>
+          }
+<span class="nc" id="L784">          String newObjPath = refObjPath;</span>
+<span class="nc bnc" id="L785" title="All 2 branches missed.">          if (fileEntry != null) {</span>
+            // rename the object path
+<span class="nc" id="L787">            newObjPath = objectRenameMap.get(refObjPath);</span>
+<span class="nc bnc" id="L788" title="All 2 branches missed.">            if (newObjPath == null) {</span>
+              // if refObjPath still contains &quot;.&quot;, it means that it has the suffix
+              // then change the name before the suffix string
+<span class="nc" id="L791">              int dotIndex = refObjPath.indexOf(&quot;.&quot;);</span>
+<span class="nc bnc" id="L792" title="All 2 branches missed.">              if (dotIndex != -1) {</span>
+<span class="nc" id="L793">                newObjPath =</span>
+<span class="nc" id="L794">                    refObjPath.substring(0, dotIndex)</span>
+                        + &quot;-&quot;
+<span class="nc" id="L796">                        + makeUniqueName()</span>
+<span class="nc" id="L797">                        + refObjPath.substring(dotIndex);</span>
+              } else {
+<span class="nc" id="L799">                newObjPath = refObjPath + &quot;-&quot; + makeUniqueName();</span>
+              }
+<span class="nc" id="L801">              objectRenameMap.put(refObjPath, newObjPath);</span>
+            }
+<span class="nc" id="L803">            object.setAttributeNS(</span>
+<span class="nc" id="L804">                OdfDocumentNamespace.XLINK.getUri(),</span>
+                &quot;xlink:href&quot;,
+<span class="nc bnc" id="L806" title="All 2 branches missed.">                hasPrefix ? (prefix + newObjPath) : newObjPath);</span>
+          }
+<span class="nc" id="L808">          InputStream is = srcDoc.getPackage().getInputStream(refObjPath);</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">          if (is != null) {</span>
+<span class="nc" id="L810">            String mediaType = srcDoc.getPackage().getFileEntry(refObjPath).getMediaTypeString();</span>
+<span class="nc" id="L811">            getPackage().insert(is, newObjPath, mediaType);</span>
+<span class="nc" id="L812">          } else {</span>
+<span class="nc" id="L813">            OdfDocument embedDoc = (OdfDocument) srcDoc.loadSubDocument(refObjPath);</span>
+<span class="nc bnc" id="L814" title="All 2 branches missed.">            if (embedDoc != null) {</span>
+<span class="nc" id="L815">              insertDocument(embedDoc, newObjPath);</span>
+            }
+          }
+        }
+      }
+<span class="nc" id="L820">    } catch (Exception e) {</span>
+<span class="nc" id="L821">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L822">    }</span>
+<span class="nc" id="L823">  }</span>
+
+  private void copyForeignStyleRef(OdfElement sourceCloneEle, OdfPresentationDocument doc) {
+    try {
+<span class="nc" id="L827">      OdfContentDom contentDom = getContentDom();</span>
+<span class="nc" id="L828">      XPath xpath = contentDom.getXPath();</span>
+      // 1. collect all the referred style element which has &quot;style:name&quot; attribute
+      // 1.1. style:name of content.xml
+<span class="nc" id="L831">      String styleQName = &quot;style:name&quot;;</span>
+<span class="nc" id="L832">      NodeList srcStyleDefNodeList =</span>
+<span class="nc" id="L833">          (NodeList) xpath.evaluate(&quot;//*[@&quot; + styleQName + &quot;]&quot;, contentDom, XPathConstants.NODESET);</span>
+<span class="nc" id="L834">      HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt; srcContentStyleCloneEleList =</span>
+          new HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt;();
+<span class="nc" id="L836">      HashMap&lt;OdfElement, OdfElement&gt; appendContentStyleList =</span>
+          new HashMap&lt;OdfElement, OdfElement&gt;();
+<span class="nc" id="L838">      getCopyStyleList(</span>
+          null,
+          sourceCloneEle,
+          styleQName,
+          srcStyleDefNodeList,
+          srcContentStyleCloneEleList,
+          appendContentStyleList,
+          true);
+      // 1.2. style:name of styles.xml
+<span class="nc" id="L847">      srcStyleDefNodeList =</span>
+          (NodeList)
+<span class="nc" id="L849">              xpath.evaluate(</span>
+<span class="nc" id="L850">                  &quot;//*[@&quot; + styleQName + &quot;]&quot;, doc.getStylesDom(), XPathConstants.NODESET);</span>
+<span class="nc" id="L851">      HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt; srcStylesStyleCloneEleList =</span>
+          new HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt;();
+<span class="nc" id="L853">      HashMap&lt;OdfElement, OdfElement&gt; appendStylesStyleList = new HashMap&lt;OdfElement, OdfElement&gt;();</span>
+<span class="nc" id="L854">      getCopyStyleList(</span>
+          null,
+          sourceCloneEle,
+          styleQName,
+          srcStyleDefNodeList,
+          srcStylesStyleCloneEleList,
+          appendStylesStyleList,
+          true);
+      // 1.3 rename, copy the referred style element to the corresponding position in the dom tree
+<span class="nc" id="L863">      insertCollectedStyle(</span>
+<span class="nc" id="L864">          styleQName, srcContentStyleCloneEleList, getContentDom(), appendContentStyleList);</span>
+<span class="nc" id="L865">      insertCollectedStyle(</span>
+<span class="nc" id="L866">          styleQName, srcStylesStyleCloneEleList, getStylesDom(), appendStylesStyleList);</span>
+
+      // 2. collect all the referred style element which has &quot;draw:name&quot; attribute
+      // 2.1 draw:name of styles.xml
+      // the value of draw:name is string or StyleName,
+      // only when the value is StyleName type, the style definition should be cloned to the
+      // destination document
+      // in ODF spec, such attribute type is only exist in &lt;office:styles&gt; element, so only search
+      // it in styles.xml dom
+<span class="nc" id="L875">      styleQName = &quot;draw:name&quot;;</span>
+<span class="nc" id="L876">      srcStyleDefNodeList =</span>
+          (NodeList)
+<span class="nc" id="L878">              xpath.evaluate(</span>
+<span class="nc" id="L879">                  &quot;//*[@&quot; + styleQName + &quot;]&quot;, doc.getStylesDom(), XPathConstants.NODESET);</span>
+<span class="nc" id="L880">      HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt; srcDrawStyleCloneEleList =</span>
+          new HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt;();
+<span class="nc" id="L882">      HashMap&lt;OdfElement, OdfElement&gt; appendDrawStyleList = new HashMap&lt;OdfElement, OdfElement&gt;();</span>
+<span class="nc" id="L883">      Iterator&lt;OdfElement&gt; iter = appendContentStyleList.keySet().iterator();</span>
+<span class="nc bnc" id="L884" title="All 2 branches missed.">      while (iter.hasNext()) {</span>
+<span class="nc" id="L885">        OdfElement styleElement = iter.next();</span>
+<span class="nc" id="L886">        OdfElement cloneStyleElement = appendContentStyleList.get(styleElement);</span>
+<span class="nc" id="L887">        getCopyStyleList(</span>
+            styleElement,
+            cloneStyleElement,
+            styleQName,
+            srcStyleDefNodeList,
+            srcDrawStyleCloneEleList,
+            appendDrawStyleList,
+            false);
+<span class="nc" id="L895">      }</span>
+<span class="nc" id="L896">      iter = appendStylesStyleList.keySet().iterator();</span>
+<span class="nc bnc" id="L897" title="All 2 branches missed.">      while (iter.hasNext()) {</span>
+<span class="nc" id="L898">        OdfElement styleElement = iter.next();</span>
+<span class="nc" id="L899">        OdfElement cloneStyleElement = appendStylesStyleList.get(styleElement);</span>
+<span class="nc" id="L900">        getCopyStyleList(</span>
+            styleElement,
+            cloneStyleElement,
+            styleQName,
+            srcStyleDefNodeList,
+            srcDrawStyleCloneEleList,
+            appendDrawStyleList,
+            false);
+<span class="nc" id="L908">      }</span>
+      // 2.2 rename, copy the referred style element to the corresponding position in the dom tree
+      // note: &quot;draw:name&quot; style element only exist in styles.dom
+<span class="nc" id="L911">      insertCollectedStyle(</span>
+<span class="nc" id="L912">          styleQName, srcDrawStyleCloneEleList, getStylesDom(), appendDrawStyleList);</span>
+
+<span class="nc" id="L914">    } catch (Exception e) {</span>
+<span class="nc" id="L915">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L916">    }</span>
+<span class="nc" id="L917">  }</span>
+
+  // 1. modified the style name of the style definition element which has the same name with the
+  // source document
+  // 2. As to the style definition which match 1) condition, modified the referred style name of the
+  // element which reference this style
+  // 3. All the style which also contains other style reference, should be copied to the source
+  // document.
+  private void insertCollectedStyle(
+      String styleQName,
+      HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt; srcStyleCloneEleList,
+      OdfFileDom dom,
+      HashMap&lt;OdfElement, OdfElement&gt; appendStyleList) {
+    try {
+<span class="nc" id="L931">      String stylePrefix = OdfNamespace.getPrefixPart(styleQName);</span>
+<span class="nc" id="L932">      String styleLocalName = OdfNamespace.getLocalPart(styleQName);</span>
+<span class="nc" id="L933">      String styleURI = OdfDocumentNamespace.STYLE.getUri();</span>
+      // is the DOM always the styles.xml
+<span class="nc" id="L935">      XPath xpath = dom.getXPath();</span>
+<span class="nc" id="L936">      NodeList destStyleNodeList =</span>
+<span class="nc" id="L937">          (NodeList) xpath.evaluate(&quot;//*[@&quot; + styleQName + &quot;]&quot;, dom, XPathConstants.NODESET);</span>
+
+      //			HashMap&lt;String, String&gt; styleRenameMap = new HashMap&lt;String, String&gt;();
+<span class="nc" id="L940">      Iterator&lt;OdfElement&gt; iter = srcStyleCloneEleList.keySet().iterator();</span>
+<span class="nc bnc" id="L941" title="All 2 branches missed.">      while (iter.hasNext()) {</span>
+<span class="nc" id="L942">        OdfElement styleElement = iter.next();</span>
+<span class="nc" id="L943">        OdfElement cloneStyleElement = appendStyleList.get(styleElement);</span>
+<span class="nc bnc" id="L944" title="All 2 branches missed.">        if (cloneStyleElement == null) {</span>
+<span class="nc" id="L945">          cloneStyleElement = (OdfElement) styleElement.cloneNode(true);</span>
+<span class="nc" id="L946">          appendStyleList.put(styleElement, cloneStyleElement);</span>
+        }
+<span class="nc" id="L948">        String styleName = styleElement.getAttributeNS(styleURI, styleLocalName);</span>
+<span class="nc" id="L949">        List&lt;String&gt; newStyleNameList = styleRenameMap.get(styleName);</span>
+        // if the newStyleNameList != null, means that styleName exists in dest document
+        // and it has already been renamed
+<span class="nc bnc" id="L952" title="All 2 branches missed.">        if ((newStyleNameList != null)</span>
+<span class="nc bnc" id="L953" title="All 2 branches missed.">            || (isStyleNameExist(destStyleNodeList, styleName) != null)) {</span>
+<span class="nc" id="L954">          String newStyleName = null;</span>
+<span class="nc bnc" id="L955" title="All 2 branches missed.">          if (newStyleNameList == null) {</span>
+<span class="nc" id="L956">            newStyleNameList = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L957">            newStyleName = styleName + &quot;-&quot; + makeUniqueName();</span>
+<span class="nc" id="L958">            newStyleNameList.add(newStyleName);</span>
+<span class="nc" id="L959">            styleRenameMap.put(styleName, newStyleNameList);</span>
+          } else {
+<span class="nc bnc" id="L961" title="All 2 branches missed.">            for (int i = 0; i &lt; newStyleNameList.size(); i++) {</span>
+<span class="nc" id="L962">              String styleNameIter = newStyleNameList.get(i);</span>
+<span class="nc" id="L963">              OdfElement destStyleElementWithNewName =</span>
+<span class="nc" id="L964">                  isStyleNameExist(destStyleNodeList, styleNameIter);</span>
+              // check if the two style elements have the same content
+              // if not, the cloneStyleElement should rename, rather than reuse the new style name
+<span class="nc" id="L967">              cloneStyleElement.setAttributeNS(styleURI, styleQName, styleNameIter);</span>
+<span class="nc bnc" id="L968" title="All 2 branches missed.">              if ((destStyleElementWithNewName != null)</span>
+<span class="nc bnc" id="L969" title="All 2 branches missed.">                  &amp;&amp; destStyleElementWithNewName.equals(cloneStyleElement)) {</span>
+<span class="nc" id="L970">                newStyleName = styleNameIter;</span>
+<span class="nc" id="L971">                break;</span>
+              }
+            }
+<span class="nc bnc" id="L974" title="All 2 branches missed.">            if (newStyleName == null) {</span>
+<span class="nc" id="L975">              newStyleName = styleName + &quot;-&quot; + makeUniqueName();</span>
+<span class="nc" id="L976">              newStyleNameList.add(newStyleName);</span>
+            }
+          }
+          // if newStyleName has been set in the element as the new name
+          // which means that the newStyleName is conform to the odf spec
+          // then change element style reference name
+<span class="nc bnc" id="L982" title="All 2 branches missed.">          if (changeStyleRefName(srcStyleCloneEleList.get(styleElement), styleName, newStyleName)) {</span>
+<span class="nc" id="L983">            cloneStyleElement.setAttributeNS(styleURI, styleQName, newStyleName);</span>
+            // if display name should also be renamed
+<span class="nc" id="L985">            String displayName = cloneStyleElement.getAttributeNS(styleURI, &quot;display-name&quot;);</span>
+<span class="nc bnc" id="L986" title="All 4 branches missed.">            if ((displayName != null) &amp;&amp; (displayName.length() &gt; 0)) {</span>
+<span class="nc" id="L987">              cloneStyleElement.setAttributeNS(</span>
+                  styleURI,
+                  stylePrefix + &quot;:display-name&quot;,
+<span class="nc" id="L990">                  displayName + newStyleName.substring(newStyleName.length() - 8));</span>
+            }
+          }
+        }
+<span class="nc" id="L994">      }</span>
+
+<span class="nc" id="L996">      iter = appendStyleList.keySet().iterator();</span>
+<span class="nc bnc" id="L997" title="All 2 branches missed.">      while (iter.hasNext()) {</span>
+<span class="nc" id="L998">        OdfElement styleElement = iter.next();</span>
+<span class="nc" id="L999">        OdfElement cloneStyleElement = appendStyleList.get(styleElement);</span>
+<span class="nc" id="L1000">        String newStyleName = cloneStyleElement.getAttributeNS(styleURI, styleLocalName);</span>
+<span class="nc" id="L1001">        Boolean isAppended = styleAppendMap.get(newStyleName);</span>
+        // if styleAppendMap contain the newStyleName,
+        // means that cloneStyleElement has already been appended
+<span class="nc bnc" id="L1004" title="All 4 branches missed.">        if ((isAppended != null) &amp;&amp; isAppended.booleanValue() == true) {</span>
+<span class="nc" id="L1005">          continue;</span>
+        } else {
+<span class="nc" id="L1007">          styleAppendMap.put(newStyleName, true);</span>
+        }
+<span class="nc" id="L1009">        OdfElement cloneForeignStyleElement =</span>
+<span class="nc" id="L1010">            (OdfElement) cloneForeignElement(cloneStyleElement, dom, true);</span>
+<span class="nc" id="L1011">        String styleElePath = getElementPath(styleElement);</span>
+<span class="nc" id="L1012">        appendForeignStyleElement(cloneForeignStyleElement, dom, styleElePath);</span>
+<span class="nc" id="L1013">        copyForeignLinkRef(cloneStyleElement);</span>
+<span class="nc" id="L1014">      }</span>
+<span class="nc" id="L1015">    } catch (Exception e) {</span>
+<span class="nc" id="L1016">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1017">    }</span>
+<span class="nc" id="L1018">  }</span>
+
+  // get all the copy of referred style element which is directly referred or indirectly referred by
+  // cloneEle
+  // all the style are defined in srcStyleNodeList
+  // and these style are all have the styleName defined in styleQName attribute
+  // the key of copyStyleEleList is the style definition element
+  // the value of the corresponding key is the clone of the element which refer to the key,
+  // the cloned element can be the content of slide or the style element.
+  // the key of appendStyleList is the style definition element which has the other style reference
+  // the value of the corresponding key is the the style definition clone element
+  // loop means if recursive call this function
+  // if loop == true, get the style definition element reference other style definition element
+  private void getCopyStyleList(
+      OdfElement ele,
+      OdfElement cloneEle,
+      String styleQName,
+      NodeList srcStyleNodeList,
+      HashMap&lt;OdfElement, List&lt;OdfElement&gt;&gt; copyStyleEleList,
+      HashMap&lt;OdfElement, OdfElement&gt; appendStyleList,
+      boolean loop) {
+    try {
+<span class="nc" id="L1040">      String styleLocalName = OdfNamespace.getLocalPart(styleQName);</span>
+<span class="nc" id="L1041">      String styleURI = OdfDocumentNamespace.STYLE.getUri();</span>
+      // OdfElement override the &quot;toString&quot; method
+<span class="nc" id="L1043">      String cloneEleStr = cloneEle.toString();</span>
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">      for (int i = 0; i &lt; srcStyleNodeList.getLength(); i++) {</span>
+<span class="nc" id="L1045">        OdfElement styleElement = (OdfElement) srcStyleNodeList.item(i);</span>
+<span class="nc" id="L1046">        String styleName = styleElement.getAttributeNS(styleURI, styleLocalName);</span>
+<span class="nc bnc" id="L1047" title="All 2 branches missed.">        if (styleName != null) {</span>
+<span class="nc" id="L1048">          int index = 0;</span>
+<span class="nc" id="L1049">          index = cloneEleStr.indexOf(&quot;=\&quot;&quot; + styleName + &quot;\&quot;&quot;, index);</span>
+<span class="nc bnc" id="L1050" title="All 2 branches missed.">          while (index &gt;= 0) {</span>
+<span class="nc" id="L1051">            String subStr = cloneEleStr.substring(0, index);</span>
+<span class="nc" id="L1052">            int lastSpaceIndex = subStr.lastIndexOf(' ');</span>
+<span class="nc" id="L1053">            String attrStr = subStr.substring(lastSpaceIndex + 1, index);</span>
+<span class="nc" id="L1054">            XPath xpath = ((OdfFileDom) cloneEle.getOwnerDocument()).getXPath();</span>
+<span class="nc" id="L1055">            NodeList styleRefNodes =</span>
+                (NodeList)
+<span class="nc" id="L1057">                    xpath.evaluate(</span>
+                        &quot;.//*[@&quot; + attrStr + &quot;='&quot; + styleName + &quot;']&quot;,
+                        cloneEle,
+                        XPathConstants.NODESET);
+<span class="nc" id="L1061">            boolean isExist = false;</span>
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">            for (int j = 0; j &lt;= styleRefNodes.getLength(); j++) {</span>
+<span class="nc" id="L1063">              OdfElement styleRefElement = null;</span>
+<span class="nc bnc" id="L1064" title="All 2 branches missed.">              if (j == styleRefNodes.getLength()) {</span>
+<span class="nc" id="L1065">                isExist = isStyleNameRefExist(cloneEle, styleName, false);</span>
+<span class="nc bnc" id="L1066" title="All 2 branches missed.">                if (isExist) {</span>
+<span class="nc" id="L1067">                  styleRefElement = cloneEle;</span>
+                } else {
+                  continue;
+                }
+              } else {
+<span class="nc" id="L1072">                OdfElement tmpElement = (OdfElement) styleRefNodes.item(j);</span>
+<span class="nc bnc" id="L1073" title="All 2 branches missed.">                if (isStyleNameRefExist(tmpElement, styleName, false)) {</span>
+<span class="nc" id="L1074">                  styleRefElement = tmpElement;</span>
+                } else {
+                  continue;
+                }
+              }
+<span class="nc" id="L1079">              boolean hasLoopStyleDef = true;</span>
+<span class="nc bnc" id="L1080" title="All 2 branches missed.">              if (copyStyleEleList.get(styleElement) == null) {</span>
+<span class="nc" id="L1081">                List&lt;OdfElement&gt; styleRefEleList = new ArrayList&lt;OdfElement&gt;();</span>
+<span class="nc" id="L1082">                copyStyleEleList.put(styleElement, styleRefEleList);</span>
+<span class="nc" id="L1083">                hasLoopStyleDef = false;</span>
+              }
+<span class="nc" id="L1085">              copyStyleEleList.get(styleElement).add(styleRefElement);</span>
+
+<span class="nc" id="L1087">              OdfElement cloneStyleElement = appendStyleList.get(styleElement);</span>
+<span class="nc bnc" id="L1088" title="All 2 branches missed.">              if (cloneStyleElement == null) {</span>
+<span class="nc" id="L1089">                cloneStyleElement = (OdfElement) styleElement.cloneNode(true);</span>
+<span class="nc" id="L1090">                appendStyleList.put(styleElement, cloneStyleElement);</span>
+              }
+<span class="nc bnc" id="L1092" title="All 4 branches missed.">              if (loop &amp;&amp; !hasLoopStyleDef) {</span>
+<span class="nc" id="L1093">                getCopyStyleList(</span>
+                    styleElement,
+                    cloneStyleElement,
+                    styleQName,
+                    srcStyleNodeList,
+                    copyStyleEleList,
+                    appendStyleList,
+                    loop);
+              }
+            }
+<span class="nc" id="L1103">            index = cloneEleStr.indexOf(&quot;=\&quot;&quot; + styleName + &quot;\&quot;&quot;, index + styleName.length());</span>
+<span class="nc" id="L1104">          }</span>
+        }
+      }
+<span class="nc" id="L1107">    } catch (Exception e) {</span>
+<span class="nc" id="L1108">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1109">    }</span>
+<span class="nc" id="L1110">  }</span>
+  // append the cloneStyleElement to the contentDom which position is defined by styleElePath
+
+  private void appendForeignStyleElement(
+      OdfElement cloneStyleEle, OdfFileDom dom, String styleElePath) {
+<span class="nc" id="L1115">    StringTokenizer token = new StringTokenizer(styleElePath, &quot;/&quot;);</span>
+<span class="nc" id="L1116">    boolean isExist = true;</span>
+<span class="nc" id="L1117">    Node iterNode = dom.getFirstChild();</span>
+<span class="nc" id="L1118">    Node parentNode = dom;</span>
+<span class="nc bnc" id="L1119" title="All 2 branches missed.">    while (token.hasMoreTokens()) {</span>
+<span class="nc" id="L1120">      String onePath = token.nextToken();</span>
+
+<span class="nc bnc" id="L1122" title="All 4 branches missed.">      while ((iterNode != null) &amp;&amp; isExist) {</span>
+<span class="nc" id="L1123">        String path = iterNode.getNamespaceURI();</span>
+<span class="nc" id="L1124">        String prefix = iterNode.getPrefix();</span>
+<span class="nc bnc" id="L1125" title="All 2 branches missed.">        if (prefix == null) {</span>
+<span class="nc" id="L1126">          path += &quot;@&quot; + iterNode.getLocalName();</span>
+        } else {
+<span class="nc" id="L1128">          path += &quot;@&quot; + prefix + &quot;:&quot; + iterNode.getLocalName();</span>
+        }
+<span class="nc bnc" id="L1130" title="All 2 branches missed.">        if (!path.equals(onePath)) {</span>
+          // not found, then get the next sibling to find such path node
+<span class="nc" id="L1132">          iterNode = iterNode.getNextSibling();</span>
+        } else {
+          // found, then get the child nodes to find the next path node
+<span class="nc" id="L1135">          parentNode = iterNode;</span>
+<span class="nc" id="L1136">          iterNode = iterNode.getFirstChild();</span>
+<span class="nc" id="L1137">          break;</span>
+        }
+<span class="nc" id="L1139">      }</span>
+
+<span class="nc bnc" id="L1141" title="All 2 branches missed.">      if (iterNode == null) {</span>
+        // should new the element since the current path node
+<span class="nc bnc" id="L1143" title="All 2 branches missed.">        if (isExist) {</span>
+<span class="nc" id="L1144">          isExist = false;</span>
+        }
+<span class="nc" id="L1146">        StringTokenizer token2 = new StringTokenizer(onePath, &quot;@&quot;);</span>
+<span class="nc" id="L1147">        OdfElement newElement =</span>
+<span class="nc" id="L1148">            dom.createElementNS(OdfName.newName(token2.nextToken(), token2.nextToken()));</span>
+<span class="nc" id="L1149">        parentNode.appendChild(newElement);</span>
+<span class="nc" id="L1150">        parentNode = newElement;</span>
+      }
+<span class="nc" id="L1152">    }</span>
+<span class="nc" id="L1153">    parentNode.appendChild(cloneStyleEle);</span>
+<span class="nc" id="L1154">  }</span>
+
+  // The returned string is a path from the top of the dom tree to the specified element
+  // and the path is split by &quot;/&quot; between each node
+  private String getElementPath(OdfElement styleEle) {
+<span class="nc" id="L1159">    String path = &quot;&quot;;</span>
+<span class="nc" id="L1160">    Node parentNode = styleEle.getParentNode();</span>
+<span class="nc bnc" id="L1161" title="All 2 branches missed.">    while (!(parentNode instanceof OdfFileDom)) {</span>
+<span class="nc" id="L1162">      String qname = null;</span>
+<span class="nc" id="L1163">      String prefix = parentNode.getPrefix();</span>
+<span class="nc bnc" id="L1164" title="All 2 branches missed.">      if (prefix == null) {</span>
+<span class="nc" id="L1165">        qname = parentNode.getLocalName();</span>
+      } else {
+<span class="nc" id="L1167">        qname = prefix + &quot;:&quot; + parentNode.getLocalName();</span>
+      }
+<span class="nc" id="L1169">      path = parentNode.getNamespaceURI() + &quot;@&quot; + qname + &quot;/&quot; + path;</span>
+<span class="nc" id="L1170">      parentNode = parentNode.getParentNode();</span>
+<span class="nc" id="L1171">    }</span>
+<span class="nc" id="L1172">    return path;</span>
+  }
+
+  // change the element referred oldStyleName to the new name
+  // if true then set newStyleName attribute value successfully
+  // if false means that the newStyleName value is not conform to the ODF spec, so do not modify the
+  // oldStyleName
+  private boolean changeStyleRefName(
+      List&lt;OdfElement&gt; list, String oldStyleName, String newStyleName) {
+<span class="nc" id="L1181">    boolean rtn = false;</span>
+<span class="nc bnc" id="L1182" title="All 2 branches missed.">    for (int index = 0; index &lt; list.size(); index++) {</span>
+<span class="nc" id="L1183">      OdfElement element = list.get(index);</span>
+<span class="nc" id="L1184">      NamedNodeMap attributes = element.getAttributes();</span>
+
+<span class="nc bnc" id="L1186" title="All 2 branches missed.">      if (attributes != null) {</span>
+<span class="nc bnc" id="L1187" title="All 2 branches missed.">        for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L1188">          Node item = attributes.item(i);</span>
+<span class="nc" id="L1189">          String value = item.getNodeValue();</span>
+<span class="nc bnc" id="L1190" title="All 2 branches missed.">          if (oldStyleName.equals(value)) {</span>
+            try {
+<span class="nc" id="L1192">              item.setNodeValue(newStyleName);</span>
+<span class="nc" id="L1193">              rtn = true;</span>
+<span class="nc" id="L1194">              break;</span>
+<span class="nc" id="L1195">            } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L1196">              return false;</span>
+            }
+          }
+        }
+      }
+    }
+<span class="nc" id="L1202">    return rtn;</span>
+  }
+
+  // check if the element contains the referred styleName
+  private boolean isStyleNameRefExist(Node element, String styleName, boolean deep) {
+<span class="nc" id="L1207">    NamedNodeMap attributes = element.getAttributes();</span>
+<span class="nc bnc" id="L1208" title="All 2 branches missed.">    if (attributes != null) {</span>
+<span class="nc bnc" id="L1209" title="All 2 branches missed.">      for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L1210">        Node item = attributes.item(i);</span>
+<span class="nc bnc" id="L1211" title="All 2 branches missed.">        if (item.getNodeValue().equals(styleName)</span>
+<span class="nc bnc" id="L1212" title="All 2 branches missed.">            &amp;&amp; !item.getNodeName().equals(&quot;style:name&quot;)) // this is style definition, not reference</span>
+        {
+<span class="nc" id="L1214">          return true;</span>
+        }
+      }
+    }
+<span class="nc bnc" id="L1218" title="All 2 branches missed.">    if (deep) {</span>
+<span class="nc" id="L1219">      Node childNode = element.getFirstChild();</span>
+<span class="nc bnc" id="L1220" title="All 2 branches missed.">      while (childNode != null) {</span>
+<span class="nc bnc" id="L1221" title="All 2 branches missed.">        if (!isStyleNameRefExist(childNode, styleName, true)) {</span>
+<span class="nc" id="L1222">          childNode = childNode.getNextSibling();</span>
+        } else {
+<span class="nc" id="L1224">          return true;</span>
+        }
+      }
+    }
+<span class="nc" id="L1228">    return false;</span>
+  }
+
+  // check if nodeList contains the node that &quot;style:name&quot; attribute has the same value with
+  // styleName
+  // Note: nodeList here is all the style definition list
+  private OdfElement isStyleNameExist(NodeList nodeList, String styleName) {
+<span class="nc bnc" id="L1235" title="All 2 branches missed.">    for (int i = 0; i &lt; nodeList.getLength(); i++) {</span>
+<span class="nc" id="L1236">      OdfElement element = (OdfElement) nodeList.item(i);</span>
+<span class="nc" id="L1237">      String name = element.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;name&quot;);</span>
+<span class="nc bnc" id="L1238" title="All 2 branches missed.">      if (name.equals(styleName)) // return true;</span>
+      {
+<span class="nc" id="L1240">        return element;</span>
+      }
+    }
+    // return false;
+<span class="nc" id="L1244">    return null;</span>
+  }
+
+  private String makeUniqueName() {
+<span class="nc" id="L1248">    return String.format(&quot;a%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+  }
+
+  /**
+   * Make a content copy of the specified element, and the returned element should have the
+   * specified ownerDocument.
+   *
+   * @param element The element that need to be copied
+   * @param dom The specified DOM tree that the returned element belong to
+   * @param deep If true, recursively clone the subtree under the element, false, only clone the
+   *     element itself
+   * @return Returns a duplicated element which is not in the DOM tree with the specified element
+   */
+  public Node cloneForeignElement(Node element, OdfFileDom dom, boolean deep) {
+<span class="nc" id="L1262">    checkAllSlideName();</span>
+<span class="nc bnc" id="L1263" title="All 2 branches missed.">    if (element instanceof OdfElement) {</span>
+<span class="nc" id="L1264">      OdfElement cloneElement = dom.createElementNS(((OdfElement) element).getOdfName());</span>
+
+<span class="nc" id="L1266">      NamedNodeMap attributes = element.getAttributes();</span>
+<span class="nc bnc" id="L1267" title="All 2 branches missed.">      if (attributes != null) {</span>
+<span class="nc bnc" id="L1268" title="All 2 branches missed.">        for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L1269">          Node item = attributes.item(i);</span>
+<span class="nc" id="L1270">          String qname = null;</span>
+<span class="nc" id="L1271">          String prefix = item.getPrefix();</span>
+<span class="nc bnc" id="L1272" title="All 2 branches missed.">          if (prefix == null) {</span>
+<span class="nc" id="L1273">            qname = item.getLocalName();</span>
+          } else {
+<span class="nc" id="L1275">            qname = prefix + &quot;:&quot; + item.getLocalName();</span>
+          }
+
+<span class="nc" id="L1278">          cloneElement.setAttributeNS(item.getNamespaceURI(), qname, item.getNodeValue());</span>
+        }
+      }
+
+<span class="nc bnc" id="L1282" title="All 2 branches missed.">      if (deep) {</span>
+<span class="nc" id="L1283">        Node childNode = element.getFirstChild();</span>
+<span class="nc bnc" id="L1284" title="All 2 branches missed.">        while (childNode != null) {</span>
+<span class="nc" id="L1285">          cloneElement.appendChild(cloneForeignElement(childNode, dom, true));</span>
+<span class="nc" id="L1286">          childNode = childNode.getNextSibling();</span>
+        }
+      }
+
+<span class="nc" id="L1290">      return cloneElement;</span>
+    } else {
+<span class="nc" id="L1292">      return dom.createTextNode(element.getNodeValue());</span>
+    }
+  }
+
+  /**
+   * New a slide at the specified position with the specified name, and use the specified slide
+   * template. See &lt;code&gt;OdfDrawPage.SlideLayout&lt;/code&gt;.
+   *
+   * &lt;p&gt;If index is invalid, such as larger than the current document slide number or is negative,
+   * then append the new slide at the end of the document.
+   *
+   * &lt;p&gt;The slide name can be null.
+   *
+   * @param index the new slide position
+   * @param name the new slide name
+   * @param slideLayout the new slide template
+   * @return the new slide which locate at the specified position with the specified name and apply
+   *     the specified slide template. If slideLayout is null, then use the default slide template
+   *     which is a blank slide.
+   *     &lt;p&gt;Throw IndexOutOfBoundsException if index is out of the presentation document slide
+   *     count.
+   */
+  public OdfSlide newSlide(int index, String name, OdfSlide.SlideLayout slideLayout) {
+<span class="nc" id="L1315">    checkAllSlideName();</span>
+<span class="nc" id="L1316">    OfficePresentationElement contentRoot = null;</span>
+    try {
+<span class="nc" id="L1318">      contentRoot = getContentRoot();</span>
+<span class="nc" id="L1319">    } catch (Exception e) {</span>
+<span class="nc" id="L1320">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1321">      return null;</span>
+<span class="nc" id="L1322">    }</span>
+<span class="nc" id="L1323">    NodeList slideList =</span>
+<span class="nc" id="L1324">        contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc" id="L1325">    int slideCount = slideList.getLength();</span>
+<span class="nc bnc" id="L1326" title="All 4 branches missed.">    if ((index &lt; 0) || (index &gt; slideCount)) {</span>
+<span class="nc" id="L1327">      throw new IndexOutOfBoundsException(</span>
+          &quot;the specified Index is out of slide count when call newSlide method.&quot;);
+    }
+    // if insert page at the beginning of the document,
+    // get the next page style as the new page style
+    // else get the previous page style as the new page style
+<span class="nc" id="L1333">    DrawPageElement refStyleSlide = null;</span>
+<span class="nc" id="L1334">    int refSlideIndex = 0;</span>
+<span class="nc bnc" id="L1335" title="All 2 branches missed.">    if (index &gt; 0) {</span>
+<span class="nc" id="L1336">      refSlideIndex = index - 1;</span>
+    }
+<span class="nc" id="L1338">    refStyleSlide = (DrawPageElement) slideList.item(refSlideIndex);</span>
+<span class="nc" id="L1339">    String masterPageStyleName = &quot;Default&quot;;</span>
+<span class="nc" id="L1340">    String masterName = refStyleSlide.getDrawMasterPageNameAttribute();</span>
+<span class="nc bnc" id="L1341" title="All 2 branches missed.">    if (masterName != null) {</span>
+<span class="nc" id="L1342">      masterPageStyleName = masterName;</span>
+    }
+<span class="nc" id="L1344">    DrawPageElement newSlideElement = contentRoot.newDrawPageElement(masterPageStyleName);</span>
+<span class="nc" id="L1345">    newSlideElement.setDrawNameAttribute(name);</span>
+<span class="nc" id="L1346">    String drawStyleName = refStyleSlide.getDrawStyleNameAttribute();</span>
+<span class="nc bnc" id="L1347" title="All 2 branches missed.">    if (drawStyleName != null) {</span>
+<span class="nc" id="L1348">      newSlideElement.setDrawStyleNameAttribute(drawStyleName);</span>
+    }
+<span class="nc" id="L1350">    String pageLayoutName = refStyleSlide.getPresentationPresentationPageLayoutNameAttribute();</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">    if (pageLayoutName != null) {</span>
+<span class="nc" id="L1352">      newSlideElement.setPresentationPresentationPageLayoutNameAttribute(pageLayoutName);</span>
+    }
+<span class="nc" id="L1354">    setSlideLayout(newSlideElement, slideLayout);</span>
+    // insert notes page
+<span class="nc" id="L1356">    NodeList noteNodes =</span>
+<span class="nc" id="L1357">        refStyleSlide.getElementsByTagNameNS(OdfDocumentNamespace.PRESENTATION.getUri(), &quot;notes&quot;);</span>
+<span class="nc bnc" id="L1358" title="All 2 branches missed.">    if (noteNodes.getLength() &gt; 0) {</span>
+<span class="nc" id="L1359">      PresentationNotesElement notePage = (PresentationNotesElement) noteNodes.item(0);</span>
+<span class="nc" id="L1360">      PresentationNotesElement cloneNotePage = (PresentationNotesElement) notePage.cloneNode(true);</span>
+<span class="nc" id="L1361">      newSlideElement.appendChild(cloneNotePage);</span>
+    }
+<span class="nc bnc" id="L1363" title="All 2 branches missed.">    if (index &lt; slideCount) {</span>
+<span class="nc" id="L1364">      DrawPageElement refSlide = (DrawPageElement) slideList.item(index);</span>
+<span class="nc" id="L1365">      contentRoot.insertBefore(newSlideElement, refSlide);</span>
+    }
+<span class="nc" id="L1367">    adjustNotePageNumber(index);</span>
+    // in case that the appended new slide have the same name with the original slide
+<span class="nc" id="L1369">    hasCheckSlideName = false;</span>
+<span class="nc" id="L1370">    checkAllSlideName();</span>
+<span class="nc" id="L1371">    return OdfSlide.getInstance(newSlideElement);</span>
+  }
+
+  // when insert a slide, the note page for this slide is also inserted.
+  // note page refer the slide index in order to show the corresponding slide notes view
+  // this function is used to adjust note page referred slide index since startIndex
+  // when the slide at startIndex has been delete or insert
+  private void adjustNotePageNumber(int startIndex) {
+    try {
+<span class="nc" id="L1380">      OfficePresentationElement contentRoot = getContentRoot();</span>
+<span class="nc" id="L1381">      NodeList slideList =</span>
+<span class="nc" id="L1382">          contentRoot.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page&quot;);</span>
+<span class="nc bnc" id="L1383" title="All 2 branches missed.">      for (int i = startIndex; i &lt; getSlideCount(); i++) {</span>
+<span class="nc" id="L1384">        DrawPageElement page = (DrawPageElement) slideList.item(i);</span>
+<span class="nc" id="L1385">        NodeList noteNodes =</span>
+<span class="nc" id="L1386">            page.getElementsByTagNameNS(OdfDocumentNamespace.PRESENTATION.getUri(), &quot;notes&quot;);</span>
+<span class="nc bnc" id="L1387" title="All 2 branches missed.">        if (noteNodes.getLength() &gt; 0) {</span>
+<span class="nc" id="L1388">          PresentationNotesElement notePage = (PresentationNotesElement) noteNodes.item(0);</span>
+<span class="nc" id="L1389">          NodeList thumbnailList =</span>
+<span class="nc" id="L1390">              notePage.getElementsByTagNameNS(OdfDocumentNamespace.DRAW.getUri(), &quot;page-thumbnail&quot;);</span>
+<span class="nc bnc" id="L1391" title="All 2 branches missed.">          if (thumbnailList.getLength() &gt; 0) {</span>
+<span class="nc" id="L1392">            DrawPageThumbnailElement thumbnail = (DrawPageThumbnailElement) thumbnailList.item(0);</span>
+<span class="nc" id="L1393">            thumbnail.setDrawPageNumberAttribute(i + 1);</span>
+          }
+        }
+      }
+<span class="nc" id="L1397">    } catch (Exception e) {</span>
+<span class="nc" id="L1398">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1399">    }</span>
+<span class="nc" id="L1400">  }</span>
+
+  // covered element
+  // &lt;presentation:notes&gt;, &lt;draw:page-thumbnail&gt;, &lt;draw:frame&gt;
+  // &lt;style:presentation-page-layout&gt;
+  private void setSlideLayout(DrawPageElement page, OdfSlide.SlideLayout slideLayout) {
+<span class="nc bnc" id="L1406" title="All 2 branches missed.">    if (slideLayout == null) {</span>
+<span class="nc" id="L1407">      slideLayout = OdfSlide.SlideLayout.BLANK;</span>
+    }
+<span class="nc" id="L1409">    OdfOfficeStyles styles = null;</span>
+    try {
+<span class="nc" id="L1411">      styles = this.getStylesDom().getOrCreateOfficeStyles();</span>
+<span class="nc" id="L1412">    } catch (SAXException ex) {</span>
+<span class="nc" id="L1413">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1414">    } catch (IOException ex) {</span>
+<span class="nc" id="L1415">      Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1416">    }</span>
+    String layoutName;
+
+<span class="nc bnc" id="L1419" title="All 2 branches missed.">    if (slideLayout.toString().equals(OdfSlide.SlideLayout.TITLE_ONLY.toString())) {</span>
+<span class="nc" id="L1420">      layoutName = &quot;AL1T&quot; + makeUniqueName();</span>
+      try {
+<span class="nc" id="L1422">        StylePresentationPageLayoutElement layout =</span>
+<span class="nc" id="L1423">            styles.newStylePresentationPageLayoutElement(layoutName);</span>
+<span class="nc" id="L1424">        layout.newPresentationPlaceholderElement(</span>
+            &quot;title&quot;, &quot;2.058cm&quot;, &quot;1.743cm&quot;, &quot;23.91cm&quot;, &quot;3.507cm&quot;);
+<span class="nc" id="L1426">      } catch (Exception e1) {</span>
+<span class="nc" id="L1427">        Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e1);</span>
+<span class="nc" id="L1428">      }</span>
+<span class="nc" id="L1429">      page.setPresentationPresentationPageLayoutNameAttribute(layoutName);</span>
+
+<span class="nc" id="L1431">      DrawFrameElement frame1 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1432">      frame1.setProperty(StyleGraphicPropertiesElement.StyleShadow, &quot;true&quot;);</span>
+<span class="nc" id="L1433">      frame1.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1434">      frame1.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1435">      frame1.setPresentationStyleNameAttribute(frame1.getStyleName());</span>
+
+<span class="nc" id="L1437">      frame1.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1438">      frame1.setSvgHeightAttribute(&quot;3.006cm&quot;);</span>
+<span class="nc" id="L1439">      frame1.setSvgWidthAttribute(&quot;24.299cm&quot;);</span>
+<span class="nc" id="L1440">      frame1.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1441">      frame1.setSvgYAttribute(&quot;0.717cm&quot;);</span>
+<span class="nc" id="L1442">      frame1.setPresentationClassAttribute(PresentationClassAttribute.Value.TITLE.toString());</span>
+<span class="nc" id="L1443">      frame1.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1444">      frame1.newDrawTextBoxElement();</span>
+<span class="nc bnc" id="L1445" title="All 2 branches missed.">    } else if (slideLayout.toString().equals(OdfSlide.SlideLayout.TITLE_OUTLINE.toString())) {</span>
+<span class="nc" id="L1446">      layoutName = makeUniqueName();</span>
+      try {
+<span class="nc" id="L1448">        styles = super.getStylesDom().getOfficeStyles();</span>
+<span class="nc bnc" id="L1449" title="All 2 branches missed.">        if (styles == null) {</span>
+<span class="nc" id="L1450">          styles = super.getStylesDom().newOdfElement(OdfOfficeStyles.class);</span>
+        }
+<span class="nc" id="L1452">        StylePresentationPageLayoutElement layout =</span>
+<span class="nc" id="L1453">            styles.newStylePresentationPageLayoutElement(layoutName);</span>
+<span class="nc" id="L1454">        layout.newPresentationPlaceholderElement(</span>
+            &quot;title&quot;, &quot;2.058cm&quot;, &quot;1.743cm&quot;, &quot;23.91cm&quot;, &quot;3.507cm&quot;);
+<span class="nc" id="L1456">        layout.newPresentationPlaceholderElement(</span>
+            &quot;outline&quot;, &quot;2.058cm&quot;, &quot;1.743cm&quot;, &quot;23.91cm&quot;, &quot;3.507cm&quot;);
+
+<span class="nc" id="L1459">      } catch (Exception e1) {</span>
+<span class="nc" id="L1460">        Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e1);</span>
+<span class="nc" id="L1461">      }</span>
+<span class="nc" id="L1462">      page.setPresentationPresentationPageLayoutNameAttribute(layoutName);</span>
+
+<span class="nc" id="L1464">      DrawFrameElement frame1 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1465">      frame1.setProperty(StyleGraphicPropertiesElement.StyleShadow, &quot;true&quot;);</span>
+<span class="nc" id="L1466">      frame1.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1467">      frame1.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1468">      frame1.setPresentationStyleNameAttribute(frame1.getStyleName());</span>
+
+<span class="nc" id="L1470">      frame1.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1471">      frame1.setSvgHeightAttribute(&quot;3.006cm&quot;);</span>
+<span class="nc" id="L1472">      frame1.setSvgWidthAttribute(&quot;24.299cm&quot;);</span>
+<span class="nc" id="L1473">      frame1.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1474">      frame1.setSvgYAttribute(&quot;0.717cm&quot;);</span>
+<span class="nc" id="L1475">      frame1.setPresentationClassAttribute(PresentationClassAttribute.Value.TITLE.toString());</span>
+<span class="nc" id="L1476">      frame1.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1477">      frame1.newDrawTextBoxElement();</span>
+<span class="nc" id="L1478">      DrawFrameElement frame2 = page.newDrawFrameElement();</span>
+
+<span class="nc" id="L1480">      frame2.setProperty(StyleGraphicPropertiesElement.FillColor, &quot;#ffffff&quot;);</span>
+<span class="nc" id="L1481">      frame2.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;13.114&quot;);</span>
+<span class="nc" id="L1482">      frame2.setPresentationStyleNameAttribute(frame2.getStyleName());</span>
+
+<span class="nc" id="L1484">      frame2.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1485">      frame2.setSvgHeightAttribute(&quot;11.629cm&quot;);</span>
+<span class="nc" id="L1486">      frame2.setSvgWidthAttribute(&quot;24.199cm&quot;);</span>
+<span class="nc" id="L1487">      frame2.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1488">      frame2.setSvgYAttribute(&quot;4.337cm&quot;);</span>
+<span class="nc" id="L1489">      frame2.setPresentationClassAttribute(PresentationClassAttribute.Value.OUTLINE.toString());</span>
+<span class="nc" id="L1490">      frame2.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1491">      frame2.newDrawTextBoxElement();</span>
+<span class="nc bnc" id="L1492" title="All 2 branches missed.">    } else if (slideLayout.toString().equals(OdfSlide.SlideLayout.TITLE_PLUS_TEXT.toString())) {</span>
+<span class="nc" id="L1493">      layoutName = makeUniqueName();</span>
+      try {
+<span class="nc" id="L1495">        styles = super.getStylesDom().getOfficeStyles();</span>
+<span class="nc bnc" id="L1496" title="All 2 branches missed.">        if (styles == null) {</span>
+<span class="nc" id="L1497">          styles = super.getStylesDom().newOdfElement(OdfOfficeStyles.class);</span>
+        }
+<span class="nc" id="L1499">        StylePresentationPageLayoutElement layout =</span>
+<span class="nc" id="L1500">            styles.newStylePresentationPageLayoutElement(layoutName);</span>
+<span class="nc" id="L1501">        layout.newPresentationPlaceholderElement(</span>
+            &quot;title&quot;, &quot;2.058cm&quot;, &quot;1.743cm&quot;, &quot;23.91cm&quot;, &quot;1.743cm&quot;);
+<span class="nc" id="L1503">        layout.newPresentationPlaceholderElement(</span>
+            &quot;subtitle&quot;, &quot;2.058cm&quot;, &quot;5.838cm&quot;, &quot;23.91cm&quot;, &quot;13.23cm&quot;);
+
+<span class="nc" id="L1506">      } catch (Exception e1) {</span>
+<span class="nc" id="L1507">        Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e1);</span>
+<span class="nc" id="L1508">      }</span>
+<span class="nc" id="L1509">      page.setPresentationPresentationPageLayoutNameAttribute(layoutName);</span>
+
+<span class="nc" id="L1511">      DrawFrameElement frame1 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1512">      frame1.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1513">      frame1.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1514">      frame1.setPresentationStyleNameAttribute(frame1.getStyleName());</span>
+
+<span class="nc" id="L1516">      frame1.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1517">      frame1.setSvgHeightAttribute(&quot;3.006cm&quot;);</span>
+<span class="nc" id="L1518">      frame1.setSvgWidthAttribute(&quot;24.299cm&quot;);</span>
+<span class="nc" id="L1519">      frame1.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1520">      frame1.setSvgYAttribute(&quot;0.717cm&quot;);</span>
+<span class="nc" id="L1521">      frame1.setPresentationClassAttribute(PresentationClassAttribute.Value.TITLE.toString());</span>
+<span class="nc" id="L1522">      frame1.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1523">      frame1.newDrawTextBoxElement();</span>
+<span class="nc" id="L1524">      DrawFrameElement frame2 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1525">      frame2.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1526">      frame2.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1527">      frame2.setPresentationStyleNameAttribute(frame2.getStyleName());</span>
+
+<span class="nc" id="L1529">      frame2.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1530">      frame2.setSvgHeightAttribute(&quot;11.88cm&quot;);</span>
+<span class="nc" id="L1531">      frame2.setSvgWidthAttribute(&quot;24.299cm&quot;);</span>
+<span class="nc" id="L1532">      frame2.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1533">      frame2.setSvgYAttribute(&quot;4.712cm&quot;);</span>
+<span class="nc" id="L1534">      frame2.setPresentationClassAttribute(PresentationClassAttribute.Value.SUBTITLE.toString());</span>
+<span class="nc" id="L1535">      frame2.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1536">      frame2.newDrawTextBoxElement();</span>
+
+<span class="nc" id="L1538">    } else if (slideLayout</span>
+<span class="nc" id="L1539">        .toString()</span>
+<span class="nc bnc" id="L1540" title="All 2 branches missed.">        .equals(OdfSlide.SlideLayout.TITLE_PLUS_2_TEXT_BLOCK.toString())) {</span>
+
+<span class="nc" id="L1542">      layoutName = makeUniqueName();</span>
+      try {
+<span class="nc" id="L1544">        styles = super.getStylesDom().getOfficeStyles();</span>
+<span class="nc bnc" id="L1545" title="All 2 branches missed.">        if (styles == null) {</span>
+<span class="nc" id="L1546">          styles = super.getStylesDom().newOdfElement(OdfOfficeStyles.class);</span>
+        }
+<span class="nc" id="L1548">        StylePresentationPageLayoutElement layout =</span>
+<span class="nc" id="L1549">            styles.newStylePresentationPageLayoutElement(layoutName);</span>
+<span class="nc" id="L1550">        layout.newPresentationPlaceholderElement(</span>
+            &quot;outline&quot;, &quot;2.058cm&quot;, &quot;1.743cm&quot;, &quot;23.91cm&quot;, &quot;1.743cm&quot;);
+<span class="nc" id="L1552">        layout.newPresentationPlaceholderElement(</span>
+            &quot;outline&quot;, &quot;1.35cm&quot;, &quot;4.212cm&quot;, &quot;11.857cm&quot;, &quot;11.629cm&quot;);
+<span class="nc" id="L1554">        layout.newPresentationPlaceholderElement(</span>
+            &quot;outline&quot;, &quot;4.212cm&quot;, &quot;13.8cm&quot;, &quot;11.857cm&quot;, &quot;11.629cm&quot;);
+
+<span class="nc" id="L1557">      } catch (Exception e1) {</span>
+<span class="nc" id="L1558">        Logger.getLogger(OdfPresentationDocument.class.getName()).log(Level.SEVERE, null, e1);</span>
+<span class="nc" id="L1559">      }</span>
+
+<span class="nc" id="L1561">      DrawFrameElement frame1 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1562">      frame1.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1563">      frame1.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1564">      frame1.setPresentationStyleNameAttribute(frame1.getStyleName());</span>
+
+<span class="nc" id="L1566">      frame1.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1567">      frame1.setSvgHeightAttribute(&quot;3.006cm&quot;);</span>
+<span class="nc" id="L1568">      frame1.setSvgWidthAttribute(&quot;24.299cm&quot;);</span>
+<span class="nc" id="L1569">      frame1.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1570">      frame1.setSvgYAttribute(&quot;0.717cm&quot;);</span>
+<span class="nc" id="L1571">      frame1.setPresentationClassAttribute(PresentationClassAttribute.Value.TITLE.toString());</span>
+<span class="nc" id="L1572">      frame1.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1573">      frame1.newDrawTextBoxElement();</span>
+<span class="nc" id="L1574">      DrawFrameElement frame2 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1575">      frame2.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1576">      frame2.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1577">      frame2.setPresentationStyleNameAttribute(frame2.getStyleName());</span>
+
+<span class="nc" id="L1579">      frame2.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1580">      frame2.setSvgHeightAttribute(&quot;11.629cm&quot;);</span>
+<span class="nc" id="L1581">      frame2.setSvgWidthAttribute(&quot;11.857cm&quot;);</span>
+<span class="nc" id="L1582">      frame2.setSvgXAttribute(&quot;1.35cm&quot;);</span>
+<span class="nc" id="L1583">      frame2.setSvgYAttribute(&quot;4.212cm&quot;);</span>
+<span class="nc" id="L1584">      frame2.setPresentationClassAttribute(PresentationClassAttribute.Value.OUTLINE.toString());</span>
+<span class="nc" id="L1585">      frame2.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1586">      frame2.newDrawTextBoxElement();</span>
+<span class="nc" id="L1587">      DrawFrameElement frame3 = page.newDrawFrameElement();</span>
+<span class="nc" id="L1588">      frame3.setProperty(StyleGraphicPropertiesElement.AutoGrowHeight, &quot;true&quot;);</span>
+<span class="nc" id="L1589">      frame3.setProperty(StyleGraphicPropertiesElement.MinHeight, &quot;3.507&quot;);</span>
+<span class="nc" id="L1590">      frame3.setPresentationStyleNameAttribute(frame3.getStyleName());</span>
+
+<span class="nc" id="L1592">      frame3.setDrawLayerAttribute(&quot;layout&quot;);</span>
+<span class="nc" id="L1593">      frame3.setSvgHeightAttribute(&quot;11.62cm&quot;);</span>
+<span class="nc" id="L1594">      frame3.setSvgWidthAttribute(&quot;11.857cm&quot;);</span>
+<span class="nc" id="L1595">      frame3.setSvgXAttribute(&quot;13.8cm&quot;);</span>
+<span class="nc" id="L1596">      frame3.setSvgYAttribute(&quot;4.212cm&quot;);</span>
+<span class="nc" id="L1597">      frame3.setPresentationClassAttribute(PresentationClassAttribute.Value.OUTLINE.toString());</span>
+<span class="nc" id="L1598">      frame3.setPresentationPlaceholderAttribute(true);</span>
+<span class="nc" id="L1599">      frame3.newDrawTextBoxElement();</span>
+
+<span class="nc" id="L1601">      page.setPresentationPresentationPageLayoutNameAttribute(layoutName);</span>
+    }
+<span class="nc" id="L1603">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

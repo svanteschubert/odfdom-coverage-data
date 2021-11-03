@@ -1,0 +1,1237 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Component.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">Component.java</span></div><h1>Component.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.dr3d.Dr3dSceneElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawCaptionElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawCircleElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawConnectorElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawControlElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawCustomShapeElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawEllipseElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawFrameElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawGElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawLineElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPageThumbnailElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPathElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPolygonElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPolylineElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawRectElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawRegularPolygonElement;
+import org.odftoolkit.odfdom.dom.element.form.FormConnectionResourceElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeAnnotationElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeAnnotationEndElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeChartElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeDatabaseElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeDrawingElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeImageElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficePresentationElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeSpreadsheetElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeTextElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleFooterElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleFooterLeftElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHeaderElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHeaderLeftElement;
+import org.odftoolkit.odfdom.dom.element.table.TableCoveredTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowsElement;
+import org.odftoolkit.odfdom.dom.element.text.TextAElement;
+import org.odftoolkit.odfdom.dom.element.text.TextAuthorInitialsElement;
+import org.odftoolkit.odfdom.dom.element.text.TextBookmarkElement;
+import org.odftoolkit.odfdom.dom.element.text.TextHElement;
+import org.odftoolkit.odfdom.dom.element.text.TextLineBreakElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListHeaderElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListItemElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.element.text.TextParagraphElementBase;
+import org.odftoolkit.odfdom.dom.element.text.TextSElement;
+import org.odftoolkit.odfdom.dom.element.text.TextSpanElement;
+import org.odftoolkit.odfdom.dom.element.text.TextTabElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
+/**
+ * The component is a logical modular entity, to abstract from the implementation details of the
+ * XML.
+ *
+ * @author svante.schubertATgmail.com
+ */
+public class Component {
+
+<span class="nc" id="L93">  private static final Logger LOG = Logger.getLogger(Component.class.getName());</span>
+  //
+  // public enum OPERATION {
+  //    INSERT_PARAGRAPH (&quot;insertParagraph&quot;, 2),
+  //    INSERT_TEXT   (&quot;insertText&quot;, 3);
+  //
+  //    private final String name;   // function name
+  //    private final int parameterCount; // number of arguments
+  //    Operation(String name, int parameterCount) {
+  //        this.name = name;
+  //        this.parameterCount = parameterCount;
+  //    }
+  //    public String name()   { return parameterCount; }
+  //    public name parameterCount() { return parameterCount; }
+  //
+  //    public double surfaceGravity() {
+  //        return G * mass / (radius * radius);
+  //    }
+  //    public double surfaceWeight(double otherMass) {
+  //        return otherMass * surfaceGravity();
+  //    }
+  // }
+  private static final String LIBRE_OFFICE_MS_INTEROP_NAMESPACE =
+      &quot;urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0&quot;;
+  private static final String LIBRE_OFFICE_MS_INTEROP_LOCALNAME = &quot;fieldmark&quot;;
+
+  /**
+   * Tests if the given element is the start of a component
+   *
+   * @return true if the given element is the root of an ODF component
+   */
+  public static boolean isComponentRoot(Element element) {
+<span class="nc" id="L125">    boolean isComponent = false;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">    if (element instanceof OdfElement) {</span>
+<span class="nc" id="L127">      isComponent =</span>
+<span class="nc" id="L128">          isComponentRoot(</span>
+<span class="nc" id="L129">              ((OdfElement) element).getNamespaceURI(), ((OdfElement) element).getLocalName());</span>
+    }
+<span class="nc" id="L131">    return isComponent;</span>
+  }
+
+  /**
+   * Tests if the given element is the start of a component
+   *
+   * @return true if the given element is the root of an ODF component
+   */
+  public static boolean isComponentRoot(String uri, String localName) {
+<span class="nc" id="L140">    boolean isComponent = false;</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    if (uri != null) {</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">      if (uri.equals(TextPElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (localName.equals(TextPElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L144">          isComponent = true;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        } else if (localName.equals(TextHElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L146">          isComponent = true;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        } else if (localName.equals(TextTabElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L148">          isComponent = true;</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        } else if (localName.equals(TextLineBreakElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L150">          isComponent = true;</span>
+        }
+<span class="nc bnc" id="L152" title="All 2 branches missed.">      } else if (uri.equals(TableTableElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (localName.equals(TableTableElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L154">          isComponent = true;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        } else if (localName.equals(TableTableRowElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L156">          isComponent = true;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        } else if (localName.equals(TableTableCellElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L158">          isComponent = true;</span>
+        }
+<span class="nc bnc" id="L160" title="All 2 branches missed.">      } else if (uri.equals(DrawFrameElement.ELEMENT_NAME.getUri())</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">          &amp;&amp; localName.equals(DrawFrameElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L162">        isComponent = true;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">      } else if (isShapeElement(uri, localName)) {</span>
+<span class="nc" id="L164">        isComponent = true;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">      } else if ((uri.equals(OfficeAnnotationElement.ELEMENT_NAME.getUri())</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">              &amp;&amp; localName.equals(OfficeAnnotationElement.ELEMENT_NAME.getLocalName()))</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">          || (uri.equals(OfficeAnnotationEndElement.ELEMENT_NAME.getUri())</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">              &amp;&amp; localName.equals(OfficeAnnotationEndElement.ELEMENT_NAME.getLocalName()))) {</span>
+<span class="nc" id="L169">        isComponent = true;</span>
+      }
+<span class="nc bnc" id="L171" title="All 2 branches missed.">      if (isField(uri, localName)) {</span>
+<span class="nc" id="L172">        isComponent = true;</span>
+      }
+    }
+<span class="nc" id="L175">    return isComponent;</span>
+  }
+
+  /**
+   * Tests if the given element is the wrapper around a descendant component root element
+   *
+   * @return true if the given element is a potential wrapper around an ODF component
+   */
+  public static boolean isComponentWrapper(Element element) {
+<span class="nc" id="L184">    boolean isWrapper = false;</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    if (element instanceof OdfElement) {</span>
+<span class="nc" id="L186">      isWrapper =</span>
+<span class="nc" id="L187">          isComponentWrapper(</span>
+<span class="nc" id="L188">              ((OdfElement) element).getNamespaceURI(), ((OdfElement) element).getLocalName());</span>
+    }
+<span class="nc" id="L190">    return isWrapper;</span>
+  }
+
+  /**
+   * Tests if the given element is the wrapper around a descendant component root element
+   *
+   * @return true if the given element is a potential wrapper around an ODF component
+   */
+  public static boolean isComponentWrapper(String uri, String localName) {
+<span class="nc" id="L199">    boolean isWrapper = false;</span>
+<span class="nc bnc" id="L200" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TextListElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">      if (localName.equals(TextListElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L202">        isWrapper = true;</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">      } else if (localName.equals(TextListItemElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L204">        isWrapper = true;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">      } else if (localName.equals(TextListHeaderElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L206">        isWrapper = true;</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">      } else if (localName.equals(TextBookmarkElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L208">        isWrapper = true;</span>
+      }
+<span class="nc bnc" id="L210" title="All 4 branches missed.">    } else if (uri != null &amp;&amp; uri.equals(TableTableElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">      if (localName.equals(TableTableRowsElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L212">        isWrapper = true;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">      } else if (localName.equals(TableTableRowGroupElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L214">        isWrapper = true;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">      } else if (localName.equals(TableTableColumnsElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L216">        isWrapper = true;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">      } else if (localName.equals(TableTableColumnGroupElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L218">        isWrapper = true;</span>
+      }
+    }
+<span class="nc" id="L221">    return isWrapper;</span>
+  }
+
+  //    /** Includes text delimiter */
+  //    private boolean isTextElement(String uri, String localName) {
+  //        boolean isTextElement = false;
+  //        // Check for component root element by combination of URI and localName
+  //        if (uri.equals(TextPElement.ELEMENT_NAME.getUri()) &amp;&amp;
+  // (localName.equals(TextPElement.ELEMENT_NAME.getLocalName())
+  //                || localName.equals(TextSpanElement.ELEMENT_NAME.getLocalName())
+  //                || localName.equals(TextHElement.ELEMENT_NAME.getLocalName()))) {
+  //            isTextElement = true;
+  //        }
+  //        return isTextElement;
+  //    }
+  /**
+   * Returns true if the Node is an TextPElement or TextHElement. Both are the root elements of text
+   * containers. Text container have special handline of whitespace, see
+   * http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#White-space_Characters
+   */
+  public static boolean isTextComponentRoot(Node textContainer) {
+<span class="nc" id="L242">    boolean isTextElement = false;</span>
+<span class="nc bnc" id="L243" title="All 4 branches missed.">    if (textContainer instanceof TextPElement || textContainer instanceof TextHElement) {</span>
+<span class="nc" id="L244">      isTextElement = true;</span>
+    }
+<span class="nc" id="L246">    return isTextElement;</span>
+  }
+
+  public static boolean isTextComponentRoot(String uri, String localName) {
+<span class="nc" id="L250">    boolean isComponent = false;</span>
+<span class="nc bnc" id="L251" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TextPElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">      if (localName.equals(TextPElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L253">        isComponent = true;</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">      } else if (localName.equals(TextHElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L255">        isComponent = true;</span>
+      }
+    }
+<span class="nc" id="L258">    return isComponent;</span>
+  }
+
+  public static boolean isRowComponentRoot(Node textContainer) {
+<span class="nc" id="L262">    boolean isRowElement = false;</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">    if (textContainer instanceof TableTableRowElement) {</span>
+<span class="nc" id="L264">      isRowElement = true;</span>
+    }
+<span class="nc" id="L266">    return isRowElement;</span>
+  }
+
+  public static boolean isRowComponentRoot(String uri, String localName) {
+<span class="nc" id="L270">    boolean isComponent = false;</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TableTableRowElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">      if (localName.equals(TableTableRowElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L273">        isComponent = true;</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">      } else if (localName.equals(TextHElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L275">        isComponent = true;</span>
+      }
+    }
+<span class="nc" id="L278">    return isComponent;</span>
+  }
+
+  public static boolean isField(String uri, String localName) {
+<span class="nc" id="L282">    boolean isField = false;</span>
+<span class="nc bnc" id="L283" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TextAuthorInitialsElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">      if (localName.equals(&quot;author-initials&quot;)</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">          || localName.equals(&quot;author-name&quot;)</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">          || localName.equals(&quot;bookmark-ref&quot;)</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">          || localName.equals(&quot;chapter&quot;)</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">          || localName.equals(&quot;character-count&quot;)</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">          || localName.equals(&quot;conditional-text&quot;)</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">          || localName.equals(&quot;creation-date&quot;)</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">          || localName.equals(&quot;creation-time&quot;)</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">          || localName.equals(&quot;creator&quot;)</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">          || localName.equals(&quot;database-display&quot;)</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">          || localName.equals(&quot;database-name&quot;)</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">          || localName.equals(&quot;database-row-number&quot;)</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">          || localName.equals(&quot;date&quot;)</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">          || localName.equals(&quot;dde-connection&quot;)</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">          || localName.equals(&quot;description&quot;)</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">          || localName.equals(&quot;editing-cycles&quot;)</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">          || localName.equals(&quot;editing-duration&quot;)</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">          || localName.equals(&quot;execute-macro&quot;)</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">          || localName.equals(&quot;expression&quot;)</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">          || localName.equals(&quot;file-name&quot;)</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">          || localName.equals(&quot;hidden-paragraph&quot;)</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">          || localName.equals(&quot;hidden-text&quot;)</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">          || localName.equals(&quot;image-count&quot;)</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">          || localName.equals(&quot;initial-creator&quot;)</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">          || localName.equals(&quot;keywords&quot;)</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">          || localName.equals(&quot;measure&quot;)</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">          || localName.equals(&quot;meta-field&quot;)</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">          || localName.equals(&quot;modification-date&quot;)</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">          || localName.equals(&quot;modification-time&quot;)</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">          || localName.equals(&quot;note-ref&quot;)</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">          || localName.equals(&quot;object-count&quot;)</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">          || localName.equals(&quot;page-continuation&quot;)</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">          || localName.equals(&quot;page-count&quot;)</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">          || localName.equals(&quot;page-number&quot;)</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">          || localName.equals(&quot;page-variable-get&quot;)</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">          || localName.equals(&quot;page-variable-set&quot;)</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">          || localName.equals(&quot;paragraph-count&quot;)</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">          || localName.equals(&quot;placeholder&quot;)</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">          || localName.equals(&quot;print-date&quot;)</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">          || localName.equals(&quot;print-time&quot;)</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">          || localName.equals(&quot;printed-by&quot;)</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">          || localName.equals(&quot;reference-ref&quot;)</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">          || localName.equals(&quot;script&quot;)</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">          || localName.equals(&quot;sender-city&quot;)</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">          || localName.equals(&quot;sender-company&quot;)</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">          || localName.equals(&quot;sender-country&quot;)</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">          || localName.equals(&quot;sender-email&quot;)</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">          || localName.equals(&quot;sender-fax&quot;)</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">          || localName.equals(&quot;sender-firstname&quot;)</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">          || localName.equals(&quot;sender-initials&quot;)</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">          || localName.equals(&quot;sender-lastname&quot;)</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">          || localName.equals(&quot;sender-phone-private&quot;)</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">          || localName.equals(&quot;sender-phone-work&quot;)</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">          || localName.equals(&quot;sender-position&quot;)</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">          || localName.equals(&quot;sender-postal-code&quot;)</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">          || localName.equals(&quot;sender-state-or-province&quot;)</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">          || localName.equals(&quot;sender-street&quot;)</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">          || localName.equals(&quot;sender-title&quot;)</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">          || localName.equals(&quot;sequence-ref&quot;)</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">          || localName.equals(&quot;sequence&quot;)</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">          || localName.equals(&quot;sheet-name&quot;)</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">          || localName.equals(&quot;subject&quot;)</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">          || localName.equals(&quot;table-count&quot;)</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">          || localName.equals(&quot;template-name&quot;)</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">          || localName.equals(&quot;text-input&quot;)</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">          || localName.equals(&quot;time&quot;)</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">          || localName.equals(&quot;title&quot;)</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">          || localName.equals(&quot;user-defined&quot;)</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">          || localName.equals(&quot;user-field-get&quot;)</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">          || localName.equals(&quot;user-field-input&quot;)</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">          || localName.equals(&quot;variable-get&quot;)</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">          || localName.equals(&quot;variable-input&quot;)</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">          || localName.equals(&quot;variable-set&quot;)</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">          || localName.equals(&quot;word-count&quot;)) {</span>
+<span class="nc" id="L358">        isField = true;</span>
+      }
+<span class="nc bnc" id="L360" title="All 4 branches missed.">    } else if (uri != null &amp;&amp; uri.equals(FormConnectionResourceElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">      if (localName.equals(&quot;connection-resource&quot;)) {</span>
+<span class="nc" id="L362">        isField = true;</span>
+      }
+<span class="nc bnc" id="L364" title="All 4 branches missed.">    } else if (uri != null &amp;&amp; uri.equals(LIBRE_OFFICE_MS_INTEROP_NAMESPACE)) {</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">      if (localName.equals(LIBRE_OFFICE_MS_INTEROP_LOCALNAME)) {</span>
+<span class="nc" id="L366">        isField = true;</span>
+      }
+    }
+<span class="nc" id="L369">    return isField;</span>
+  }
+
+  /**
+   * Tests if the given element is the start of a document
+   *
+   * @return true if the given element is the root of an ODF document (e.g. office:text)
+   */
+  public static boolean isDocumentRoot(String uri, String localName) {
+<span class="nc" id="L378">    boolean isRoot = false;</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">    if (uri.equals(OfficeTextElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">      if (localName.equals(OfficeTextElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L381">        isRoot = true;</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">      } else if (localName.equals(OfficeSpreadsheetElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L383">        isRoot = true;</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">      } else if (localName.equals(OfficePresentationElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L385">        isRoot = true;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">      } else if (localName.equals(OfficeChartElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L387">        isRoot = true;</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">      } else if (localName.equals(OfficeDrawingElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L389">        isRoot = true;</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">      } else if (localName.equals(OfficeImageElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L391">        isRoot = true;</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">      } else if (localName.equals(OfficeDatabaseElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L393">        isRoot = true;</span>
+      }
+<span class="nc bnc" id="L395" title="All 4 branches missed.">    } else if (isHeaderRoot(uri, localName) || isFooterRoot(uri, localName)) {</span>
+<span class="nc" id="L396">      isRoot = true;</span>
+    }
+<span class="nc" id="L398">    return isRoot;</span>
+  }
+
+  /**
+   * Tests if the given element is the start of a header within a page style. The content of a
+   * header is equal to the content of a usual ODT text file (ie. &lt;office:text&gt;).
+   *
+   * @return true if the given element is the root of a header (i.e. style:header)
+   */
+  public static boolean isHeaderRoot(String uri, String localName) {
+<span class="nc" id="L408">    boolean isRoot = false;</span>
+<span class="nc bnc" id="L409" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleHeaderElement.ELEMENT_NAME.getUri())) {</span>
+      // style:header
+<span class="nc bnc" id="L411" title="All 2 branches missed.">      if (localName.equals(StyleHeaderElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L412">        isRoot = true;</span>
+      }
+    }
+<span class="nc bnc" id="L415" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleHeaderLeftElement.ELEMENT_NAME.getUri())) {</span>
+      // style:header-left
+<span class="nc bnc" id="L417" title="All 2 branches missed.">      if (localName.equals(StyleHeaderLeftElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L418">        isRoot = true;</span>
+      }
+    }
+<span class="nc bnc" id="L421" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleHeaderLeftElement.ELEMENT_NAME.getUri())) {</span>
+      // style:header-first
+<span class="nc bnc" id="L423" title="All 2 branches missed.">      if (localName.equals(&quot;header-first&quot;)) {</span>
+<span class="nc" id="L424">        isRoot = true;</span>
+      }
+    }
+<span class="nc" id="L427">    return isRoot;</span>
+  }
+
+  /**
+   * Tests if the given element is the start of a footer within a page style. The content of a
+   * footer is equal to the content of a usual ODT text file (ie. &lt;office:text&gt;).
+   *
+   * @return true if the given element is the root of a footer (i.e. style:footer)
+   */
+  public static boolean isFooterRoot(String uri, String localName) {
+<span class="nc" id="L437">    boolean isRoot = false;</span>
+
+<span class="nc bnc" id="L439" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleFooterElement.ELEMENT_NAME.getUri())) {</span>
+      // style:footer
+<span class="nc bnc" id="L441" title="All 2 branches missed.">      if (localName.equals(StyleFooterElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L442">        isRoot = true;</span>
+      }
+    }
+<span class="nc bnc" id="L445" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleFooterLeftElement.ELEMENT_NAME.getUri())) {</span>
+      // style:footer-left
+<span class="nc bnc" id="L447" title="All 2 branches missed.">      if (localName.equals(StyleFooterLeftElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L448">        isRoot = true;</span>
+      }
+    }
+<span class="nc bnc" id="L451" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleFooterLeftElement.ELEMENT_NAME.getUri())) {</span>
+      // style:footer-first
+<span class="nc bnc" id="L453" title="All 2 branches missed.">      if (localName.equals(&quot;footer-first&quot;)) {</span>
+<span class="nc" id="L454">        isRoot = true;</span>
+      }
+    }
+<span class="nc" id="L457">    return isRoot;</span>
+  }
+
+  /**
+   * Tests if the given element is a shape element Shapes are in general those with elements with a
+   *
+   * @svg:width and
+   * @text:anchor-type. With the exception of office:annotation, usually viewed aside the document
+   *     as note. The list of placeholder elements is therefore: dr3d:scene draw:caption draw:circle
+   *     draw:control draw:custom-shape draw:ellipse draw:page-thumbnail draw:path draw:polygon
+   *     draw:polyline draw:rect draw:regular-polygon
+   * @return true if the given element is the root of an ODF shape element
+   */
+  public static boolean isShapeElement(String uri, String localName) {
+<span class="nc" id="L471">    boolean isShape = false;</span>
+<span class="nc bnc" id="L472" title="All 4 branches missed.">    if (uri != null &amp;&amp; localName != null) {</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">      if (uri.equals(DrawRectElement.ELEMENT_NAME.getUri())</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">          &amp;&amp; (localName.equals(DrawCaptionElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">              || localName.equals(DrawCircleElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">              || localName.equals(DrawControlElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">              || localName.equals(DrawCustomShapeElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">              || localName.equals(DrawEllipseElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">              || localName.equals(DrawGElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">              || localName.equals(DrawPageThumbnailElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">              || localName.equals(DrawPathElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">              || localName.equals(DrawPolylineElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">              || localName.equals(DrawPolygonElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">              || localName.equals(DrawRectElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">              || localName.equals(DrawRegularPolygonElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">              || localName.equals(DrawLineElement.ELEMENT_NAME.getLocalName())</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">              || localName.equals(DrawConnectorElement.ELEMENT_NAME.getLocalName()))) {</span>
+<span class="nc" id="L488">        isShape = true;</span>
+      }
+<span class="nc bnc" id="L490" title="All 2 branches missed.">      if (uri.equals(Dr3dSceneElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        if (localName.equals(Dr3dSceneElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L492">          isShape = true;</span>
+        }
+      }
+    }
+<span class="nc" id="L496">    return isShape;</span>
+  }
+
+  /**
+   * Tests if the given element is a whitespace element
+   *
+   * @return true if the given element is an ODF whitespace element
+   */
+  public static boolean isWhiteSpaceElement(String uri, String localName) {
+<span class="nc" id="L505">    boolean isWhiteSpace = false;</span>
+<span class="nc bnc" id="L506" title="All 2 branches missed.">    if (uri.equals(TextSElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">      if (localName.equals(TextSElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L508">        isWhiteSpace = true;</span>
+      }
+    }
+<span class="nc" id="L511">    return isWhiteSpace;</span>
+  }
+
+  public static boolean isCoveredComponentRoot(String uri, String localName) {
+<span class="nc" id="L515">    boolean isComponent = false;</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">    if (uri.equals(TableTableElement.ELEMENT_NAME.getUri())) {</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">      if (localName.equals(TableCoveredTableCellElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L518">        isComponent = true;</span>
+      }
+    }
+<span class="nc" id="L521">    return isComponent;</span>
+  }
+
+  /** @return true if the node is a text delimiter element */
+  public static boolean isTextSelection(Node textSelection) {
+<span class="nc" id="L526">    boolean isTextElement = false;</span>
+<span class="nc bnc" id="L527" title="All 4 branches missed.">    if (textSelection instanceof TextSpanElement || textSelection instanceof TextAElement) {</span>
+<span class="nc" id="L528">      isTextElement = true;</span>
+    }
+<span class="nc" id="L530">    return isTextElement;</span>
+  }
+
+  /**
+   * Only being used to create the root of all components, representing the document without a
+   * parent element
+   */
+<span class="nc" id="L537">  public Component(OdfElement componentElement) {</span>
+<span class="nc" id="L538">    mRootElement = componentElement;</span>
+<span class="nc" id="L539">    componentElement.setComponent(this);</span>
+<span class="nc" id="L540">  }</span>
+
+<span class="nc" id="L542">  protected Component(OdfElement componentElement, Component parent) {</span>
+<span class="nc" id="L543">    mRootElement = componentElement;</span>
+<span class="nc" id="L544">    componentElement.setComponent(this);</span>
+<span class="nc" id="L545">    mParent = parent;</span>
+<span class="nc" id="L546">  }</span>
+  // All component children
+  List&lt;Component&gt; mChildren;
+  // the root XML element of the component
+  public OdfElement mRootElement;
+  // the parent component
+  private Component mParent;
+  private Component mRootComponent;
+  /** if a repeated attribute was set at the component. In this case the positioning will change. */
+<span class="nc" id="L555">  boolean mHasRepeated = false;</span>
+
+  /** Returns the parent component */
+  public Component getParent() {
+<span class="nc" id="L559">    return mParent;</span>
+  }
+
+  /**
+   * Sometimes (e.g. if the child is a paragraph within list elements). The parent root element of
+   * the child component root element will not be directly children. It will be checked if there is
+   * a child element or list level 10 has reached.
+   */
+  public static OdfElement getCorrectStartElementOfChild(
+      OdfElement parentElement, OdfElement existingChildElement) {
+    // element usually used for positioning of insertion
+    // lists elements are boilerplate between paragraph parent and child component (paragraph),
+<span class="nc" id="L571">    OdfElement existingParentElement = (OdfElement) existingChildElement.getParentNode();</span>
+    // if the existing component is a paragraph with list properities
+<span class="nc bnc" id="L573" title="All 6 branches missed.">    if ((existingParentElement instanceof TextListItemElement</span>
+            || existingParentElement instanceof TextListHeaderElement)
+        &amp;&amp; existingChildElement instanceof TextParagraphElementBase) {
+<span class="nc" id="L576">      TextParagraphElementBase existingParagraph = (TextParagraphElementBase) existingChildElement;</span>
+<span class="nc" id="L577">      JsonOperationConsumer.isolateListParagraph(existingParagraph);</span>
+<span class="nc" id="L578">      OdfElement potentialParent = (OdfElement) existingParagraph.getParentNode();</span>
+<span class="nc bnc" id="L579" title="All 4 branches missed.">      while (potentialParent != null &amp;&amp; !parentElement.equals(potentialParent)) {</span>
+<span class="nc" id="L580">        potentialParent = (OdfElement) potentialParent.getParentNode();</span>
+<span class="nc bnc" id="L581" title="All 2 branches missed.">        if (parentElement.equals(potentialParent)) {</span>
+<span class="nc" id="L582">          break;</span>
+        } else {
+<span class="nc" id="L584">          existingChildElement = potentialParent;</span>
+        }
+      }
+    }
+<span class="nc" id="L588">    return existingChildElement;</span>
+  }
+
+  public Component getLastChild() {
+<span class="nc" id="L592">    Component lastChild = null;</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">    if (mChildren != null) {</span>
+<span class="nc" id="L594">      lastChild = mChildren.get(mChildren.size());</span>
+    }
+<span class="nc" id="L596">    return lastChild;</span>
+  }
+
+  public Document getOwnerDocument() {
+<span class="nc" id="L600">    return mRootElement.getOwnerDocument();</span>
+  }
+
+  /** @return the child at the given position */
+  public Node getChildNode(int position) {
+<span class="nc" id="L605">    Node rootElement = null;</span>
+<span class="nc" id="L606">    Component c = null;</span>
+<span class="nc bnc" id="L607" title="All 4 branches missed.">    if (mChildren != null &amp;&amp; mChildren.size() &gt; position) {</span>
+<span class="nc" id="L608">      c = mChildren.get(position);</span>
+    }
+<span class="nc bnc" id="L610" title="All 2 branches missed.">    if (c != null) {</span>
+<span class="nc" id="L611">      rootElement = c.getRootElement();</span>
+    }
+<span class="nc" id="L613">    return rootElement;</span>
+  }
+
+  public Component get(JSONArray position) {
+<span class="nc" id="L617">    return get(position, false, false, 0);</span>
+  }
+
+  /**
+   * Get descendant component by its relative position to this component. Counting starts with 0.
+   *
+   * @param position relative position of the desired component relative to the current component
+   * @param needParent if true the parent of the given position is returned
+   * @param needFollowingSibling if true the next sibling of the given position is returned
+   *     (exclusive to getPositionsFollowingSibling)
+   */
+  protected Component get(
+      JSONArray position, boolean needParent, boolean needFollowingSibling, int depth) {
+    // check recursion end conditions
+<span class="nc" id="L631">    Component c = null;</span>
+<span class="nc" id="L632">    final int maxDepth = position.length() - 1;</span>
+    // if not the correct depth is reached, go deeper
+<span class="nc bnc" id="L634" title="All 8 branches missed.">    if (!needParent &amp;&amp; maxDepth &gt; depth || (needParent &amp;&amp; (maxDepth - 1 != depth))) {</span>
+      try {
+        // get from this level the currect component
+<span class="nc" id="L637">        Node startNode = getChildNode(position.getInt(depth));</span>
+<span class="nc bnc" id="L638" title="All 2 branches missed.">        if (startNode instanceof OdfElement) {</span>
+<span class="nc" id="L639">          c = ((OdfElement) startNode).getComponent();</span>
+        }
+        // call recursive this method with an additional depth for getting its child
+<span class="nc bnc" id="L642" title="All 2 branches missed.">        if (c != null) {</span>
+<span class="nc" id="L643">          c = c.get(position, needParent, needFollowingSibling, depth + 1);</span>
+        } else {
+          // we need a special component for table row and cell, to expand if necessary!
+          // take the last existing row/cell and insert as many empty before the last one.
+          // get the position of the last XML and the last XML as well
+          // split up repeated
+          // do not split up covered, but .. hmm... get an empty cell back
+          // shall we track the position on-the-fly via DOM events?
+          //					OdfElement lastElement = mRootElement.getLastChildElement();
+          //					Component c2 = lastElement.getComponent();
+          //					String pos = c2.getPosition(c2);
+<span class="nc" id="L654">          LOG.fine(&quot;Component yet missing!&quot;);</span>
+        }
+<span class="nc" id="L656">      } catch (JSONException ex) {</span>
+<span class="nc" id="L657">        Logger.getLogger(Component.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L658">      }</span>
+    } else {
+      try {
+        // get the desired child
+<span class="nc bnc" id="L662" title="All 2 branches missed.">        if (needFollowingSibling) {</span>
+<span class="nc" id="L663">          Node startNode = getChildNode(position.getInt(depth) + 1);</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">          if (startNode instanceof OdfElement) {</span>
+<span class="nc" id="L665">            c = ((OdfElement) startNode).getComponent();</span>
+          }
+<span class="nc" id="L667">        } else {</span>
+<span class="nc" id="L668">          Node startNode = getChildNode(position.getInt(depth));</span>
+<span class="nc bnc" id="L669" title="All 2 branches missed.">          if (startNode instanceof OdfElement) {</span>
+<span class="nc" id="L670">            c = ((OdfElement) startNode).getComponent();</span>
+<span class="nc" id="L671">            Component parent = c.getParent();</span>
+<span class="nc" id="L672">            parent.getPosition(c);</span>
+          }
+        }
+        // call recursive this method with an additional depth for getting its child
+<span class="nc bnc" id="L676" title="All 2 branches missed.">        if (c == null) {</span>
+          // we need a special component for table row and cell, to expand if necessary!
+          // take the last existing row/cell and insert as many empty before the last one.
+          // get the position of the last XML and the last XML as well
+          // split up repeated
+          // do not split up covered, but .. hmm... get an empty cell back
+          // shall we track the position on-the-fly via DOM events?
+          //					OdfElement lastElement = mRootElement.getLastChildElement();
+          //					Component c2 = lastElement.getComponent();
+          //					String pos = c2.getPosition(c2);
+<span class="nc" id="L686">          LOG.fine(&quot;Component yet missing!&quot;);</span>
+        }
+<span class="nc" id="L688">      } catch (JSONException ex) {</span>
+<span class="nc" id="L689">        Logger.getLogger(Component.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L690">      }</span>
+    }
+<span class="nc" id="L692">    return c;</span>
+  }
+
+  /** Get next sibling component of the given position. Counting start with 0. */
+  public Component getNextSiblingOf(JSONArray position) {
+<span class="nc" id="L697">    return get(position, false, true, 0);</span>
+  }
+
+  /** Get parent component of the given position */
+  public Component getParentOf(JSONArray position) {
+<span class="nc" id="L702">    Component c = null;</span>
+<span class="nc bnc" id="L703" title="All 2 branches missed.">    if (position.length() == 1) {</span>
+<span class="nc" id="L704">      c = getRootComponent();</span>
+    } else {
+<span class="nc" id="L706">      c = get(position, true, false, 0);</span>
+    }
+<span class="nc" id="L708">    return c;</span>
+  }
+
+  public Component getRootComponent() {
+<span class="nc bnc" id="L712" title="All 2 branches missed.">    if (mRootComponent == null) {</span>
+<span class="nc" id="L713">      Component parent = this;</span>
+<span class="nc bnc" id="L714" title="All 2 branches missed.">      while (parent != null) {</span>
+<span class="nc" id="L715">        mRootComponent = parent;</span>
+<span class="nc" id="L716">        parent = parent.getParent();</span>
+      }
+    }
+<span class="nc" id="L719">    return mRootComponent;</span>
+  }
+
+  public List&lt;Component&gt; getChildren() {
+<span class="nc" id="L723">    return mChildren;</span>
+  }
+
+  /** @return the root element of the component */
+  public OdfElement getRootElement() {
+<span class="nc" id="L728">    return mRootElement;</span>
+  }
+
+  /**
+   * @param odfElement the new root element of the component Used after splitting a list containing
+   *     paragraphs and assigning the new cloned paragraph elements to the existing components.
+   */
+  void setRootElement(OdfElement odfElement) {
+<span class="nc" id="L736">    mRootElement = odfElement;</span>
+<span class="nc" id="L737">  }</span>
+
+  /** Appending a child element to the component */
+  public Component createChildComponent(OdfElement componentRoot) {
+<span class="nc" id="L741">    componentRoot.markAsComponentRoot(true);</span>
+<span class="nc" id="L742">    return createChildComponent(-1, this, componentRoot);</span>
+  }
+
+  /**
+   * Inserts a component at the given position as child
+   *
+   * @param position of the component, a -1 is going to append the element
+   */
+  public static Component createChildComponent(
+      int position, Component parentComponent, OdfElement newChildElement) {
+<span class="nc" id="L752">    Component c = createComponent(parentComponent, newChildElement);</span>
+
+<span class="nc bnc" id="L754" title="All 8 branches missed.">    if (!(parentComponent instanceof Table</span>
+        || parentComponent instanceof Row
+        || parentComponent instanceof Cell
+        || parentComponent instanceof TextContainer)) {
+<span class="nc" id="L758">      addComponent(position, parentComponent, c);</span>
+    }
+
+<span class="nc" id="L761">    LOG.log(</span>
+        Level.FINEST,
+        &quot;***\n***  New Component: {0}\n*** {1}\n***&quot;,
+<span class="nc" id="L764">        new Object[] {parentComponent.getPosition(c), newChildElement.toString()});</span>
+<span class="nc" id="L765">    return c;</span>
+  }
+
+  public static Component createComponent(Component parentComponent, OdfElement newChildElement) {
+    Component c;
+    // Mark the element as component, so for instance an ODF Frame with image can be recognized as
+    // component
+<span class="nc" id="L772">    newChildElement.markAsComponentRoot(true);</span>
+
+    // if the component is a table container
+<span class="nc bnc" id="L775" title="All 2 branches missed.">    if (newChildElement instanceof TableTableElement) {</span>
+<span class="nc" id="L776">      c = new Table&lt;Component&gt;(newChildElement, parentComponent);</span>
+
+<span class="nc bnc" id="L778" title="All 2 branches missed.">    } else if (newChildElement instanceof TableTableRowElement) {</span>
+<span class="nc" id="L779">      c = new Row&lt;Component&gt;(newChildElement, parentComponent);</span>
+
+<span class="nc bnc" id="L781" title="All 4 branches missed.">    } else if (newChildElement instanceof TableTableCellElement</span>
+        || newChildElement instanceof TableCoveredTableCellElement) {
+<span class="nc" id="L783">      c = new Cell&lt;Component&gt;(newChildElement, parentComponent);</span>
+
+<span class="nc bnc" id="L785" title="All 2 branches missed.">    } else if (isTextComponentRoot(newChildElement)) {</span>
+<span class="nc" id="L786">      c = new TextContainer&lt;Component&gt;(newChildElement, parentComponent);</span>
+      // if the component is a text container (have to deal with text nodes and elements)
+<span class="nc bnc" id="L788" title="All 2 branches missed.">    } else if (newChildElement instanceof OfficeAnnotationElement) {</span>
+<span class="nc" id="L789">      c = new Annotation(newChildElement, parentComponent);</span>
+    } else {
+<span class="nc" id="L791">      c = new Component(newChildElement, parentComponent);</span>
+    }
+<span class="nc" id="L793">    newChildElement.setComponent(c);</span>
+<span class="nc" id="L794">    return c;</span>
+  }
+
+  /**
+   * Adds the given component as new child component. No XML elements are being changed!
+   *
+   * @param index starting with 0 representing the position of the child, if -1 the new child will
+   *     be appended
+   */
+  static void addComponent(int pos, Component parent, Component child) {
+<span class="nc" id="L804">    parent.addChild(pos, child);</span>
+<span class="nc" id="L805">  }</span>
+
+  /**
+   * Adds the given component as new child component. No XML elements are being changed!
+   *
+   * @param index starting with 0 representing the position of the child, if -1 the new child will
+   *     be appended
+   */
+  public void addChild(int index, Component c) {
+<span class="nc bnc" id="L814" title="All 2 branches missed.">    if (mChildren == null) {</span>
+<span class="nc bnc" id="L815" title="All 2 branches missed.">      if (mChildren == null) {</span>
+<span class="nc" id="L816">        mChildren = new LinkedList&lt;Component&gt;();</span>
+      }
+    }
+<span class="nc bnc" id="L819" title="All 2 branches missed.">    if (index &gt;= 0) {</span>
+<span class="nc" id="L820">      mChildren.add(index, c);</span>
+    } else {
+<span class="nc" id="L822">      mChildren.add(c);</span>
+    }
+<span class="nc" id="L824">  }</span>
+
+  /** Only removes from the component list, not from the DOM */
+  public Node remove(int position) {
+<span class="nc" id="L828">    Node n = null;</span>
+<span class="nc bnc" id="L829" title="All 2 branches missed.">    if (mChildren != null) {</span>
+<span class="nc" id="L830">      Component c = mChildren.remove(position);</span>
+<span class="nc bnc" id="L831" title="All 2 branches missed.">      if (c != null) {</span>
+<span class="nc" id="L832">        n = c.getRootElement();</span>
+      }
+    }
+<span class="nc" id="L835">    return n;</span>
+  }
+
+  /** Returns the number of child components */
+  public int size() {
+<span class="nc" id="L840">    int size = 0;</span>
+<span class="nc bnc" id="L841" title="All 2 branches missed.">    if (mChildren != null) {</span>
+<span class="nc" id="L842">      size = mChildren.size();</span>
+    }
+<span class="nc" id="L844">    return size;</span>
+  }
+
+  public void hasRepeated(boolean hasRepeated) {
+<span class="nc" id="L848">    mHasRepeated = hasRepeated;</span>
+<span class="nc" id="L849">  }</span>
+
+  public boolean hasRepeated() {
+<span class="nc" id="L852">    return mHasRepeated;</span>
+  }
+
+  /** @return the position as a slash separated string */
+  protected String getPosition(Component c) {
+    String s;
+    List&lt;Integer&gt; position;
+    int childPos;
+<span class="nc bnc" id="L860" title="All 2 branches missed.">    if (c.mParent != null) {</span>
+<span class="nc" id="L861">      position = new LinkedList();</span>
+      Component parent;
+<span class="nc bnc" id="L863" title="All 2 branches missed.">      while ((parent = c.getParent()) != null) {</span>
+<span class="nc" id="L864">        childPos = parent.indexOf(c);</span>
+        //				if (childPos &lt; 0) {
+        //					childPos = indexOf(c);
+        //				}
+<span class="nc" id="L868">        position.add(childPos);</span>
+<span class="nc" id="L869">        c = parent;</span>
+      }
+<span class="nc" id="L871">      StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L872" title="All 2 branches missed.">      for (int i = position.size() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L873">        sb.append(&quot;/&quot;).append(position.get(i));</span>
+      }
+<span class="nc" id="L875">      s = sb.toString();</span>
+<span class="nc" id="L876">    } else {</span>
+<span class="nc" id="L877">      s = &quot;/&quot;;</span>
+    }
+<span class="nc" id="L879">    return s;</span>
+  }
+
+  /** @return the position as a slash separated string */
+  protected static String getPositionString(Component c) {
+    String s;
+    List&lt;Integer&gt; position;
+    int childPos;
+<span class="nc bnc" id="L887" title="All 2 branches missed.">    if (c.mParent != null) {</span>
+<span class="nc" id="L888">      position = new LinkedList();</span>
+      Component parent;
+<span class="nc bnc" id="L890" title="All 2 branches missed.">      while ((parent = c.getParent()) != null) {</span>
+<span class="nc" id="L891">        childPos = parent.indexOf(c);</span>
+        //				if (childPos &lt; 0) {
+        //					childPos = indexOf(c);
+        //				}
+<span class="nc" id="L895">        position.add(childPos);</span>
+<span class="nc" id="L896">        c = parent;</span>
+      }
+<span class="nc" id="L898">      StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L899" title="All 2 branches missed.">      for (int i = position.size() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L900">        sb.append(&quot;/&quot;).append(position.get(i));</span>
+      }
+<span class="nc" id="L902">      s = sb.toString();</span>
+<span class="nc" id="L903">    } else {</span>
+<span class="nc" id="L904">      s = &quot;/&quot;;</span>
+    }
+<span class="nc" id="L906">    return s;</span>
+  }
+
+  /**
+   * @returns the position of the child component c or given Node within the parents children list.
+   *     Returns -1 if it is not a child.
+   */
+  public int indexOf(Object o) {
+<span class="nc" id="L914">    int position = -1;</span>
+    // Either use the previous way of creating lists of child components
+<span class="nc bnc" id="L916" title="All 2 branches missed.">    if (mChildren != null) {</span>
+<span class="nc" id="L917">      position = mChildren.indexOf(o);</span>
+    } else {
+      // Either use the previous way of creating lists of child components
+<span class="nc" id="L920">      Node targetNode = null;</span>
+<span class="nc" id="L921">      OdfElement parentNode = null;</span>
+<span class="nc bnc" id="L922" title="All 2 branches missed.">      if (o instanceof Component) {</span>
+<span class="nc" id="L923">        Component c = ((Component) o);</span>
+<span class="nc" id="L924">        targetNode = c.getRootElement();</span>
+<span class="nc" id="L925">        parentNode = c.getParent().getRootElement();</span>
+<span class="nc bnc" id="L926" title="All 2 branches missed.">      } else if (o instanceof Node) {</span>
+<span class="nc" id="L927">        targetNode = (Node) o;</span>
+<span class="nc" id="L928">        parentNode = (OdfElement) targetNode.getParentNode();</span>
+      }
+
+<span class="nc bnc" id="L931" title="All 4 branches missed.">      if (targetNode != null &amp;&amp; targetNode instanceof OdfElement) {</span>
+<span class="nc bnc" id="L932" title="All 4 branches missed.">        if (parentNode != null &amp;&amp; parentNode.equals(mRootElement)) {</span>
+<span class="nc" id="L933">          position = findPosition(parentNode, (OdfElement) targetNode);</span>
+        }
+      }
+    }
+<span class="nc" id="L937">    return position;</span>
+  }
+
+  /** Recursive traverse the text container and count the children */
+  private Integer findPosition(Element parentComponentElement, OdfElement targetNode) {
+<span class="nc" id="L942">    int pos = -1;</span>
+    // Only start the recursion if the parameters are not null and in an ancestor relationship
+<span class="nc bnc" id="L944" title="All 4 branches missed.">    if (parentComponentElement != null</span>
+        &amp;&amp; targetNode != null
+<span class="nc bnc" id="L946" title="All 2 branches missed.">        &amp;&amp; targetNode.hasAncestor(parentComponentElement)) {</span>
+<span class="nc" id="L947">      findChild(0, parentComponentElement, targetNode);</span>
+    }
+<span class="nc" id="L949">    return pos;</span>
+  }
+
+  /** Recursive traverse the text container and count the children */
+  private Integer findChild(Integer pos, Element parentComponentElement, Node child) {
+    // Traverse first horizontal backwards and if no further sibling, traverse up (e.g. for
+    // paragraphs within list required)
+<span class="nc bnc" id="L956" title="All 2 branches missed.">    if (child != null) {</span>
+<span class="nc bnc" id="L957" title="All 2 branches missed.">      if (child instanceof OdfElement) {</span>
+<span class="nc" id="L958">        OdfElement childElement = ((OdfElement) child);</span>
+<span class="nc bnc" id="L959" title="All 2 branches missed.">        if (childElement.isComponentRoot()) {</span>
+          // if it is a component we found one (even ourselves in the beginning) at one
+<span class="nc" id="L961">          pos += childElement.getRepetition();</span>
+<span class="nc" id="L962">          pos = findChild(pos, parentComponentElement, childElement.getPreviousSibling());</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">        } else if (Component.isComponentWrapper(childElement)) {</span>
+<span class="nc" id="L964">          pos = findChild(pos, parentComponentElement, childElement.getLastChildElement());</span>
+        } else {
+<span class="nc" id="L966">          pos = findChild(pos, parentComponentElement, childElement.getPreviousSibling());</span>
+        }
+<span class="nc" id="L968">      } else {</span>
+        // do the recursion even for text nodes, comments, etc.
+<span class="nc" id="L970">        pos = findChild(pos, parentComponentElement, child.getPreviousSibling());</span>
+      }
+    }
+<span class="nc" id="L973">    return pos;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L978">    String s = &quot;POS:&quot; + getPosition(this);</span>
+<span class="nc bnc" id="L979" title="All 2 branches missed.">    if (mRootElement != null) {</span>
+<span class="nc" id="L980">      s += mRootElement.getPrefix() + &quot;:&quot; + mRootElement.getLocalName();</span>
+    } else {
+<span class="nc" id="L982">      s += &quot;NO ROOT ELEMENT!!!&quot;;</span>
+    }
+<span class="nc" id="L984">    return s;</span>
+  }
+
+  // These sets should be static initialized and a central place, best generated at the family
+  // superclass
+  public static Map&lt;String, OdfStylePropertiesSet&gt; getAllStyleGroupingIdProperties(
+      OdfStylableElement styleElement) {
+<span class="nc" id="L991">    return getAllStyleGroupingIdProperties(styleElement.getStyleFamily());</span>
+  }
+
+  public static Map&lt;String, OdfStylePropertiesSet&gt; getAllStyleGroupingIdProperties(
+      OdfStyleFamily styleFamily) {
+<span class="nc" id="L996">    Map&lt;String, OdfStylePropertiesSet&gt; familyProperties =</span>
+        new HashMap&lt;String, OdfStylePropertiesSet&gt;();
+<span class="nc bnc" id="L998" title="All 2 branches missed.">    if (styleFamily.equals(OdfStyleFamily.Paragraph)) {</span>
+<span class="nc" id="L999">      familyProperties.put(&quot;paragraph&quot;, OdfStylePropertiesSet.ParagraphProperties);</span>
+<span class="nc" id="L1000">      familyProperties.put(&quot;character&quot;, OdfStylePropertiesSet.TextProperties);</span>
+<span class="nc bnc" id="L1001" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Text)) {</span>
+<span class="nc" id="L1002">      familyProperties.put(&quot;character&quot;, OdfStylePropertiesSet.TextProperties);</span>
+<span class="nc bnc" id="L1003" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Table)) {</span>
+<span class="nc" id="L1004">      familyProperties.put(&quot;table&quot;, OdfStylePropertiesSet.TableProperties);</span>
+<span class="nc bnc" id="L1005" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableRow)) {</span>
+<span class="nc" id="L1006">      familyProperties.put(&quot;row&quot;, OdfStylePropertiesSet.TableRowProperties);</span>
+<span class="nc bnc" id="L1007" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableCell)) {</span>
+<span class="nc" id="L1008">      familyProperties.put(&quot;cell&quot;, OdfStylePropertiesSet.TableCellProperties);</span>
+<span class="nc" id="L1009">      familyProperties.put(&quot;paragraph&quot;, OdfStylePropertiesSet.ParagraphProperties);</span>
+<span class="nc" id="L1010">      familyProperties.put(</span>
+          &quot;character&quot;, OdfStylePropertiesSet.TextProperties); // changed from text to character
+<span class="nc bnc" id="L1012" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableColumn)) {</span>
+<span class="nc" id="L1013">      familyProperties.put(&quot;column&quot;, OdfStylePropertiesSet.TableColumnProperties);</span>
+<span class="nc bnc" id="L1014" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Section)) {</span>
+<span class="nc" id="L1015">      familyProperties.put(&quot;section&quot;, OdfStylePropertiesSet.SectionProperties);</span>
+<span class="nc bnc" id="L1016" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.List)) {</span>
+<span class="nc" id="L1017">      familyProperties.put(&quot;list&quot;, OdfStylePropertiesSet.ListLevelProperties);</span>
+<span class="nc bnc" id="L1018" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Chart)) {</span>
+<span class="nc" id="L1019">      familyProperties.put(&quot;chart&quot;, OdfStylePropertiesSet.ChartProperties);</span>
+<span class="nc" id="L1020">      familyProperties.put(</span>
+          &quot;drawing&quot;, OdfStylePropertiesSet.GraphicProperties); // changed from graphic to drawing
+<span class="nc" id="L1022">      familyProperties.put(&quot;paragraph&quot;, OdfStylePropertiesSet.ParagraphProperties);</span>
+<span class="nc" id="L1023">      familyProperties.put(</span>
+          &quot;character&quot;, OdfStylePropertiesSet.TextProperties); // changed to text from character
+<span class="nc bnc" id="L1025" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Graphic)</span>
+<span class="nc bnc" id="L1026" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Presentation)) {</span>
+<span class="nc" id="L1027">      familyProperties.put(</span>
+          &quot;drawing&quot;, OdfStylePropertiesSet.GraphicProperties); // changed from graphic to drawing
+<span class="nc" id="L1029">      familyProperties.put(&quot;paragraph&quot;, OdfStylePropertiesSet.ParagraphProperties);</span>
+<span class="nc" id="L1030">      familyProperties.put(</span>
+          &quot;character&quot;, OdfStylePropertiesSet.TextProperties); // changed from text to character
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.DrawingPage)) {</span>
+<span class="nc" id="L1033">      familyProperties.put(&quot;drawing&quot;, OdfStylePropertiesSet.DrawingPageProperties);</span>
+<span class="nc bnc" id="L1034" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Ruby)) {</span>
+<span class="nc" id="L1035">      familyProperties.put(&quot;ruby&quot;, OdfStylePropertiesSet.RubyProperties);</span>
+    }
+<span class="nc" id="L1037">    return familyProperties;</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getFamilyID(OdfStylableElement styleElement) {
+<span class="nc" id="L1042">    return getFamilyID(styleElement.getStyleFamily());</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getMainStyleGroupingId(OdfStylableElement styleElement) {
+<span class="nc" id="L1047">    return Component.getMainStyleGroupingId(styleElement.getStyleFamily());</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getStyleNamePrefix(OdfStylableElement styleElement) {
+<span class="nc" id="L1052">    return getStyleNamePrefix(styleElement.getStyleFamily());</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getMainStyleGroupingId(OdfStyleFamily styleFamily) {
+<span class="nc" id="L1057">    String familyID = null;</span>
+<span class="nc bnc" id="L1058" title="All 2 branches missed.">    if (styleFamily.equals(OdfStyleFamily.Paragraph)) {</span>
+<span class="nc" id="L1059">      familyID = &quot;paragraph&quot;;</span>
+<span class="nc bnc" id="L1060" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Text)) {</span>
+<span class="nc" id="L1061">      familyID = &quot;character&quot;;</span>
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Table)) {</span>
+<span class="nc" id="L1063">      familyID = &quot;table&quot;;</span>
+<span class="nc bnc" id="L1064" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableRow)) {</span>
+<span class="nc" id="L1065">      familyID = &quot;row&quot;;</span>
+<span class="nc bnc" id="L1066" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableCell)) {</span>
+<span class="nc" id="L1067">      familyID = &quot;cell&quot;;</span>
+<span class="nc bnc" id="L1068" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableColumn)) {</span>
+<span class="nc" id="L1069">      familyID = &quot;column&quot;;</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Section)) {</span>
+<span class="nc" id="L1071">      familyID = &quot;section&quot;;</span>
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.List)) {</span>
+<span class="nc" id="L1073">      familyID = &quot;list&quot;;</span>
+<span class="nc bnc" id="L1074" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Chart)) {</span>
+<span class="nc" id="L1075">      familyID = &quot;chart&quot;;</span>
+<span class="nc bnc" id="L1076" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Graphic)</span>
+<span class="nc bnc" id="L1077" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Presentation)) {</span>
+<span class="nc" id="L1078">      familyID = &quot;drawing&quot;;</span>
+<span class="nc bnc" id="L1079" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.DrawingPage)) {</span>
+<span class="nc" id="L1080">      familyID = &quot;drawing&quot;;</span>
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Ruby)) {</span>
+<span class="nc" id="L1082">      familyID = &quot;ruby&quot;;</span>
+    }
+<span class="nc" id="L1084">    return familyID;</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getStyleNamePrefix(OdfStyleFamily styleFamily) {
+<span class="nc" id="L1089">    String familyID = null;</span>
+<span class="nc bnc" id="L1090" title="All 2 branches missed.">    if (styleFamily.equals(OdfStyleFamily.Paragraph)</span>
+<span class="nc bnc" id="L1091" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Text)</span>
+<span class="nc bnc" id="L1092" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Section)</span>
+<span class="nc bnc" id="L1093" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.List)</span>
+<span class="nc bnc" id="L1094" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Ruby)) {</span>
+<span class="nc" id="L1095">      familyID = &quot;text&quot;;</span>
+<span class="nc bnc" id="L1096" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Table)</span>
+<span class="nc bnc" id="L1097" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.TableRow)</span>
+<span class="nc bnc" id="L1098" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.TableCell)</span>
+<span class="nc bnc" id="L1099" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.TableColumn)) {</span>
+<span class="nc" id="L1100">      familyID = &quot;table&quot;;</span>
+<span class="nc bnc" id="L1101" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Chart)) {</span>
+<span class="nc" id="L1102">      familyID = &quot;chart&quot;;</span>
+<span class="nc bnc" id="L1103" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Graphic)</span>
+<span class="nc bnc" id="L1104" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Presentation)</span>
+<span class="nc bnc" id="L1105" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.DrawingPage)) {</span>
+<span class="nc" id="L1106">      familyID = &quot;draw&quot;;</span>
+<span class="nc bnc" id="L1107" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Presentation)) {</span>
+<span class="nc" id="L1108">      familyID = &quot;presentation&quot;;</span>
+    }
+<span class="nc" id="L1110">    return familyID;</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getFamilyID(OdfStyleFamily styleFamily) {
+<span class="nc" id="L1115">    String familyID = null;</span>
+<span class="nc bnc" id="L1116" title="All 2 branches missed.">    if (styleFamily.equals(OdfStyleFamily.Paragraph)) {</span>
+<span class="nc" id="L1117">      familyID = &quot;paragraph&quot;;</span>
+<span class="nc bnc" id="L1118" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Text)) {</span>
+<span class="nc" id="L1119">      familyID = &quot;character&quot;;</span>
+<span class="nc bnc" id="L1120" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Table)) {</span>
+<span class="nc" id="L1121">      familyID = &quot;table&quot;;</span>
+<span class="nc bnc" id="L1122" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableRow)) {</span>
+<span class="nc" id="L1123">      familyID = &quot;row&quot;;</span>
+<span class="nc bnc" id="L1124" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableCell)) {</span>
+<span class="nc" id="L1125">      familyID = &quot;cell&quot;;</span>
+<span class="nc bnc" id="L1126" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableColumn)) {</span>
+<span class="nc" id="L1127">      familyID = &quot;column&quot;;</span>
+<span class="nc bnc" id="L1128" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Section)) {</span>
+<span class="nc" id="L1129">      familyID = &quot;section&quot;;</span>
+<span class="nc bnc" id="L1130" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.List)) {</span>
+<span class="nc" id="L1131">      familyID = &quot;list&quot;;</span>
+<span class="nc bnc" id="L1132" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Chart)) {</span>
+<span class="nc" id="L1133">      familyID = &quot;chart&quot;;</span>
+<span class="nc bnc" id="L1134" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Graphic)</span>
+<span class="nc bnc" id="L1135" title="All 2 branches missed.">        || styleFamily.equals(OdfStyleFamily.Presentation)) {</span>
+<span class="nc" id="L1136">      familyID = &quot;drawing&quot;;</span>
+<span class="nc bnc" id="L1137" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.DrawingPage)) {</span>
+<span class="nc" id="L1138">      familyID = &quot;drawing&quot;;</span>
+<span class="nc bnc" id="L1139" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Ruby)) {</span>
+<span class="nc" id="L1140">      familyID = &quot;ruby&quot;;</span>
+    }
+<span class="nc" id="L1142">    return familyID;</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  public static String getFamilyDisplayName(OdfStyleFamily styleFamily) {
+<span class="nc" id="L1147">    String familyID = null;</span>
+<span class="nc bnc" id="L1148" title="All 2 branches missed.">    if (styleFamily.equals(OdfStyleFamily.Paragraph)) {</span>
+<span class="nc" id="L1149">      familyID = &quot;Paragraph&quot;;</span>
+<span class="nc bnc" id="L1150" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Text)) {</span>
+<span class="nc" id="L1151">      familyID = &quot;Character&quot;;</span>
+<span class="nc bnc" id="L1152" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Table)) {</span>
+<span class="nc" id="L1153">      familyID = &quot;Table&quot;;</span>
+<span class="nc bnc" id="L1154" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableRow)) {</span>
+<span class="nc" id="L1155">      familyID = &quot;Row&quot;;</span>
+<span class="nc bnc" id="L1156" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableCell)) {</span>
+<span class="nc" id="L1157">      familyID = &quot;Cell&quot;;</span>
+<span class="nc bnc" id="L1158" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.TableColumn)) {</span>
+<span class="nc" id="L1159">      familyID = &quot;Column&quot;;</span>
+<span class="nc bnc" id="L1160" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Section)) {</span>
+<span class="nc" id="L1161">      familyID = &quot;Section&quot;;</span>
+<span class="nc bnc" id="L1162" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.List)) {</span>
+<span class="nc" id="L1163">      familyID = &quot;List&quot;;</span>
+<span class="nc bnc" id="L1164" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Presentation)) {</span>
+<span class="nc" id="L1165">      familyID = &quot;Presentation&quot;;</span>
+<span class="nc bnc" id="L1166" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Chart)) {</span>
+<span class="nc" id="L1167">      familyID = &quot;Chart&quot;;</span>
+<span class="nc bnc" id="L1168" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Graphic)) {</span>
+<span class="nc" id="L1169">      familyID = &quot;Graphic&quot;;</span>
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.DrawingPage)) {</span>
+<span class="nc" id="L1171">      familyID = &quot;Drawing&quot;;</span>
+<span class="nc bnc" id="L1172" title="All 2 branches missed.">    } else if (styleFamily.equals(OdfStyleFamily.Ruby)) {</span>
+<span class="nc" id="L1173">      familyID = &quot;Ruby&quot;;</span>
+    }
+<span class="nc" id="L1175">    return familyID;</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  /**
+   * @return styleFamilyValue the &lt;code&gt;String&lt;/code&gt; value * * * * * * * of &lt;code&gt;
+   *     StyleFamilyAttribute&lt;/code&gt;,
+   */
+  public static String getFamilyName(String styleId) {
+<span class="nc" id="L1184">    String familyID = null;</span>
+<span class="nc bnc" id="L1185" title="All 2 branches missed.">    if (styleId.equals(&quot;paragraph&quot;)) {</span>
+<span class="nc" id="L1186">      familyID = OdfStyleFamily.Paragraph.getName();</span>
+<span class="nc bnc" id="L1187" title="All 2 branches missed.">    } else if (styleId.equals(&quot;character&quot;)) {</span>
+<span class="nc" id="L1188">      familyID = OdfStyleFamily.Text.getName();</span>
+<span class="nc bnc" id="L1189" title="All 2 branches missed.">    } else if (styleId.equals(&quot;table&quot;)) {</span>
+<span class="nc" id="L1190">      familyID = OdfStyleFamily.Table.getName();</span>
+<span class="nc bnc" id="L1191" title="All 2 branches missed.">    } else if (styleId.equals(&quot;row&quot;)) {</span>
+<span class="nc" id="L1192">      familyID = OdfStyleFamily.TableRow.getName();</span>
+<span class="nc bnc" id="L1193" title="All 2 branches missed.">    } else if (styleId.equals(&quot;cell&quot;)) {</span>
+<span class="nc" id="L1194">      familyID = OdfStyleFamily.TableCell.getName();</span>
+<span class="nc bnc" id="L1195" title="All 2 branches missed.">    } else if (styleId.equals(&quot;column&quot;)) {</span>
+<span class="nc" id="L1196">      familyID = OdfStyleFamily.TableColumn.getName();</span>
+<span class="nc bnc" id="L1197" title="All 2 branches missed.">    } else if (styleId.equals(&quot;graphic&quot;)) {</span>
+<span class="nc" id="L1198">      familyID = OdfStyleFamily.Graphic.getName();</span>
+    }
+<span class="nc" id="L1200">    return familyID;</span>
+  }
+
+  // In the end, this meths should be better moved to the component class
+  /**
+   * @return styleFamily the &lt;code&gt;OdfStyleFamily&lt;/code&gt; representation * * * of &lt;code&gt;
+   *     StyleFamilyAttribute&lt;/code&gt;,
+   */
+  public static OdfStyleFamily getFamily(String styleId) {
+<span class="nc" id="L1209">    OdfStyleFamily family = null;</span>
+<span class="nc bnc" id="L1210" title="All 2 branches missed.">    if (styleId.equals(&quot;paragraph&quot;)) {</span>
+<span class="nc" id="L1211">      family = OdfStyleFamily.Paragraph;</span>
+<span class="nc bnc" id="L1212" title="All 2 branches missed.">    } else if (styleId.equals(&quot;character&quot;)) {</span>
+<span class="nc" id="L1213">      family = OdfStyleFamily.Text;</span>
+<span class="nc bnc" id="L1214" title="All 2 branches missed.">    } else if (styleId.equals(&quot;table&quot;)) {</span>
+<span class="nc" id="L1215">      family = OdfStyleFamily.Table;</span>
+<span class="nc bnc" id="L1216" title="All 2 branches missed.">    } else if (styleId.equals(&quot;row&quot;)) {</span>
+<span class="nc" id="L1217">      family = OdfStyleFamily.TableRow;</span>
+<span class="nc bnc" id="L1218" title="All 2 branches missed.">    } else if (styleId.equals(&quot;cell&quot;)) {</span>
+<span class="nc" id="L1219">      family = OdfStyleFamily.TableCell;</span>
+<span class="nc bnc" id="L1220" title="All 2 branches missed.">    } else if (styleId.equals(&quot;column&quot;)) {</span>
+<span class="nc" id="L1221">      family = OdfStyleFamily.TableColumn;</span>
+<span class="nc bnc" id="L1222" title="All 2 branches missed.">    } else if (styleId.equals(&quot;drawing&quot;)) {</span>
+<span class="nc" id="L1223">      family = OdfStyleFamily.Graphic;</span>
+    }
+<span class="nc" id="L1225">    return family;</span>
+  }
+
+  /**
+   * A multiple components can be represented by a single XML element
+   *
+   * @return the number of components the elements represents
+   */
+  public int repetition() {
+<span class="nc" id="L1234">    return 1;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

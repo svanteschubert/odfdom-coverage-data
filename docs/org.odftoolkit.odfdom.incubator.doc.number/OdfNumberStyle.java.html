@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfNumberStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.number</a> &gt; <span class="el_source">OdfNumberStyle.java</span></div><h1>OdfNumberStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.number;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.number.NumberFractionElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberScientificNumberElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMapElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public class OdfNumberStyle extends NumberNumberStyleElement {
+
+  public OdfNumberStyle(OdfFileDom ownerDoc) {
+<span class="nc" id="L43">    super(ownerDoc);</span>
+<span class="nc" id="L44">  }</span>
+
+  public OdfNumberStyle(OdfFileDom ownerDoc, String format, String styleName) {
+<span class="nc" id="L47">    super(ownerDoc);</span>
+<span class="nc" id="L48">    this.setStyleNameAttribute(styleName);</span>
+<span class="nc" id="L49">    setFormat(format);</span>
+<span class="nc" id="L50">  }</span>
+
+  private String quoteTextContent(String text) {
+<span class="nc" id="L53">    Pattern p = Pattern.compile(&quot;[MDYHMSE#0,.]+&quot;);</span>
+<span class="nc" id="L54">    Matcher m = p.matcher(text);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">    if (m.find()) {</span>
+<span class="nc" id="L56">      text = &quot;\&quot;&quot; + text + &quot;\&quot;&quot;;</span>
+    }
+<span class="nc" id="L58">    return text;</span>
+  }
+  /**
+   * Get the format string that represents this style.
+   *
+   * @return the format string
+   */
+  @Override
+  public String getFormat(boolean caps) {
+<span class="nc" id="L67">    String mappedResult = &quot;&quot;;</span>
+<span class="nc" id="L68">    String result = &quot;&quot;;</span>
+<span class="nc" id="L69">    Node m = getFirstChild();</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">    while (m != null) {</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">      if (m instanceof NumberNumberElement) {</span>
+<span class="nc" id="L72">        result += getNumberFormat();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">      } else if (m instanceof NumberTextElement) {</span>
+<span class="nc" id="L74">        String textcontent = m.getTextContent();</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">        if (textcontent == null || textcontent.length() == 0) {</span>
+<span class="nc" id="L76">          textcontent = &quot; &quot;;</span>
+        }
+<span class="nc" id="L78">        result += quoteTextContent(textcontent);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">      } else if (m instanceof StyleTextPropertiesElement) {</span>
+<span class="nc" id="L80">        result += getColorFromElement((StyleTextPropertiesElement) m);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">      } else if (m instanceof StyleMapElement) {</span>
+<span class="nc" id="L82">        mappedResult += getMapping((StyleMapElement) m);</span>
+<span class="nc" id="L83">        mappedResult += &quot;;&quot;;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">      } else if (m instanceof NumberFractionElement) {</span>
+<span class="nc" id="L85">        NumberFractionElement f = (NumberFractionElement) m;</span>
+<span class="nc" id="L86">        Integer digitCount = f.getNumberMinIntegerDigitsAttribute();</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (digitCount != null) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">          if (digitCount == 0) {</span>
+<span class="nc" id="L89">            result += '#'; // show optional integer part of the fraction</span>
+          } else {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            while (--digitCount &gt;= 0) {</span>
+<span class="nc" id="L92">              result += '0';</span>
+            }
+          }
+<span class="nc" id="L95">          result += ' '; // space between integer part and fraction</span>
+        }
+<span class="nc" id="L97">        Integer numeratorCount = f.getNumberMinNumeratorDigitsAttribute();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (numeratorCount != null) {</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">          while (--numeratorCount &gt;= 0) {</span>
+<span class="nc" id="L100">            result += '?';</span>
+          }
+        } else {
+<span class="nc" id="L103">          result += '?';</span>
+        }
+
+<span class="nc" id="L106">        result += '/';</span>
+<span class="nc" id="L107">        Integer denominatorCount = f.getNumberMinDenominatorDigitsAttribute();</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (denominatorCount != null) {</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">          while (--denominatorCount &gt;= 0) {</span>
+<span class="nc" id="L110">            result += '?';</span>
+          }
+        } else {
+<span class="nc" id="L113">          result += '?';</span>
+        }
+<span class="nc bnc" id="L115" title="All 2 branches missed.">      } else if (m instanceof NumberScientificNumberElement) {</span>
+<span class="nc" id="L116">        NumberScientificNumberElement s = (NumberScientificNumberElement) m;</span>
+<span class="nc" id="L117">        Boolean isGroup = s.getNumberGroupingAttribute();</span>
+<span class="nc" id="L118">        Integer digits = s.getNumberMinIntegerDigitsAttribute();</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        int digitCount = digits == null ? 0 : digits.intValue();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        for (int digit = 0; digit &lt; digitCount; ++digit) {</span>
+<span class="nc" id="L121">          result += '0';</span>
+        }
+<span class="nc" id="L123">        Integer places = s.getNumberDecimalPlacesAttribute();</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (places != null) {</span>
+<span class="nc" id="L125">          result += '.';</span>
+<span class="nc" id="L126">          int placeCount = places.intValue();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">          while (--placeCount &gt;= 0) {</span>
+<span class="nc" id="L128">            result += '0';</span>
+          }
+        }
+<span class="nc" id="L131">        result += 'E';</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">        if (isGroup != null &amp;&amp; isGroup.booleanValue()) {</span>
+          // fill with #,##...
+<span class="nc bnc" id="L134" title="All 2 branches missed.">          if (digitCount &lt; 4) {</span>
+<span class="nc" id="L135">            String fill = &quot;#,###&quot;;</span>
+<span class="nc" id="L136">            result = fill.substring(0, 5 - digitCount) + result;</span>
+<span class="nc" id="L137">          } else {</span>
+<span class="nc" id="L138">            result = result.substring(0, digitCount - 3) + ',' + result.substring(digitCount - 3);</span>
+          }
+        }
+<span class="nc" id="L141">        Integer exp = s.getNumberMinExponentDigitsAttribute();</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (exp != null) {</span>
+<span class="nc" id="L143">          result += '+';</span>
+<span class="nc" id="L144">          int exponents = exp.intValue();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">          while (--exponents &gt;= 0) {</span>
+<span class="nc" id="L146">            result += '0';</span>
+          }
+        }
+      }
+<span class="nc" id="L150">      m = m.getNextSibling();</span>
+    }
+<span class="nc bnc" id="L152" title="All 2 branches missed.">    if (!mappedResult.isEmpty()) {</span>
+<span class="nc" id="L153">      result = mappedResult + result;</span>
+    }
+<span class="nc" id="L155">    return result;</span>
+  }
+
+  /**
+   * Creates a &amp;lt;number:number-style&amp;gt; element based upon format.
+   *
+   * @param format the number format string
+   */
+  /**
+   * Creates a &amp;lt;number:number-style&amp;gt; element based upon format.
+   *
+   * @param format the number format string
+   */
+  @Override
+  public void setFormat(String format) {
+    /*
+     * Setting ownerDoc won't be necessary once this is folded into
+     * OdfNumberStyle
+     */
+
+<span class="nc" id="L175">    int openBracket = format.indexOf(&quot;[&quot;);</span>
+<span class="nc" id="L176">    String color = &quot;&quot;;</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">    while (openBracket &gt;= 0) {</span>
+<span class="nc" id="L178">      int closeBracket = format.indexOf(&quot;]&quot;, openBracket);</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">      if (closeBracket &gt; openBracket) {</span>
+<span class="nc" id="L180">        String innerText = format.substring(openBracket + 1, closeBracket);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (innerText.length() &gt; 1) {</span>
+          // detect color - if any
+<span class="nc" id="L183">          color = getColorElement(innerText);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">          if (!color.isEmpty()) {</span>
+<span class="nc" id="L185">            OdfFileDom dom = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="nc" id="L186">            StyleTextPropertiesElement cProperties = new StyleTextPropertiesElement(dom);</span>
+<span class="nc" id="L187">            cProperties.setAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;fo:color&quot;, color);</span>
+<span class="nc" id="L188">            this.appendChild(cProperties);</span>
+          }
+<span class="nc" id="L190">          format = format.substring(0, openBracket) + format.substring(closeBracket + 1);</span>
+        }
+      }
+<span class="nc" id="L193">      openBracket = format.indexOf(&quot;[&quot;);</span>
+<span class="nc" id="L194">    }</span>
+
+    /*
+     * If there is a numeric specification, then split the
+     * string into the part before the specifier, the specifier
+     * itself, and then part after the specifier. The parts
+     * before and after are just text (which may contain the
+     * currency symbol).
+     */
+<span class="nc bnc" id="L203" title="All 4 branches missed.">    if (format != null &amp;&amp; !format.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L204">      Pattern p = Pattern.compile(&quot;[#0,.?/E+\\s]+&quot;);</span>
+<span class="nc" id="L205">      Matcher m = p.matcher(format);</span>
+
+<span class="nc" id="L207">      int lastEnd = 0;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">      while (m.find()) {</span>
+<span class="nc" id="L209">        String prefix = &quot;&quot;;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (m.start() &gt; lastEnd) {</span>
+<span class="nc" id="L211">          prefix = format.substring(lastEnd, m.start());</span>
+        }
+<span class="nc" id="L213">        lastEnd = m.end();</span>
+<span class="nc" id="L214">        String sub = format.substring(m.start(), m.end());</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (sub.startsWith(&quot; &quot;)) {</span>
+<span class="nc" id="L216">          int pos = 1;</span>
+<span class="nc bnc" id="L217" title="All 4 branches missed.">          while (sub.length() &gt; pos &amp;&amp; sub.charAt(pos) == ' ') {</span>
+<span class="nc" id="L218">            ++pos;</span>
+          }
+<span class="nc" id="L220">          prefix += sub.substring(0, pos);</span>
+<span class="nc" id="L221">          sub = sub.substring(pos);</span>
+        }
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (!prefix.isEmpty()) {</span>
+<span class="nc" id="L224">          emitText(prefix);</span>
+        }
+<span class="nc" id="L226">        String suffix = &quot;&quot;;</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (sub.endsWith(&quot; &quot;)) {</span>
+<span class="nc" id="L228">          int pos = sub.length() - 1;</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">          while (sub.charAt(pos) == ' ') {</span>
+<span class="nc" id="L230">            --pos;</span>
+          }
+<span class="nc" id="L232">          suffix = sub.substring(pos + 1);</span>
+<span class="nc" id="L233">          sub = sub.substring(0, pos + 1);</span>
+        }
+<span class="nc" id="L235">        boolean denominator = false;</span>
+<span class="nc" id="L236">        int denominatorCount = 0;</span>
+<span class="nc" id="L237">        int nominatorCount = 0;</span>
+<span class="nc" id="L238">        boolean isDecimals = false;</span>
+<span class="nc" id="L239">        boolean isFraction = false;</span>
+<span class="nc" id="L240">        boolean isHash = false;</span>
+<span class="nc" id="L241">        boolean isGrouping = false;</span>
+<span class="nc" id="L242">        int digitCount = 0;</span>
+<span class="nc" id="L243">        int decimalsCount = 0;</span>
+<span class="nc" id="L244">        boolean isScientific = false;</span>
+<span class="nc" id="L245">        int exponentCount = 0;</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        for (int pos = 0; pos &lt; sub.length(); ++pos) {</span>
+<span class="nc" id="L247">          char c = sub.charAt(pos);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">          if (c == '?') {</span>
+<span class="nc" id="L249">            isFraction = true;</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (denominator) {</span>
+<span class="nc" id="L251">              ++denominatorCount;</span>
+            } else {
+<span class="nc" id="L253">              ++nominatorCount;</span>
+            }
+<span class="nc bnc" id="L255" title="All 2 branches missed.">          } else if (c == '/') {</span>
+<span class="nc" id="L256">            denominator = true;</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">          } else if (c == ',') {</span>
+<span class="nc" id="L258">            isGrouping = true;</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">          } else if (c == '.') {</span>
+<span class="nc" id="L260">            isDecimals = true;</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">          } else if (c == '0') {</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            if (isScientific) {</span>
+<span class="nc" id="L263">              ++exponentCount;</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            } else if (isDecimals) {</span>
+<span class="nc" id="L265">              ++decimalsCount;</span>
+            } else {
+<span class="nc" id="L267">              ++digitCount;</span>
+            }
+<span class="nc bnc" id="L269" title="All 2 branches missed.">          } else if (c == 'E') {</span>
+<span class="nc" id="L270">            isScientific = true;</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">          } else if (c == '#') {</span>
+<span class="nc" id="L272">            isHash = true; // only required in fraction formats</span>
+          }
+        }
+
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        if (isFraction) {</span>
+<span class="nc" id="L277">          NumberFractionElement number =</span>
+<span class="nc" id="L278">              new NumberFractionElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc bnc" id="L279" title="All 4 branches missed.">          if (isHash || digitCount &gt; 0) {</span>
+<span class="nc bnc" id="L280" title="All 4 branches missed.">            number.setNumberMinIntegerDigitsAttribute(digitCount == 0 &amp;&amp; isHash ? 1 : digitCount);</span>
+          }
+<span class="nc" id="L282">          number.setNumberMinNumeratorDigitsAttribute(nominatorCount);</span>
+<span class="nc" id="L283">          number.setNumberMinDenominatorDigitsAttribute(denominatorCount);</span>
+<span class="nc" id="L284">          appendChild(number);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        } else if (isScientific) {</span>
+<span class="nc" id="L286">          NumberScientificNumberElement number =</span>
+<span class="nc" id="L287">              new NumberScientificNumberElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">          if (decimalsCount &gt; 0) {</span>
+<span class="nc" id="L289">            number.setNumberDecimalPlacesAttribute(decimalsCount);</span>
+          }
+<span class="nc bnc" id="L291" title="All 2 branches missed.">          if (digitCount &gt; 0) {</span>
+<span class="nc" id="L292">            number.setNumberMinIntegerDigitsAttribute(digitCount);</span>
+          }
+<span class="nc bnc" id="L294" title="All 2 branches missed.">          if (isGrouping) {</span>
+<span class="nc" id="L295">            number.setNumberGroupingAttribute(true);</span>
+          }
+<span class="nc bnc" id="L297" title="All 2 branches missed.">          if (exponentCount &gt; 0) {</span>
+<span class="nc" id="L298">            number.setNumberMinExponentDigitsAttribute(exponentCount);</span>
+          }
+<span class="nc" id="L300">          appendChild(number);</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        } else if (sub.length() &gt; 0) {</span>
+<span class="nc" id="L302">          NumberNumberElement number =</span>
+<span class="nc" id="L303">              new NumberNumberElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">          if (decimalsCount &gt; 0) {</span>
+<span class="nc" id="L305">            number.setNumberDecimalPlacesAttribute(decimalsCount);</span>
+          }
+<span class="nc bnc" id="L307" title="All 2 branches missed.">          if (digitCount &gt; 0) {</span>
+<span class="nc" id="L308">            number.setNumberMinIntegerDigitsAttribute(digitCount);</span>
+          }
+<span class="nc bnc" id="L310" title="All 2 branches missed.">          if (isGrouping) {</span>
+<span class="nc" id="L311">            number.setNumberGroupingAttribute(true);</span>
+          }
+<span class="nc" id="L313">          appendChild(number);</span>
+        }
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (!suffix.isEmpty()) {</span>
+<span class="nc" id="L316">          emitText(suffix);</span>
+        }
+<span class="nc" id="L318">      }</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">      if (lastEnd &lt; format.length()) {</span>
+<span class="nc" id="L320">        emitText(format.substring(lastEnd));</span>
+      }
+    }
+<span class="nc" id="L323">  }</span>
+
+  /**
+   * Set &amp;lt;style:map&amp;gt; for positive values to the given style name.
+   *
+   * @param mapName the style name to map to
+   */
+  public void setMapPositive(String mapName) {
+<span class="nc" id="L331">    StyleMapElement map = new StyleMapElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L332">    map.setStyleApplyStyleNameAttribute(mapName);</span>
+<span class="nc" id="L333">    map.setStyleConditionAttribute(&quot;value()&gt;0&quot;);</span>
+<span class="nc" id="L334">    this.appendChild(map);</span>
+<span class="nc" id="L335">  }</span>
+
+  /**
+   * Set &amp;lt;style:map&amp;gt; for negative values to the given style name.
+   *
+   * @param mapName the style name to map to
+   */
+  public void setMapNegative(String mapName) {
+<span class="nc" id="L343">    StyleMapElement map = new StyleMapElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L344">    map.setStyleApplyStyleNameAttribute(mapName);</span>
+<span class="nc" id="L345">    map.setStyleConditionAttribute(&quot;value()&lt;0&quot;);</span>
+<span class="nc" id="L346">    this.appendChild(map);</span>
+<span class="nc" id="L347">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

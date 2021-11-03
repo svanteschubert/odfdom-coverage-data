@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LanguageCode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">LanguageCode.java</span></div><h1>LanguageCode.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.regex.Pattern;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype languageCode} */
+public class LanguageCode implements OdfDataType {
+
+  private String mLanguageCode;
+<span class="nc" id="L32">  private static final Pattern languageCodePattern = Pattern.compile(&quot;^[A-Za-z]{1,8}$&quot;);</span>
+
+  /**
+   * Construct LanguageCode by the parsing the given string
+   *
+   * @param languageCode The String to be parsed into LanguageCode
+   * @throws IllegalArgumentException if the given argument is not a valid langageCode
+   */
+<span class="nc" id="L40">  public LanguageCode(String languageCode) throws IllegalArgumentException {</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">    if (!isValid(languageCode)) {</span>
+<span class="nc" id="L42">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype LanguageCode&quot;);</span>
+    }
+
+    // validate 'LanguageCode' type which is defined in W3C schema
+    // http://www.w3.org/TR/xmlschema-2/#token
+<span class="nc bnc" id="L47" title="All 2 branches missed.">    if (!W3CSchemaType.isValid(&quot;token&quot;, languageCode)) {</span>
+<span class="nc" id="L48">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype LanguageCode&quot;);</span>
+    }
+<span class="nc" id="L50">    mLanguageCode = languageCode;</span>
+<span class="nc" id="L51">  }</span>
+
+  /**
+   * Returns a String Object representing this LanguageCode's value
+   *
+   * @return return a string representation of the value of this LanguageCode object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L60">    return mLanguageCode;</span>
+  }
+
+  /**
+   * Returns a LanguageCode instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a LanguageCode instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid LanguageCode
+   */
+  public static LanguageCode valueOf(String stringValue) throws IllegalArgumentException {
+<span class="nc" id="L71">    return new LanguageCode(stringValue);</span>
+  }
+
+  /**
+   * check if the specified String instance is a valid {@odf.datatype languageCode} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype languageCode} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L82" title="All 4 branches missed.">    if (stringValue == null || !languageCodePattern.matcher(stringValue).matches()) {</span>
+<span class="nc" id="L83">      return true;</span>
+    } else {
+<span class="nc" id="L85">      return W3CSchemaType.isValid(&quot;token&quot;, stringValue);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

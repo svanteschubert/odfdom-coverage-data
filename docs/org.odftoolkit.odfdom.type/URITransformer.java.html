@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>URITransformer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">URITransformer.java</span></div><h1>URITransformer.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.BitSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Transformations for transporting URIs in URLs.
+ *
+ * &lt;h4&gt;URIs, URLs, and URNs &lt;/h4&gt;
+ *
+ * A URI is a uniform resource &lt;i&gt;identifier&lt;/i&gt; while a URL is a uniform resource &lt;i&gt;locator&lt;/i&gt;.
+ * Hence every URL is a URI, abstractly speaking, but not every URI is a URL. This is because there
+ * is another subcategory of URIs, uniform resource &lt;i&gt;names&lt;/i&gt; (URNs), which name resources but do
+ * not specify how to locate them. The &lt;tt&gt;mailto&lt;/tt&gt;, &lt;tt&gt;news&lt;/tt&gt;, and &lt;tt&gt;isbn&lt;/tt&gt; URIs shown
+ * above are examples of URNs.
+ *
+ * &lt;h4&gt;URI syntax and components&lt;/h4&gt;
+ *
+ * At the highest level a URI reference (hereinafter simply &quot;URI&quot;) in string form has the syntax
+ *
+ * &lt;blockquote&gt;
+ *
+ * [&lt;i&gt;scheme&lt;/i&gt;&lt;tt&gt;&lt;b&gt;:&lt;/b&gt;&lt;/tt&gt;&lt;i&gt;&lt;/i&gt;]&lt;i&gt;scheme-specific-part&lt;/i&gt;[&lt;tt&gt;&lt;b&gt;#&lt;/b&gt;&lt;/tt&gt;&lt;i&gt;fragment&lt;/i&gt;]
+ *
+ * &lt;/blockquote&gt;
+ *
+ * where square brackets [...] delineate optional components and the characters &lt;tt&gt;&lt;b&gt;:&lt;/b&gt;&lt;/tt&gt;
+ * and &lt;tt&gt;&lt;b&gt;#&lt;/b&gt;&lt;/tt&gt; stand for themselves.
+ *
+ * &lt;p&gt;An &lt;i&gt;absolute&lt;/i&gt; URI specifies a scheme; a URI that is not absolute is said to be
+ * &lt;i&gt;relative&lt;/i&gt;. URIs are also classified according to whether they are &lt;i&gt;opaque&lt;/i&gt; or
+ * &lt;i&gt;hierarchical&lt;/i&gt;.
+ *
+ * &lt;p&gt;An &lt;i&gt;opaque&lt;/i&gt; URI is an absolute URI whose scheme-specific part does not begin with a slash
+ * character (&lt;tt&gt;'/'&lt;/tt&gt;). Opaque URIs are not subject to further parsing. Some examples of opaque
+ * URIs are:
+ *
+ * &lt;blockquote&gt;
+ *
+ * &lt;table cellpadding=0 cellspacing=0&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;tt&gt;mailto:java-net@java.sun.com&lt;/tt&gt;&lt;td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;tt&gt;news:comp.lang.java&lt;/tt&gt;&lt;td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;tt&gt;urn:isbn:096139210x&lt;/td&gt;&lt;/tr&gt;
+ * &lt;/table&gt;
+ *
+ * &lt;/blockquote&gt;
+ *
+ * &lt;p&gt;A &lt;i&gt;hierarchical&lt;/i&gt; URI is either an absolute URI whose scheme-specific part begins with a
+ * slash character, or a relative URI, that is, a URI that does not specify a scheme. Some examples
+ * of hierarchical URIs are:
+ *
+ * &lt;blockquote&gt;
+ *
+ * &lt;tt&gt;http://java.sun.com/j2se/1.3/&lt;/tt&gt;&lt;br&gt;
+ * &lt;tt&gt;docs/guide/collections/designfaq.html#28&lt;/tt&gt;&lt;/br&gt;
+ * &lt;tt&gt;../../../demo/jfc/SwingSet2/src/SwingSet2.java&lt;/tt&gt;&lt;/br&gt; &lt;tt&gt;file:///~/calendar&lt;/tt&gt;
+ *
+ * &lt;/blockquote&gt;
+ *
+ * &lt;p&gt;A hierarchical URI is subject to further parsing according to the syntax
+ *
+ * &lt;blockquote&gt;
+ *
+ * [&lt;i&gt;scheme&lt;/i&gt;&lt;tt&gt;&lt;b&gt;:&lt;/b&gt;&lt;/tt&gt;][&lt;tt&gt;&lt;b&gt;//&lt;/b&gt;&lt;/tt&gt;&lt;i&gt;authority&lt;/i&gt;][&lt;i&gt;path&lt;/i&gt;][&lt;tt&gt;&lt;b&gt;?&lt;/b&gt;&lt;/tt&gt;&lt;i&gt;query&lt;/i&gt;][&lt;tt&gt;&lt;b&gt;#&lt;/b&gt;&lt;/tt&gt;&lt;i&gt;fragment&lt;/i&gt;]
+ *
+ * &lt;/blockquote&gt;
+ *
+ * where the characters &lt;tt&gt;&lt;b&gt;:&lt;/b&gt;&lt;/tt&gt;, &lt;tt&gt;&lt;b&gt;/&lt;/b&gt;&lt;/tt&gt;, &lt;tt&gt;&lt;b&gt;?&lt;/b&gt;&lt;/tt&gt;, and
+ * &lt;tt&gt;&lt;b&gt;#&lt;/b&gt;&lt;/tt&gt; stand for themselves. The scheme-specific part of a hierarchical URI consists
+ * of the characters between the scheme and fragment components.
+ *
+ * &lt;p&gt;The authority component of a hierarchical URI is, if specified, either &lt;i&gt;server-based&lt;/i&gt; or
+ * &lt;i&gt;registry-based&lt;/i&gt;. A server-based authority parses according to the familiar syntax
+ *
+ * &lt;blockquote&gt;
+ *
+ * [&lt;i&gt;user-info&lt;/i&gt;&lt;tt&gt;&lt;b&gt;@&lt;/b&gt;&lt;/tt&gt;]&lt;i&gt;host&lt;/i&gt;[&lt;tt&gt;&lt;b&gt;:&lt;/b&gt;&lt;/tt&gt;&lt;i&gt;port&lt;/i&gt;]
+ *
+ * &lt;/blockquote&gt;
+ *
+ * where the characters &lt;tt&gt;&lt;b&gt;@&lt;/b&gt;&lt;/tt&gt; and &lt;tt&gt;&lt;b&gt;:&lt;/b&gt;&lt;/tt&gt; stand for themselves. Nearly all URI
+ * schemes currently in use are server-based. An authority component that does not parse in this way
+ * is considered to be registry-based.
+ *
+ * &lt;p&gt;The path component of a hierarchical URI is itself said to be absolute if it begins with a
+ * slash character (&lt;tt&gt;'/'&lt;/tt&gt;); otherwise it is relative. The path of a hierarchical URI that is
+ * either absolute or specifies an authority is always absolute.
+ *
+ * &lt;p&gt;All told, then, a URI instance has the following nine components:
+ *
+ * &lt;blockquote&gt;
+ *
+ * &lt;table&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;Component&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;i&gt;Type&lt;/i&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;scheme&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;scheme-specific-part&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;authority&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;user-info&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;host&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;port&lt;/td&gt;&lt;td&gt;&lt;tt&gt;int&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;path&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;query&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;fragment&lt;/td&gt;&lt;td&gt;&lt;tt&gt;String&lt;/tt&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;/table&gt;
+ *
+ * &lt;/blockquote&gt;
+ *
+ * In a given instance any particular component is either &lt;i&gt;undefined&lt;/i&gt; or &lt;i&gt;defined&lt;/i&gt; with a
+ * distinct value. Undefined string components are represented by &lt;tt&gt;null&lt;/tt&gt;, while undefined
+ * integer components are represented by &lt;tt&gt;-1&lt;/tt&gt;. A string component may be defined to have the
+ * empty string as its value; this is not equivalent to that component being undefined.
+ *
+ * &lt;p&gt;Whether a particular component is or is not defined in an instance depends upon the type of
+ * the URI being represented. An absolute URI has a scheme component. An opaque URI has a scheme, a
+ * scheme-specific part, and possibly a fragment, but has no other components. A hierarchical URI
+ * always has a path (though it may be empty) and a scheme-specific-part (which at least contains
+ * the path), and may have any of the other components. If the authority component is present and is
+ * server-based then the host component will be defined and the user-information and port components
+ * may be defined.
+ *
+ * &lt;p&gt;See &lt;a href=&quot;http://www.isi.edu/in-notes/rfc2396.txt&quot;&quot;&gt;&lt;i&gt;RFC&amp;nbsp;2396: Uniform Resource
+ * Identifiers (URI): Generic Syntax&lt;/i&gt;&lt;/a&gt;
+ */
+class URITransformer {
+
+  /**
+   * Array containing the safe characters set for encoding.
+   *
+   * &lt;p&gt;Only the following characters are not encoded:&lt;br&gt;
+   * A-Z a-z 0-9 : @ &amp; $ - _ . + ! * ' ( ) ,
+   */
+  protected static BitSet safeCharacters;
+
+  static {
+<span class="nc" id="L161">    safeCharacters = new BitSet(256);</span>
+    int i;
+<span class="nc bnc" id="L163" title="All 2 branches missed.">    for (i = 'a'; i &lt;= 'z'; i++) {</span>
+<span class="nc" id="L164">      safeCharacters.set(i);</span>
+    }
+<span class="nc bnc" id="L166" title="All 2 branches missed.">    for (i = 'A'; i &lt;= 'Z'; i++) {</span>
+<span class="nc" id="L167">      safeCharacters.set(i);</span>
+    }
+<span class="nc bnc" id="L169" title="All 2 branches missed.">    for (i = '0'; i &lt;= '9'; i++) {</span>
+<span class="nc" id="L170">      safeCharacters.set(i);</span>
+    }
+<span class="nc" id="L172">    safeCharacters.set('=');</span>
+<span class="nc" id="L173">    safeCharacters.set(':');</span>
+<span class="nc" id="L174">    safeCharacters.set('@');</span>
+<span class="nc" id="L175">    safeCharacters.set('&amp;');</span>
+<span class="nc" id="L176">    safeCharacters.set('$');</span>
+<span class="nc" id="L177">    safeCharacters.set('-');</span>
+<span class="nc" id="L178">    safeCharacters.set('_');</span>
+<span class="nc" id="L179">    safeCharacters.set('.');</span>
+<span class="nc" id="L180">    safeCharacters.set('+');</span>
+<span class="nc" id="L181">    safeCharacters.set('!');</span>
+<span class="nc" id="L182">    safeCharacters.set('*');</span>
+<span class="nc" id="L183">    safeCharacters.set('\'');</span>
+<span class="nc" id="L184">    safeCharacters.set('(');</span>
+<span class="nc" id="L185">    safeCharacters.set(')');</span>
+<span class="nc" id="L186">    safeCharacters.set(',');</span>
+<span class="nc" id="L187">  }</span>
+
+  /**
+   * Encode path to be used as path component segments in URI.
+   *
+   * &lt;p&gt;Creates a String that can be used as a sequence of one or more path components in an URI
+   * from a path that uses a slash character as a path separator and where the segements do not use
+   * any URI encoding rules.
+   *
+   * &lt;p&gt;The &lt;b&gt;/&lt;/b&gt; characters (delimiting the individual path_segments) are left unchanged.
+   *
+   * @param path A path that is not using URI encoding rules.
+   * @return A path that is using URI encoding rules.
+   * @see #decodePath(String)
+   */
+  public static String encodePath(String path) {
+    try {
+<span class="nc" id="L204">      StringBuilder pathc = new StringBuilder();</span>
+<span class="nc" id="L205">      byte[] bytes = null;</span>
+<span class="nc" id="L206">      bytes = path.getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">      for (int i = 0; i &lt; bytes.length; i++) {</span>
+<span class="nc" id="L208">        int v = bytes[i];</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (v &lt; 0) {</span>
+<span class="nc" id="L210">          v += 256;</span>
+        }
+<span class="nc bnc" id="L212" title="All 6 branches missed.">        if (v &gt; 0 &amp;&amp; v &lt; 256 &amp;&amp; safeCharacters.get(v)) {</span>
+<span class="nc" id="L213">          pathc.append((char) v);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        } else if ((char) v == '/') {</span>
+<span class="nc" id="L215">          pathc.append((char) v);</span>
+        } else {
+<span class="nc" id="L217">          pathc.append(&quot;%&quot; + Integer.toHexString(v));</span>
+        }
+      }
+<span class="nc" id="L220">      path = pathc.toString();</span>
+<span class="nc" id="L221">    } catch (UnsupportedEncodingException ex) {</span>
+<span class="nc" id="L222">      Logger.getLogger(URITransformer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L223">    }</span>
+<span class="nc" id="L224">    return path;</span>
+  }
+
+  /**
+   * Decode path component segments in URI.
+   *
+   * &lt;p&gt;Creates a path that uses a slash character as a path separator and where the segments do not
+   * use any URI encoding from a String that is used as a sequence of one or more path components in
+   * an URI where the path segments do use URI encoding rules.
+   *
+   * &lt;p&gt;The &lt;b&gt;/&lt;/b&gt; characters (delimiting the individual path_segments) are left unchanged.
+   *
+   * @param path A path that is using URI encoding rules.
+   * @return A path that is not using URI encoding rules.
+   * @see #encodePath(String)
+   */
+  public static String decodePath(String path) {
+<span class="nc" id="L241">    String pathc = path;</span>
+<span class="nc" id="L242">    StringBuilder uri = new StringBuilder();</span>
+
+<span class="nc" id="L244">    int j = pathc.indexOf('%', 0);</span>
+<span class="nc" id="L245">    int l = pathc.length();</span>
+
+<span class="nc" id="L247">    ByteArrayOutputStream ba = new ByteArrayOutputStream();</span>
+<span class="nc" id="L248">    byte[] b = {0};</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">    while (j != -1) {</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">      if (j + 3 &lt;= l) {</span>
+        try {
+<span class="nc" id="L252">          b = pathc.substring(0, j).getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L253">          ba.write(b, 0, b.length);</span>
+<span class="nc" id="L254">        } catch (java.io.UnsupportedEncodingException e) {</span>
+<span class="nc" id="L255">        }</span>
+<span class="nc" id="L256">        String hex = pathc.substring(j + 1, j + 3);</span>
+        try {
+<span class="nc" id="L258">          int n = Integer.parseInt(hex, 16);</span>
+<span class="nc" id="L259">          ba.write(n);</span>
+<span class="nc" id="L260">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L261">          String tmp = &quot;=&quot; + hex;</span>
+          try {
+<span class="nc" id="L263">            b = tmp.getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L264">          } catch (java.io.UnsupportedEncodingException e2) {</span>
+<span class="nc" id="L265">          }</span>
+<span class="nc" id="L266">          ba.write(b, 0, b.length);</span>
+<span class="nc" id="L267">        }</span>
+<span class="nc" id="L268">        pathc = pathc.substring(j + 3);</span>
+<span class="nc" id="L269">        l = pathc.length();</span>
+<span class="nc" id="L270">        j = pathc.indexOf('%', 0);</span>
+<span class="nc" id="L271">      } else {</span>
+<span class="nc" id="L272">        j = -1;</span>
+      }
+    }
+    try {
+<span class="nc" id="L276">      uri.append(new String(ba.toByteArray(), &quot;UTF-8&quot;));</span>
+<span class="nc" id="L277">    } catch (java.io.UnsupportedEncodingException e2) {</span>
+<span class="nc" id="L278">    }</span>
+
+<span class="nc" id="L280">    uri.append(pathc);</span>
+
+<span class="nc" id="L282">    return uri.toString();</span>
+  }
+
+  /**
+   * Extract URI from a path.
+   *
+   * &lt;p&gt;Transforms a path that was created with the {@link #uri2path(String)} method back to an URI.
+   *
+   * &lt;p&gt;This method does try to cope with an erroneous input parameter but the result returned in
+   * such a case is not guaranteed to be a valid URI.
+   *
+   * @param path the path that contains the URI information
+   * @return a String representing a URI
+   * @see #uri2path(String)
+   */
+  public static String path2uri(String path) {
+
+<span class="nc bnc" id="L299" title="All 2 branches missed.">    if (path == null) {</span>
+<span class="nc" id="L300">      return null;</span>
+    }
+<span class="nc" id="L302">    StringBuilder uri = new StringBuilder();</span>
+    String npath;
+    // ignore leading slash
+<span class="nc bnc" id="L305" title="All 2 branches missed.">    if (path.startsWith(&quot;/&quot;)) {</span>
+<span class="nc" id="L306">      npath = path.substring(1);</span>
+    } else {
+<span class="nc" id="L308">      npath = path;</span>
+    }
+
+<span class="nc" id="L311">    int l = npath.length();</span>
+
+<span class="nc" id="L313">    int i = npath.indexOf('/');</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">    if (i == -1) {</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">      if (npath.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L316">        return npath;</span>
+      }
+<span class="nc" id="L318">      return npath + &quot;://&quot;;</span>
+    }
+
+<span class="nc" id="L321">    String rpath = &quot;&quot;;</span>
+<span class="nc" id="L322">    boolean bauth = true;</span>
+
+<span class="nc bnc" id="L324" title="All 2 branches missed.">    if (i == 0) {</span>
+<span class="nc" id="L325">      uri.append(&quot;/&quot;);</span>
+    } else {
+
+      String scheme;
+<span class="nc bnc" id="L329" title="All 2 branches missed.">      if (i == l) {</span>
+<span class="nc" id="L330">        return npath + &quot;://&quot;;</span>
+      }
+<span class="nc" id="L332">      scheme = npath.substring(0, i) + &quot;:&quot;;</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">      if (i + 4 &lt;= l) {</span>
+<span class="nc" id="L334">        String hier = npath.substring(i + 1, i + 4);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (hier.startsWith(&quot;==0/&quot;)) {</span>
+<span class="nc" id="L336">          i += 5;</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        } else if (hier.startsWith(&quot;==0&quot;)) {</span>
+<span class="nc" id="L338">          i += 4;</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        } else if (hier.startsWith(&quot;==1&quot;)) {</span>
+<span class="nc" id="L340">          bauth = false;</span>
+<span class="nc" id="L341">          scheme += &quot;&quot;;</span>
+<span class="nc" id="L342">          i += 3;</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        } else if (hier.startsWith(&quot;==2&quot;)) {</span>
+<span class="nc" id="L344">          scheme += &quot;//&quot;;</span>
+<span class="nc" id="L345">          i += 3;</span>
+<span class="nc" id="L346">          bauth = false;</span>
+        } else {
+<span class="nc" id="L348">          scheme += &quot;//&quot;;</span>
+        }
+      }
+<span class="nc" id="L351">      uri.append(scheme);</span>
+    }
+
+<span class="nc" id="L354">    int j = -1;</span>
+<span class="nc" id="L355">    String auth = &quot;&quot;;</span>
+
+<span class="nc bnc" id="L357" title="All 2 branches missed.">    if (bauth) {</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">      if (rpath.equals(&quot;&quot;)) {</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">        if (i + 1 &lt;= l) {</span>
+<span class="nc" id="L360">          j = npath.indexOf('/', i + 1);</span>
+        }
+
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        if (j == -1) {</span>
+<span class="nc" id="L364">          j = l;</span>
+        } else {
+<span class="nc" id="L366">          rpath = npath.substring(j);</span>
+        }
+<span class="nc bnc" id="L368" title="All 2 branches missed.">        if (i + 1 &lt;= l) {</span>
+<span class="nc" id="L369">          auth = npath.substring(i + 1, j);</span>
+        } else {
+<span class="nc" id="L371">          auth = &quot;&quot;;</span>
+        }
+      } else {
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (i + 1 &lt;= l) {</span>
+<span class="nc" id="L375">          rpath = rpath + npath.substring(i + 1);</span>
+        } else {
+<span class="nc" id="L377">          rpath = &quot;&quot;;</span>
+        }
+      }
+
+<span class="nc" id="L381">      j = auth.indexOf('=', 0);</span>
+<span class="nc" id="L382">      l = auth.length();</span>
+
+<span class="nc" id="L384">      ByteArrayOutputStream ba = new ByteArrayOutputStream();</span>
+<span class="nc" id="L385">      byte[] b = {0};</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">      while (j != -1) {</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        if (j + 3 &lt;= l) {</span>
+          try {
+<span class="nc" id="L389">            b = auth.substring(0, j).getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L390">            ba.write(b, 0, b.length);</span>
+<span class="nc" id="L391">          } catch (java.io.UnsupportedEncodingException e) {</span>
+<span class="nc" id="L392">          }</span>
+<span class="nc" id="L393">          String hex = auth.substring(j + 1, j + 3);</span>
+          try {
+<span class="nc" id="L395">            int n = Integer.parseInt(hex, 16);</span>
+<span class="nc" id="L396">            ba.write(n);</span>
+<span class="nc" id="L397">          } catch (NumberFormatException e) {</span>
+<span class="nc" id="L398">            String tmp = &quot;=&quot; + hex;</span>
+            try {
+<span class="nc" id="L400">              b = tmp.getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L401">            } catch (java.io.UnsupportedEncodingException e2) {</span>
+<span class="nc" id="L402">            }</span>
+<span class="nc" id="L403">            ba.write(b, 0, b.length);</span>
+<span class="nc" id="L404">          }</span>
+<span class="nc" id="L405">          auth = auth.substring(j + 3);</span>
+<span class="nc" id="L406">          l = auth.length();</span>
+<span class="nc" id="L407">          j = auth.indexOf('=', 0);</span>
+<span class="nc" id="L408">        } else {</span>
+<span class="nc" id="L409">          j = -1;</span>
+        }
+      }
+      try {
+<span class="nc" id="L413">        uri.append(new String(ba.toByteArray(), &quot;UTF-8&quot;));</span>
+<span class="nc" id="L414">      } catch (java.io.UnsupportedEncodingException e2) {</span>
+<span class="nc" id="L415">      }</span>
+<span class="nc" id="L416">      uri.append(auth);</span>
+
+<span class="nc" id="L418">    } else {</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">      if (i + 1 &lt;= l) {</span>
+<span class="nc" id="L420">        rpath = npath.substring(i + 1); // empty authority</span>
+      } else {
+<span class="nc" id="L422">        rpath = &quot;&quot;;</span>
+      }
+    }
+
+<span class="nc" id="L426">    uri.append(encodePath(rpath));</span>
+
+<span class="nc" id="L428">    return uri.toString();</span>
+  }
+
+  /**
+   * Embed URI into path.
+   *
+   * &lt;h4&gt;Opaque URIs&lt;/h4&gt;
+   *
+   * Opaque URIs are mapped to a &lt;i&gt;path&lt;/i&gt; of the form &amp;lt;&lt;b&gt;/&lt;/b&gt; &lt;i&gt;scheme&lt;/i&gt; &lt;b&gt;/==0/&lt;/b&gt;
+   * &lt;i&gt;opaque_part'&lt;/i&gt;&amp;gt;.
+   *
+   * &lt;p&gt;The mapping from &lt;i&gt;opaque_part&lt;/i&gt; to &lt;i&gt;opaque_part'&lt;/i&gt; works as follows:(*)
+   *
+   * &lt;p&gt;
+   *
+   * &lt;p&gt;Octets from the set &lt;b&gt;A-Z a-z 0-9 : @ &amp; $ - _ . + ! * ' ( ) ,&lt;/b&gt; are left unchanged.
+   *
+   * &lt;p&gt;Other octest are replaced with &lt;b&gt;=&lt;/b&gt; followed by two hex digits that represent the
+   * octet's numerical value.
+   *
+   * &lt;h4&gt;Hierarchical URIs without an &lt;i&gt;authority&lt;/i&gt; component&lt;/h4&gt;
+   *
+   * &lt;p&gt;Hierarchical URIs without an &lt;i&gt;authority&lt;/i&gt; component are mapped to a &lt;i&gt;path&lt;/i&gt; of the
+   * form &amp;lt;&lt;b&gt;/&lt;/b&gt; &lt;i&gt;scheme&lt;/i&gt; &lt;b&gt;/==1&lt;/b&gt; &lt;i&gt;abs_path&lt;/i&gt;' [&lt;b&gt;?&lt;/b&gt; &lt;i&gt;query&lt;/i&gt;]&amp;gt;.
+   *
+   * &lt;p&gt;If &lt;i&gt;abs_path&lt;/i&gt; is empty, it is left unchanged.
+   *
+   * &lt;p&gt;If &lt;i&gt;abs_path&lt;/i&gt; is non-empty, it is decoded with the {@link #decodePath(String)} method.
+   *
+   * &lt;p&gt;A non-empty path_segment is left unchanged.
+   *
+   * &lt;h4&gt;Hierarchical URIs with an &lt;i&gt;authority&lt;/i&gt; component&lt;/h4&gt;
+   *
+   * &lt;p&gt;Hierarchical URIs with an &lt;i&gt;authority&lt;/i&gt; component &lt;b&gt;?&lt;/b&gt; query]&amp;gt; are mapped to a
+   * &lt;i&gt;path&lt;/i&gt; of the form &amp;lt;&lt;b&gt;/&lt;/b&gt; &lt;i&gt;scheme&lt;/i&gt; &lt;b&gt;/&lt;/b&gt; &lt;i&gt;authority'&lt;/i&gt; &lt;i&gt;abs_path'&lt;/i&gt;
+   * [&lt;b&gt;?&lt;/b&gt;&lt;i&gt;query&lt;/i&gt;]&amp;gt;.
+   *
+   * &lt;p&gt;If &lt;i&gt;authority&lt;/i&gt; is empty, it is mapped to &lt;b&gt;==2&lt;/b&gt;. This eliminates problems if the
+   * servlet container drops final slashes from &lt;i&gt;paths&lt;/i&gt; or cannot handle empty segments within
+   * &lt;i&gt;paths.&lt;/i&gt;
+   *
+   * &lt;p&gt;The mapping from &lt;i&gt;abs_path&lt;/i&gt; to &lt;i&gt;abs_path'&lt;/i&gt; works as follows:
+   *
+   * &lt;p&gt;If &lt;i&gt;authority&lt;/i&gt; is non-empty, it is mapped as described for the &lt;i&gt;opaque_part&lt;/i&gt;
+   * above.
+   *
+   * &lt;p&gt;The mapping from &lt;i&gt;abs_path&lt;/i&gt; to &lt;i&gt;abs_path'&lt;/i&gt; works as follows:
+   *
+   * &lt;p&gt;If &lt;i&gt;abs_path&lt;/i&gt; is empty, it is left unchanged.
+   *
+   * &lt;p&gt;If &lt;i&gt;abs_path&lt;/i&gt; is non-empty, it is decoded with the {@link #decodePath(String)} method.
+   *
+   * @see #path2uri(String)
+   */
+  public static String uri2path(String uri) {
+<span class="nc bnc" id="L483" title="All 2 branches missed.">    if (uri == null) {</span>
+<span class="nc" id="L484">      return null;</span>
+    }
+<span class="nc" id="L486">    StringBuilder path = new StringBuilder();</span>
+<span class="nc" id="L487">    int i = uri.indexOf(&quot;:&quot;);</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">    if (i == -1) {</span>
+<span class="nc" id="L489">      return uri;</span>
+    }
+<span class="nc" id="L491">    int l = uri.length();</span>
+
+<span class="nc" id="L493">    path.append(uri.substring(0, i)).append(&quot;/&quot;);</span>
+
+<span class="nc" id="L495">    int sc = 0;</span>
+<span class="nc bnc" id="L496" title="All 4 branches missed.">    if ((i + 3 &lt;= l) &amp;&amp; uri.substring(i + 1, i + 3).equals(&quot;//&quot;)) {</span>
+<span class="nc" id="L497">      i += 3;</span>
+<span class="nc" id="L498">      sc = 2;</span>
+<span class="nc bnc" id="L499" title="All 4 branches missed.">    } else if ((i + 2 &lt;= l) &amp;&amp; uri.substring(i + 1, i + 2).equals(&quot;/&quot;)) {</span>
+<span class="nc" id="L500">      i += 2;</span>
+<span class="nc" id="L501">      sc = 1;</span>
+    } else {
+<span class="nc" id="L503">      i++;</span>
+    }
+
+<span class="nc" id="L506">    int j = uri.indexOf('/', i);</span>
+<span class="nc" id="L507">    String ruri = &quot;&quot;;</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">    if (j == -1) {</span>
+<span class="nc" id="L509">      j = l;</span>
+<span class="nc" id="L510">      ruri = &quot;&quot;;</span>
+    } else {
+<span class="nc" id="L512">      ruri = uri.substring(j);</span>
+    }
+<span class="nc" id="L514">    String auth = uri.substring(i, j);</span>
+
+<span class="nc bnc" id="L516" title="All 4 branches missed.">    if (sc == 2 &amp;&amp; auth.length() == 0) {</span>
+<span class="nc" id="L517">      path.append(&quot;==2&quot;);</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">    } else if (sc == 1) {</span>
+<span class="nc" id="L519">      path.append(&quot;==1/&quot;);</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">    } else if (sc == 0) {</span>
+<span class="nc" id="L521">      path.append(&quot;==0/&quot;);</span>
+    }
+
+<span class="nc" id="L524">    byte[] bytes = null;</span>
+    try {
+<span class="nc" id="L526">      bytes = auth.getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L527">    } catch (java.io.UnsupportedEncodingException e) {</span>
+<span class="nc" id="L528">    }</span>
+<span class="nc bnc" id="L529" title="All 2 branches missed.">    for (i = 0; i &lt; bytes.length; i++) {</span>
+<span class="nc" id="L530">      int v = bytes[i];</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">      if (v &lt; 0) {</span>
+<span class="nc" id="L532">        v += 256;</span>
+      }
+<span class="nc bnc" id="L534" title="All 6 branches missed.">      if (v &gt; 0 &amp;&amp; v &lt; 256 &amp;&amp; safeCharacters.get(v)) {</span>
+<span class="nc" id="L535">        path.append((char) v);</span>
+      } else {
+<span class="nc" id="L537">        path.append(&quot;=&quot; + Integer.toHexString(v));</span>
+      }
+    }
+
+<span class="nc" id="L541">    path.append(decodePath(ruri));</span>
+<span class="nc" id="L542">    return path.toString();</span>
+  }
+
+  private URITransformer() {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

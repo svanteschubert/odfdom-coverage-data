@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FieldMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">FieldMap.java</span></div><h1>FieldMap.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The lApache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.HashMap;
+import java.util.Map;
+
+class FieldMap {
+
+  public static final long PROP_FIXED = 1;
+  public static final long PROP_DATEVALUE = 1 &lt;&lt; 1;
+  public static final long PROP_TIMESTYLE = 1 &lt;&lt; 2;
+  public static final long PROP_DATEFORMAT = 1 &lt;&lt; 3;
+  public static final long PROP_LOCALE = 1 &lt;&lt; 4;
+  public static final long PROP_DBNAME = 1 &lt;&lt; 5;
+  public static final long PROP_DBTABLE = 1 &lt;&lt; 6;
+  public static final long PROP_TABLETYPE = 1 &lt;&lt; 7;
+  public static final long PROP_DBCOLUMN = 1 &lt;&lt; 8;
+  public static final long PROP_DISPLAY = 1 &lt;&lt; 9;
+  public static final long PROP_REFFORMAT = 1 &lt;&lt; 10;
+  public static final long PROP_REFNAME = 1 &lt;&lt; 11;
+  public static final long PROP_OUTLINELEVEL = 1 &lt;&lt; 12;
+  public static final long PROP_PAGENUMFORMAT = 1 &lt;&lt; 13;
+  public static final long PROP_NUMLETTERSYNC = 1 &lt;&lt; 14;
+  public static final long PROP_CONDITION = 1 &lt;&lt; 15;
+  public static final long PROP_CURRENTVALUE = 1 &lt;&lt; 16;
+  public static final long PROP_FALSEVALUE = 1 &lt;&lt; 17;
+  public static final long PROP_TRUEVALUE = 1 &lt;&lt; 18;
+  public static final long PROP_T_VALUE = 1 &lt;&lt; 19; // text:value
+  public static final long PROP_CONNECTIONNAME = 1 &lt;&lt; 20;
+  public static final long PROP_DURATION = 1 &lt;&lt; 21;
+  public static final long PROP_NAME = 1 &lt;&lt; 22;
+  public static final long PROP_BOOLVALUE = 1 &lt;&lt; 23;
+  public static final long PROP_CURRENCY = 1 &lt;&lt; 24;
+  public static final long PROP_STRINGVALUE = 1 &lt;&lt; 25;
+  public static final long PROP_TIMEVALUE = 1 &lt;&lt; 26;
+  public static final long PROP_VALUETYPE = 1 &lt;&lt; 27;
+  public static final long PROP_FORMULA = 1 &lt;&lt; 28;
+  public static final long PROP_ISHIDDEN = 1 &lt;&lt; 29;
+  public static final long PROP_O_VALUE = 1 &lt;&lt; 30; // office:value
+  public static final long PROP_ID = 1 &lt;&lt; 31;
+  public static final long PROP_DESCRIPTION = 1 &lt;&lt; 32;
+  public static final long PROP_ACTIVE = 1 &lt;&lt; 33;
+  public static final long PROP_HREF = 1 &lt;&lt; 34;
+  public static final long PROP_PLACEHOLDERTYPE = 1 &lt;&lt; 35;
+  public static final long PROP_KIND = 1 &lt;&lt; 36;
+  public static final long PROP_LANGUAGE = 1 &lt;&lt; 37;
+  public static final long PROP_LINKTYPE = 1 &lt;&lt; 38;
+  public static final long PROP_NUMFORMAT = 1 &lt;&lt; 39;
+  public static final long PROP_PAGEADJUST = 1 &lt;&lt; 40;
+  public static final long PROP_ROWNUMBER = 1 &lt;&lt; 41;
+  //    public static final long  = 1&lt;&lt; 42;
+
+  public String type;
+  private final String className;
+  private final long propertyFlags;
+<span class="nc" id="L70">  public static Map&lt;String, FieldMap&gt; fieldMap = createMap();</span>
+
+<span class="nc" id="L72">  public FieldMap(String t, String c, long flags) {</span>
+<span class="nc" id="L73">    type = t;</span>
+<span class="nc" id="L74">    className = c;</span>
+<span class="nc" id="L75">    propertyFlags = flags;</span>
+<span class="nc" id="L76">  }</span>
+
+  public String getClassName() {
+<span class="nc" id="L79">    return &quot;org.odftoolkit.odfdom.dom.element.text.&quot; + className;</span>
+  }
+
+  public boolean hasFixed() {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_FIXED) != 0;</span>
+  }
+
+  public boolean hasDateValue() {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DATEVALUE) != 0;</span>
+  }
+
+  public boolean hasTimeStyle() {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_TIMESTYLE) != 0;</span>
+  }
+
+  public boolean hasDateFormat() {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DATEFORMAT) != 0;</span>
+  }
+
+  public boolean hasLocale() {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_LOCALE) != 0;</span>
+  }
+
+  public boolean hasdbName() {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DBNAME) != 0;</span>
+  }
+
+  public boolean hasdbTable() {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DBTABLE) != 0;</span>
+  }
+
+  public boolean hasTableType() {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_TABLETYPE) != 0;</span>
+  }
+
+  public boolean hasdbColumn() {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DBCOLUMN) != 0;</span>
+  }
+
+  public boolean hasDisplay() {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DISPLAY) != 0;</span>
+  }
+
+  public boolean hasRefFormat() {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_REFFORMAT) != 0;</span>
+  }
+
+  public boolean hasRefName() {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_REFNAME) != 0;</span>
+  }
+
+  public boolean hasOutlinelevel() {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_OUTLINELEVEL) != 0;</span>
+  }
+
+  public boolean hasPageNumFormat() {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_PAGENUMFORMAT) != 0;</span>
+  }
+
+  public boolean hasNumLetterSync() {
+<span class="nc bnc" id="L139" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_NUMLETTERSYNC) != 0;</span>
+  }
+
+  public boolean hasCondition() {
+<span class="nc bnc" id="L143" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_CONDITION) != 0;</span>
+  }
+
+  public boolean hasCurrentValue() {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_CURRENTVALUE) != 0;</span>
+  }
+
+  public boolean hasFalseValue() {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_FALSEVALUE) != 0;</span>
+  }
+
+  public boolean hasTrueValue() {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_TRUEVALUE) != 0;</span>
+  }
+
+  public boolean hasConnectionName() {
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_CONNECTIONNAME) != 0;</span>
+  }
+
+  public boolean hasDuration() {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DURATION) != 0;</span>
+  }
+
+  public boolean hasName() {
+<span class="nc bnc" id="L167" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_NAME) != 0;</span>
+  }
+
+  public boolean hasBoolValue() {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_BOOLVALUE) != 0;</span>
+  }
+
+  public boolean hasCurrency() {
+<span class="nc bnc" id="L175" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_CURRENCY) != 0;</span>
+  }
+
+  public boolean hasStringValue() {
+<span class="nc bnc" id="L179" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_STRINGVALUE) != 0;</span>
+  }
+
+  public boolean hasTimeValue() {
+<span class="nc bnc" id="L183" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_TIMEVALUE) != 0;</span>
+  }
+
+  public boolean hasTValue() {
+<span class="nc bnc" id="L187" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_T_VALUE) != 0;</span>
+  }
+
+  public boolean hasOValue() {
+<span class="nc bnc" id="L191" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_O_VALUE) != 0;</span>
+  }
+
+  public boolean hasValueType() {
+<span class="nc bnc" id="L195" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_VALUETYPE) != 0;</span>
+  }
+
+  public boolean hasFormula() {
+<span class="nc bnc" id="L199" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_FORMULA) != 0;</span>
+  }
+
+  public boolean hasIsHidden() {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_ISHIDDEN) != 0;</span>
+  }
+
+  public boolean hasId() {
+<span class="nc bnc" id="L207" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_ID) != 0;</span>
+  }
+
+  public boolean hasDescription() {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_DESCRIPTION) != 0;</span>
+  }
+
+  public boolean hasActive() {
+<span class="nc bnc" id="L215" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_ACTIVE) != 0;</span>
+  }
+
+  public boolean hasHref() {
+<span class="nc bnc" id="L219" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_HREF) != 0;</span>
+  }
+
+  public boolean hasPlaceHolderType() {
+<span class="nc bnc" id="L223" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_PLACEHOLDERTYPE) != 0;</span>
+  }
+
+  public boolean hasKind() {
+<span class="nc bnc" id="L227" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_KIND) != 0;</span>
+  }
+
+  public boolean hasLanguage() {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_LANGUAGE) != 0;</span>
+  }
+
+  public boolean hasLinkType() {
+<span class="nc bnc" id="L235" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_LINKTYPE) != 0;</span>
+  }
+
+  public boolean hasNumFormat() {
+<span class="nc bnc" id="L239" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_NUMFORMAT) != 0;</span>
+  }
+
+  public boolean hasPageAdjust() {
+<span class="nc bnc" id="L243" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_PAGEADJUST) != 0;</span>
+  }
+
+  public boolean hasRowNumber() {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">    return (propertyFlags &amp; PROP_ROWNUMBER) != 0;</span>
+  }
+
+  private static Map&lt;String, FieldMap&gt; createMap() {
+<span class="nc" id="L251">    Map&lt;String, FieldMap&gt; map = new HashMap&lt;String, FieldMap&gt;();</span>
+<span class="nc" id="L252">    map.put(</span>
+        &quot;author-initials&quot;, new FieldMap(&quot;authorinitials&quot;, &quot;TextAuthorInitialsElement&quot;, PROP_FIXED));
+<span class="nc" id="L254">    map.put(&quot;author-name&quot;, new FieldMap(&quot;author-name&quot;, &quot;TextAuthorNameElement&quot;, PROP_FIXED));</span>
+<span class="nc" id="L255">    map.put(</span>
+        &quot;bookmark-ref&quot;,
+        new FieldMap(&quot;bookmark-ref&quot;, &quot;TextBookmarkRefElement&quot;, PROP_REFFORMAT | PROP_REFNAME));
+<span class="nc" id="L258">    map.put(</span>
+        &quot;chapter&quot;, new FieldMap(&quot;chapter&quot;, &quot;TextChapterElement&quot;, PROP_DISPLAY | PROP_OUTLINELEVEL));
+<span class="nc" id="L260">    map.put(</span>
+        &quot;character-count&quot;,
+        new FieldMap(
+            &quot;character-count&quot;,
+            &quot;TextCharacterCountElement&quot;,
+            PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L266">    map.put(</span>
+        &quot;conditional-text&quot;,
+        new FieldMap(
+            &quot;conditional-text&quot;,
+            &quot;TextConditionalTextElement&quot;,
+            PROP_CONDITION | PROP_CURRENTVALUE | PROP_FALSEVALUE | PROP_TRUEVALUE));
+<span class="nc" id="L272">    map.put(</span>
+        &quot;creation-date&quot;,
+        new FieldMap(
+            &quot;creation-date&quot;,
+            &quot;TextCreationDateElement&quot;,
+            PROP_FIXED | PROP_DATEVALUE | PROP_DATEFORMAT));
+<span class="nc" id="L278">    map.put(</span>
+        &quot;creation-time&quot;,
+        new FieldMap(
+            &quot;creation-time&quot;,
+            &quot;TextCreationTimeElement&quot;,
+            PROP_FIXED | PROP_DATEVALUE | PROP_DATEFORMAT | PROP_TIMESTYLE));
+<span class="nc" id="L284">    map.put(&quot;creator&quot;, new FieldMap(&quot;creator&quot;, &quot;TextCreatorElement&quot;, PROP_FIXED));</span>
+<span class="nc" id="L285">    map.put(</span>
+        &quot;database-display&quot;,
+        new FieldMap(
+            &quot;database-display&quot;,
+            &quot;TextDatabaseDisplayElement&quot;,
+            PROP_DBTABLE | PROP_DBNAME | PROP_DBCOLUMN));
+<span class="nc" id="L291">    map.put(</span>
+        &quot;database-name&quot;,
+        new FieldMap(&quot;database-name&quot;, &quot;TextDatabaseNameElement&quot;, PROP_DBTABLE | PROP_DBNAME));
+<span class="nc" id="L294">    map.put(</span>
+        &quot;database-row-number&quot;,
+        new FieldMap(
+            &quot;database-row-number&quot;,
+            &quot;TextDatabaseRowNumberElement&quot;,
+            PROP_T_VALUE | PROP_DBTABLE | PROP_DBNAME));
+<span class="nc" id="L300">    map.put(</span>
+        &quot;database-row-select&quot;,
+        new FieldMap(
+            &quot;database-row-select&quot;,
+            &quot;TextDatabaseRowSelectElement&quot;,
+            PROP_CONDITION | PROP_DBTABLE | PROP_DBNAME | PROP_ROWNUMBER | PROP_TABLETYPE));
+<span class="nc" id="L306">    map.put(</span>
+        &quot;date&quot;,
+        new FieldMap(&quot;date&quot;, &quot;TextDateElement&quot;, PROP_FIXED | PROP_DATEVALUE | PROP_DATEFORMAT));
+<span class="nc" id="L309">    map.put(</span>
+        &quot;dde-connection&quot;,
+        new FieldMap(&quot;dde-connection&quot;, &quot;TextDdeConnectionElement&quot;, PROP_CONNECTIONNAME));
+<span class="nc" id="L312">    map.put(&quot;description&quot;, new FieldMap(&quot;description&quot;, &quot;TextDescriptionElement&quot;, PROP_FIXED));</span>
+<span class="nc" id="L313">    map.put(</span>
+        &quot;editing-cycles&quot;, new FieldMap(&quot;editing-cycles&quot;, &quot;TextEditingCyclesElement&quot;, PROP_FIXED));
+<span class="nc" id="L315">    map.put(</span>
+        &quot;editing-duration&quot;,
+        new FieldMap(
+            &quot;editing-duration&quot;,
+            &quot;TextEditingDurationElement&quot;,
+            PROP_FIXED | PROP_DURATION | PROP_DATEFORMAT));
+<span class="nc" id="L321">    map.put(&quot;execute-macro&quot;, new FieldMap(&quot;execute-macro&quot;, &quot;TextExecuteMacroElement&quot;, PROP_NAME));</span>
+<span class="nc" id="L322">    map.put(</span>
+        &quot;expression&quot;,
+        new FieldMap(
+            &quot;expression&quot;,
+            &quot;TextExpressionElement&quot;,
+            PROP_BOOLVALUE
+                | PROP_CURRENCY
+                | PROP_DATEVALUE
+                | PROP_STRINGVALUE
+                | PROP_TIMEVALUE
+                | PROP_O_VALUE
+                | PROP_VALUETYPE
+                | PROP_DATEFORMAT
+                | PROP_DISPLAY
+                | PROP_FORMULA));
+<span class="nc" id="L337">    map.put(</span>
+        &quot;file-name&quot;, new FieldMap(&quot;file-name&quot;, &quot;TextFileNameElement&quot;, PROP_DISPLAY | PROP_FIXED));
+<span class="nc" id="L339">    map.put(</span>
+        &quot;hidden-paragraph&quot;,
+        new FieldMap(
+            &quot;hidden-paragraph&quot;, &quot;TextHiddenParagraphElement&quot;, PROP_CONDITION | PROP_ISHIDDEN));
+<span class="nc" id="L343">    map.put(</span>
+        &quot;hidden-text&quot;,
+        new FieldMap(
+            &quot;hidden-text&quot;,
+            &quot;TextHiddenTextElement&quot;,
+            PROP_CONDITION | PROP_ISHIDDEN | PROP_STRINGVALUE));
+<span class="nc" id="L349">    map.put(</span>
+        &quot;image-count&quot;,
+        new FieldMap(
+            &quot;image-count&quot;, &quot;TextImageCountElement&quot;, PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L353">    map.put(</span>
+        &quot;initial-creator&quot;,
+        new FieldMap(&quot;initial-creator&quot;, &quot;TextInitialCreatorElement&quot;, PROP_FIXED));
+<span class="nc" id="L356">    map.put(&quot;keywords&quot;, new FieldMap(&quot;keywords&quot;, &quot;TextKeywordsElement&quot;, 0));</span>
+<span class="nc" id="L357">    map.put(&quot;measure&quot;, new FieldMap(&quot;measure&quot;, &quot;TextMeasureElement&quot;, PROP_KIND));</span>
+<span class="nc" id="L358">    map.put(</span>
+        &quot;meta-field&quot;,
+        new FieldMap(&quot;meta-field&quot;, &quot;TextMetaFieldElement&quot;, PROP_DATEFORMAT | PROP_ID));
+<span class="nc" id="L361">    map.put(</span>
+        &quot;modification-date&quot;,
+        new FieldMap(
+            &quot;modification-date&quot;,
+            &quot;TextModificationDateElement&quot;,
+            PROP_FIXED | PROP_DATEVALUE | PROP_DATEFORMAT));
+<span class="nc" id="L367">    map.put(</span>
+        &quot;modification-time&quot;,
+        new FieldMap(
+            &quot;modification-time&quot;,
+            &quot;TextModificationTimeElement&quot;,
+            PROP_FIXED | PROP_DATEVALUE | PROP_DATEFORMAT));
+<span class="nc" id="L373">    map.put(</span>
+        &quot;note-ref&quot;, new FieldMap(&quot;note-ref&quot;, &quot;TextNoteRefElement&quot;, PROP_REFFORMAT | PROP_REFNAME));
+<span class="nc" id="L375">    map.put(</span>
+        &quot;object-count&quot;,
+        new FieldMap(
+            &quot;object-count&quot;, &quot;TextObjectCountElement&quot;, PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L379">    map.put(</span>
+        &quot;page-continuation&quot;, new FieldMap(&quot;page-continuation&quot;, &quot;TextPageContinuationElement&quot;, 0));
+<span class="nc" id="L381">    map.put(</span>
+        &quot;page-count&quot;,
+        new FieldMap(
+            &quot;page-count&quot;, &quot;TextPageCountElement&quot;, PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L385">    map.put(</span>
+        &quot;page-number&quot;,
+        new FieldMap(
+            &quot;page-number&quot;, &quot;TextPageNumberElement&quot;, PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L389">    map.put(</span>
+        &quot;page-variable-get&quot;,
+        new FieldMap(
+            &quot;page-variable-get&quot;,
+            &quot;TextPageVariableGetElement&quot;,
+            PROP_NUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L395">    map.put(</span>
+        &quot;page-variable-set&quot;,
+        new FieldMap(
+            &quot;page-variable-set&quot;, &quot;TextPageVariableSetElement&quot;, PROP_PAGEADJUST | PROP_ACTIVE));
+<span class="nc" id="L399">    map.put(</span>
+        &quot;paragraph-count&quot;,
+        new FieldMap(
+            &quot;paragraph-count&quot;,
+            &quot;TextParagraphCountElement&quot;,
+            PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L405">    map.put(</span>
+        &quot;placeholder&quot;,
+        new FieldMap(
+            &quot;placeholder&quot;, &quot;TextPlaceholderElement&quot;, PROP_DESCRIPTION | PROP_PLACEHOLDERTYPE));
+<span class="nc" id="L409">    map.put(</span>
+        &quot;print-date&quot;,
+        new FieldMap(
+            &quot;print-date&quot;, &quot;TextPrintDateElement&quot;, PROP_FIXED | PROP_DATEVALUE | PROP_DATEFORMAT));
+<span class="nc" id="L413">    map.put(</span>
+        &quot;print-time&quot;,
+        new FieldMap(
+            &quot;print-time&quot;,
+            &quot;TextPrintTimeElement&quot;,
+            PROP_FIXED | PROP_TIMESTYLE | PROP_DATEVALUE | PROP_DATEFORMAT));
+<span class="nc" id="L419">    map.put(&quot;printed-by&quot;, new FieldMap(&quot;printed-by&quot;, &quot;TextPrintedByElement&quot;, PROP_FIXED));</span>
+<span class="nc" id="L420">    map.put(</span>
+        &quot;reference-ref&quot;,
+        new FieldMap(&quot;reference-ref&quot;, &quot;TextReferenceRefElement&quot;, PROP_REFFORMAT | PROP_REFNAME));
+<span class="nc" id="L423">    map.put(</span>
+        &quot;script&quot;,
+        new FieldMap(&quot;script&quot;, &quot;TextScriptElement&quot;, PROP_LANGUAGE | PROP_HREF | PROP_LINKTYPE));
+<span class="nc" id="L426">    map.put(&quot;sender-city&quot;, new FieldMap(&quot;sender-city&quot;, &quot;TextSenderCityElement&quot;, 0));</span>
+<span class="nc" id="L427">    map.put(&quot;sender-company&quot;, new FieldMap(&quot;sender-company&quot;, &quot;TextSenderCompanyElement&quot;, 0));</span>
+<span class="nc" id="L428">    map.put(&quot;sender-country&quot;, new FieldMap(&quot;sender-country&quot;, &quot;TextSenderCountryElement&quot;, 0));</span>
+<span class="nc" id="L429">    map.put(&quot;sender-email&quot;, new FieldMap(&quot;sender-email&quot;, &quot;TextSenderEmailElement&quot;, 0));</span>
+<span class="nc" id="L430">    map.put(&quot;sender-fax&quot;, new FieldMap(&quot;sender-fax&quot;, &quot;TextSenderFaxElement&quot;, 0));</span>
+<span class="nc" id="L431">    map.put(&quot;sender-firstname&quot;, new FieldMap(&quot;sender-firstname&quot;, &quot;TextSenderFirstnameElement&quot;, 0));</span>
+<span class="nc" id="L432">    map.put(&quot;sender-initials&quot;, new FieldMap(&quot;sender-initials&quot;, &quot;TextSenderInitialsElement&quot;, 0));</span>
+<span class="nc" id="L433">    map.put(&quot;sender-lastname&quot;, new FieldMap(&quot;sender-lastname&quot;, &quot;TextSenderLastnameElement&quot;, 0));</span>
+<span class="nc" id="L434">    map.put(</span>
+        &quot;sender-phone-private&quot;,
+        new FieldMap(&quot;sender-phone-private&quot;, &quot;TextSenderPhonePrivateElement&quot;, 0));
+<span class="nc" id="L437">    map.put(</span>
+        &quot;sender-phone-work&quot;, new FieldMap(&quot;sender-phone-work&quot;, &quot;TextSenderPhoneWorkElement&quot;, 0));
+<span class="nc" id="L439">    map.put(&quot;sender-position&quot;, new FieldMap(&quot;sender-position&quot;, &quot;TextSenderPositionElement&quot;, 0));</span>
+<span class="nc" id="L440">    map.put(</span>
+        &quot;sender-postal-code&quot;, new FieldMap(&quot;sender-postal-code&quot;, &quot;TextSenderPostalCodeElement&quot;, 0));
+<span class="nc" id="L442">    map.put(</span>
+        &quot;sender-state-or-province&quot;,
+        new FieldMap(&quot;sender-state-or-province&quot;, &quot;TextSenderStateOrProvinceElement&quot;, 0));
+<span class="nc" id="L445">    map.put(&quot;sender-street&quot;, new FieldMap(&quot;sender-street&quot;, &quot;TextSenderStreetElement&quot;, 0));</span>
+<span class="nc" id="L446">    map.put(&quot;sender-title&quot;, new FieldMap(&quot;sender-title&quot;, &quot;TextSenderTitleElement&quot;, 0));</span>
+<span class="nc" id="L447">    map.put(</span>
+        &quot;sequence-ref&quot;,
+        new FieldMap(&quot;sequence-ref&quot;, &quot;TextSequenceRefElement&quot;, PROP_REFFORMAT | PROP_REFNAME));
+<span class="nc" id="L450">    map.put(</span>
+        &quot;sequence&quot;,
+        new FieldMap(
+            &quot;sequence&quot;,
+            &quot;TextSequenceElement&quot;,
+            PROP_DATEFORMAT | PROP_NUMLETTERSYNC | PROP_FORMULA | PROP_NAME | PROP_REFNAME));
+<span class="nc" id="L456">    map.put(&quot;sheet-name&quot;, new FieldMap(&quot;sheet-name&quot;, &quot;TextSheetNameElement&quot;, 0));</span>
+<span class="nc" id="L457">    map.put(&quot;subject&quot;, new FieldMap(&quot;subject&quot;, &quot;TextSubjectElement&quot;, PROP_FIXED));</span>
+<span class="nc" id="L458">    map.put(</span>
+        &quot;table-count&quot;,
+        new FieldMap(
+            &quot;table-count&quot;, &quot;TextTableCountElement&quot;, PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+<span class="nc" id="L462">    map.put(</span>
+        &quot;template-name&quot;, new FieldMap(&quot;template-name&quot;, &quot;TextTemplateNameElement&quot;, PROP_DISPLAY));
+<span class="nc" id="L464">    map.put(&quot;text-input&quot;, new FieldMap(&quot;text-input&quot;, &quot;TextTextInputElement&quot;, PROP_DESCRIPTION));</span>
+<span class="nc" id="L465">    map.put(</span>
+        &quot;time&quot;,
+        new FieldMap(
+            &quot;time&quot;,
+            &quot;TextTimeElement&quot;,
+            PROP_FIXED | PROP_DATEVALUE | PROP_TIMESTYLE | PROP_DATEFORMAT));
+<span class="nc" id="L471">    map.put(&quot;title&quot;, new FieldMap(&quot;title&quot;, &quot;TextTitleElement&quot;, PROP_FIXED));</span>
+<span class="nc" id="L472">    map.put(</span>
+        &quot;user-defined&quot;,
+        new FieldMap(
+            &quot;user-defined&quot;,
+            &quot;TextUserDefinedElement&quot;,
+            PROP_BOOLVALUE
+                | PROP_CURRENCY
+                | PROP_DATEVALUE
+                | PROP_STRINGVALUE
+                | PROP_TIMEVALUE
+                | PROP_O_VALUE
+                | PROP_DATEFORMAT
+                | PROP_FIXED
+                | PROP_NAME));
+<span class="nc" id="L486">    map.put(</span>
+        &quot;user-field-get&quot;,
+        new FieldMap(
+            &quot;user-field-get&quot;,
+            &quot;TextUserFieldGetElement&quot;,
+            PROP_DATEFORMAT | PROP_DISPLAY | PROP_NAME | PROP_VALUETYPE));
+<span class="nc" id="L492">    map.put(</span>
+        &quot;user-field-input&quot;,
+        new FieldMap(
+            &quot;user-field-input&quot;,
+            &quot;TextUserFieldInputElement&quot;,
+            PROP_DATEFORMAT | PROP_DESCRIPTION | PROP_NAME));
+<span class="nc" id="L498">    map.put(</span>
+        &quot;variable-get&quot;,
+        new FieldMap(&quot;variable-get&quot;, &quot;TextVariableGetElement&quot;, PROP_DATEFORMAT | PROP_DISPLAY));
+<span class="nc" id="L501">    map.put(</span>
+        &quot;variable-input&quot;,
+        new FieldMap(
+            &quot;variable-input&quot;,
+            &quot;TextVariableInputElement&quot;,
+            PROP_BOOLVALUE | PROP_DATEFORMAT | PROP_DISPLAY | PROP_DESCRIPTION | PROP_NAME));
+<span class="nc" id="L507">    map.put(</span>
+        &quot;variable-set&quot;,
+        new FieldMap(
+            &quot;variable-set&quot;,
+            &quot;TextVariableSetElement&quot;,
+            PROP_BOOLVALUE
+                | PROP_CURRENCY
+                | PROP_DATEVALUE
+                | PROP_STRINGVALUE
+                | PROP_TIMEVALUE
+                | PROP_O_VALUE
+                | PROP_VALUETYPE
+                | PROP_DATEFORMAT
+                | PROP_DISPLAY
+                | PROP_FORMULA
+                | PROP_NAME));
+<span class="nc" id="L523">    map.put(</span>
+        &quot;word-count&quot;,
+        new FieldMap(
+            &quot;word-count&quot;, &quot;TextWordCountElement&quot;, PROP_PAGENUMFORMAT | PROP_NUMLETTERSYNC));
+
+<span class="nc" id="L528">    return map;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

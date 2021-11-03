@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStylesBase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.office</a> &gt; <span class="el_source">OdfStylesBase.java</span></div><h1>OdfStylesBase.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.office;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.number.DataStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberBooleanStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleStyleElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberCurrencyStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberDateStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberPercentageStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberTimeStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextListStyle;
+import org.odftoolkit.odfdom.pkg.OdfAttribute;
+import org.odftoolkit.odfdom.pkg.OdfContainerElementBase;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.w3c.dom.Node;
+
+/** Implements shared functions for OdfAutomaticStyles and OdfStyles. */
+public abstract class OdfStylesBase extends OdfContainerElementBase {
+
+  private static final long serialVersionUID = 1L;
+
+  private HashMap&lt;OdfStyleFamily, HashMap&lt;String, OdfStyle&gt;&gt; mStyles;
+  private HashMap&lt;String, OdfTextListStyle&gt; mListStyles;
+  private HashMap&lt;String, OdfNumberStyle&gt; mNumberStyles;
+  private HashMap&lt;String, OdfNumberDateStyle&gt; mDateStyles;
+  private HashMap&lt;String, OdfNumberPercentageStyle&gt; mPercentageStyles;
+  private HashMap&lt;String, OdfNumberCurrencyStyle&gt; mCurrencyStyles;
+  private HashMap&lt;String, OdfNumberTimeStyle&gt; mTimeStyles;
+  private HashMap&lt;String, NumberBooleanStyleElement&gt; mBooleanStyles;
+  private HashMap&lt;String, NumberTextStyleElement&gt; mTextStyles;
+
+<span class="nc" id="L66">  private HashMap&lt;String, DataStyleElement&gt; mAllDataStyles =</span>
+      new HashMap&lt;String, DataStyleElement&gt;();
+
+  public OdfStylesBase(OdfFileDom ownerDoc, OdfName odfName) {
+<span class="nc" id="L70">    super(ownerDoc, odfName);</span>
+<span class="nc" id="L71">  }</span>
+
+  /** @return a set of all names of the contained 'number' styles (text, date, time, ...) */
+  public HashMap&lt;String, DataStyleElement&gt; getAllDataStyles() {
+<span class="nc" id="L75">    return mAllDataStyles;</span>
+  }
+
+  /**
+   * Create an ODF style with style name and family
+   *
+   * @param name The style name
+   * @param family The style family
+   * @return The &lt;code&gt;OdfStyle&lt;/code&gt; element
+   */
+  public OdfStyle newStyle(String name, OdfStyleFamily family) {
+<span class="nc" id="L86">    OdfStyle oldStyle = this.getStyle(name, family);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">    if (oldStyle != null) {</span>
+<span class="nc" id="L88">      this.removeChild(oldStyle);</span>
+    }
+<span class="nc" id="L90">    OdfFileDom fileDom = ((OdfFileDom) this.ownerDocument);</span>
+<span class="nc" id="L91">    OdfStyle newStyle = fileDom.newOdfElement(OdfStyle.class);</span>
+<span class="nc" id="L92">    newStyle.setStyleNameAttribute(name);</span>
+<span class="nc" id="L93">    newStyle.setStyleFamilyAttribute(family.getName());</span>
+    StyleStyleElement firstStyle;
+    try {
+<span class="nc" id="L96">      firstStyle = getStylesElement(fileDom, StyleStyleElement.class);</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">      if (firstStyle == null) {</span>
+<span class="nc" id="L98">        insertBefore(newStyle, firstStyle);</span>
+      } else {
+<span class="nc" id="L100">        appendChild(newStyle);</span>
+      }
+
+<span class="nc" id="L103">    } catch (Exception ex) {</span>
+<span class="nc" id="L104">      Logger.getLogger(OdfOfficeStyles.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L105">    }</span>
+<span class="nc" id="L106">    return newStyle;</span>
+  }
+
+  protected abstract &lt;T extends OdfElement&gt; T getStylesElement(OdfFileDom dom, Class&lt;T&gt; clazz)
+      throws Exception;
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfStyle getStyle(String name, OdfStyleFamily familyType) {
+<span class="nc bnc" id="L114" title="All 4 branches missed.">    if (mStyles != null &amp;&amp; name != null) {</span>
+<span class="nc" id="L115">      HashMap&lt;String, OdfStyle&gt; familyMap = mStyles.get(familyType);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">      if (familyMap != null) {</span>
+<span class="nc" id="L117">        return familyMap.get(name);</span>
+      }
+    }
+<span class="nc" id="L120">    return null;</span>
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;OdfStyle&lt;/code&gt; elements.
+   *
+   * @return iterator for all &lt;code&gt;OdfStyle&lt;/code&gt; elements
+   */
+  public Iterable&lt;OdfStyle&gt; getAllStyles() {
+<span class="nc" id="L129">    ArrayList&lt;OdfStyle&gt; allStyles = new ArrayList&lt;OdfStyle&gt;();</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">    if (mStyles != null) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">      for (OdfStyleFamily family : mStyles.keySet()) {</span>
+<span class="nc" id="L132">        HashMap&lt;String, OdfStyle&gt; familySet = mStyles.get(family);</span>
+<span class="nc" id="L133">        Collection&lt;OdfStyle&gt; familyStyles = familySet.values();</span>
+<span class="nc" id="L134">        allStyles.addAll(familyStyles);</span>
+<span class="nc" id="L135">      }</span>
+    }
+<span class="nc" id="L137">    return allStyles;</span>
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfStyle&gt; getStylesForFamily(OdfStyleFamily familyType) {
+<span class="nc bnc" id="L142" title="All 2 branches missed.">    if (mStyles != null) {</span>
+<span class="nc" id="L143">      HashMap&lt;String, OdfStyle&gt; familyMap = mStyles.get(familyType);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">      if (familyMap != null) {</span>
+<span class="nc" id="L145">        return familyMap.values();</span>
+      }
+    }
+<span class="nc" id="L148">    return new ArrayList&lt;OdfStyle&gt;();</span>
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfTextListStyle getListStyle(String name) {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">    if (mListStyles != null) {</span>
+<span class="nc" id="L154">      return mListStyles.get(name);</span>
+    } else {
+<span class="nc" id="L156">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfTextListStyle&gt; getListStyles() {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">    if (mListStyles != null) {</span>
+<span class="nc" id="L163">      return mListStyles.values();</span>
+    } else {
+<span class="nc" id="L165">      return new ArrayList&lt;OdfTextListStyle&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfNumberStyle getNumberStyle(String name) {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">    if (mNumberStyles != null) {</span>
+<span class="nc" id="L172">      return mNumberStyles.get(name);</span>
+    } else {
+<span class="nc" id="L174">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfNumberStyle&gt; getNumberStyles() {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">    if (mNumberStyles != null) {</span>
+<span class="nc" id="L181">      return mNumberStyles.values();</span>
+    } else {
+<span class="nc" id="L183">      return new ArrayList&lt;OdfNumberStyle&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfNumberDateStyle getDateStyle(String name) {
+<span class="nc bnc" id="L189" title="All 2 branches missed.">    if (mDateStyles != null) {</span>
+<span class="nc" id="L190">      return mDateStyles.get(name);</span>
+    } else {
+<span class="nc" id="L192">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfNumberDateStyle&gt; getDateStyles() {
+<span class="nc bnc" id="L198" title="All 2 branches missed.">    if (mDateStyles != null) {</span>
+<span class="nc" id="L199">      return mDateStyles.values();</span>
+    } else {
+<span class="nc" id="L201">      return new ArrayList&lt;OdfNumberDateStyle&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfNumberPercentageStyle getPercentageStyle(String name) {
+<span class="nc bnc" id="L207" title="All 2 branches missed.">    if (mPercentageStyles != null) {</span>
+<span class="nc" id="L208">      return mPercentageStyles.get(name);</span>
+    } else {
+<span class="nc" id="L210">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfNumberPercentageStyle&gt; getPercentageStyles() {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">    if (mPercentageStyles != null) {</span>
+<span class="nc" id="L217">      return mPercentageStyles.values();</span>
+    } else {
+<span class="nc" id="L219">      return new ArrayList&lt;OdfNumberPercentageStyle&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfNumberCurrencyStyle getCurrencyStyle(String name) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">    if (mCurrencyStyles != null) {</span>
+<span class="nc" id="L226">      return mCurrencyStyles.get(name);</span>
+    } else {
+<span class="nc" id="L228">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfNumberCurrencyStyle&gt; getCurrencyStyles() {
+<span class="nc bnc" id="L234" title="All 2 branches missed.">    if (mCurrencyStyles != null) {</span>
+<span class="nc" id="L235">      return mCurrencyStyles.values();</span>
+    } else {
+<span class="nc" id="L237">      return new ArrayList&lt;OdfNumberCurrencyStyle&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public OdfNumberTimeStyle getTimeStyle(String name) {
+<span class="nc bnc" id="L243" title="All 2 branches missed.">    if (mTimeStyles != null) {</span>
+<span class="nc" id="L244">      return mTimeStyles.get(name);</span>
+    } else {
+<span class="nc" id="L246">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;OdfNumberTimeStyle&gt; getTimeStyles() {
+<span class="nc bnc" id="L252" title="All 2 branches missed.">    if (mTimeStyles != null) {</span>
+<span class="nc" id="L253">      return mTimeStyles.values();</span>
+    } else {
+<span class="nc" id="L255">      return new ArrayList&lt;OdfNumberTimeStyle&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public NumberBooleanStyleElement getBooleanStyle(String name) {
+<span class="nc bnc" id="L261" title="All 2 branches missed.">    if (mBooleanStyles != null) {</span>
+<span class="nc" id="L262">      return mBooleanStyles.get(name);</span>
+    } else {
+<span class="nc" id="L264">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;NumberBooleanStyleElement&gt; getBooleanStyles() {
+<span class="nc bnc" id="L270" title="All 2 branches missed.">    if (mBooleanStyles != null) {</span>
+<span class="nc" id="L271">      return mBooleanStyles.values();</span>
+    } else {
+<span class="nc" id="L273">      return new ArrayList&lt;NumberBooleanStyleElement&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  NumberTextStyleElement getTextStyle(String name) {
+<span class="nc bnc" id="L279" title="All 2 branches missed.">    if (mTextStyles != null) {</span>
+<span class="nc" id="L280">      return mTextStyles.get(name);</span>
+    } else {
+<span class="nc" id="L282">      return null;</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  public Iterable&lt;NumberTextStyleElement&gt; getTextStyles() {
+<span class="nc bnc" id="L288" title="All 2 branches missed.">    if (mTextStyles != null) {</span>
+<span class="nc" id="L289">      return mTextStyles.values();</span>
+    } else {
+<span class="nc" id="L291">      return new ArrayList&lt;NumberTextStyleElement&gt;();</span>
+    }
+  }
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  @Override
+  public void onOdfNodeInserted(OdfElement node, Node refNode) {
+<span class="nc bnc" id="L298" title="All 2 branches missed.">    if (node instanceof DataStyleElement) {</span>
+<span class="nc" id="L299">      OdfAttribute name = node.getOdfAttribute(OdfDocumentNamespace.STYLE, &quot;name&quot;);</span>
+<span class="nc" id="L300">      mAllDataStyles.put(name.getValue(), (DataStyleElement) node);</span>
+    }
+<span class="nc bnc" id="L302" title="All 2 branches missed.">    if (node instanceof OdfStyle) {</span>
+<span class="nc" id="L303">      OdfStyle style = (OdfStyle) node;</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">      if (mStyles == null) {</span>
+<span class="nc" id="L305">        mStyles = new HashMap&lt;OdfStyleFamily, HashMap&lt;String, OdfStyle&gt;&gt;();</span>
+      }
+
+<span class="nc" id="L308">      HashMap&lt;String, OdfStyle&gt; familyMap = mStyles.get(style.getFamily());</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">      if (familyMap == null) {</span>
+<span class="nc" id="L310">        familyMap = new HashMap&lt;String, OdfStyle&gt;();</span>
+<span class="nc" id="L311">        mStyles.put(style.getFamily(), familyMap);</span>
+      }
+
+<span class="nc" id="L314">      familyMap.put(style.getStyleNameAttribute(), style);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">    } else if (node instanceof OdfTextListStyle) {</span>
+<span class="nc" id="L316">      OdfTextListStyle listStyle = (OdfTextListStyle) node;</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">      if (mListStyles == null) {</span>
+<span class="nc" id="L318">        mListStyles = new HashMap&lt;String, OdfTextListStyle&gt;();</span>
+      }
+
+<span class="nc" id="L321">      mListStyles.put(listStyle.getStyleNameAttribute(), listStyle);</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">    } else if (node instanceof OdfNumberStyle) {</span>
+<span class="nc" id="L323">      OdfNumberStyle numberStyle = (OdfNumberStyle) node;</span>
+
+<span class="nc bnc" id="L325" title="All 2 branches missed.">      if (mNumberStyles == null) {</span>
+<span class="nc" id="L326">        mNumberStyles = new HashMap&lt;String, OdfNumberStyle&gt;();</span>
+      }
+
+<span class="nc" id="L329">      mNumberStyles.put(numberStyle.getStyleNameAttribute(), numberStyle);</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">    } else if (node instanceof OdfNumberDateStyle) {</span>
+<span class="nc" id="L331">      OdfNumberDateStyle dateStyle = (OdfNumberDateStyle) node;</span>
+
+<span class="nc bnc" id="L333" title="All 2 branches missed.">      if (mDateStyles == null) {</span>
+<span class="nc" id="L334">        mDateStyles = new HashMap&lt;String, OdfNumberDateStyle&gt;();</span>
+      }
+
+<span class="nc" id="L337">      mDateStyles.put(dateStyle.getStyleNameAttribute(), dateStyle);</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">    } else if (node instanceof OdfNumberPercentageStyle) {</span>
+<span class="nc" id="L339">      OdfNumberPercentageStyle percentageStyle = (OdfNumberPercentageStyle) node;</span>
+
+<span class="nc bnc" id="L341" title="All 2 branches missed.">      if (mPercentageStyles == null) {</span>
+<span class="nc" id="L342">        mPercentageStyles = new HashMap&lt;String, OdfNumberPercentageStyle&gt;();</span>
+      }
+
+<span class="nc" id="L345">      mPercentageStyles.put(percentageStyle.getStyleNameAttribute(), percentageStyle);</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">    } else if (node instanceof OdfNumberCurrencyStyle) {</span>
+<span class="nc" id="L347">      OdfNumberCurrencyStyle currencyStyle = (OdfNumberCurrencyStyle) node;</span>
+
+<span class="nc bnc" id="L349" title="All 2 branches missed.">      if (mCurrencyStyles == null) {</span>
+<span class="nc" id="L350">        mCurrencyStyles = new HashMap&lt;String, OdfNumberCurrencyStyle&gt;();</span>
+      }
+
+<span class="nc" id="L353">      mCurrencyStyles.put(currencyStyle.getStyleNameAttribute(), currencyStyle);</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">    } else if (node instanceof OdfNumberTimeStyle) {</span>
+<span class="nc" id="L355">      OdfNumberTimeStyle timeStyle = (OdfNumberTimeStyle) node;</span>
+
+<span class="nc bnc" id="L357" title="All 2 branches missed.">      if (mTimeStyles == null) {</span>
+<span class="nc" id="L358">        mTimeStyles = new HashMap&lt;String, OdfNumberTimeStyle&gt;();</span>
+      }
+
+<span class="nc" id="L361">      mTimeStyles.put(timeStyle.getStyleNameAttribute(), timeStyle);</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">    } else if (node instanceof NumberBooleanStyleElement) {</span>
+<span class="nc" id="L363">      NumberBooleanStyleElement booleanStyle = (NumberBooleanStyleElement) node;</span>
+
+<span class="nc bnc" id="L365" title="All 2 branches missed.">      if (mBooleanStyles == null) {</span>
+<span class="nc" id="L366">        mBooleanStyles = new HashMap&lt;String, NumberBooleanStyleElement&gt;();</span>
+      }
+
+<span class="nc" id="L369">      mBooleanStyles.put(booleanStyle.getStyleNameAttribute(), booleanStyle);</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">    } else if (node instanceof NumberTextStyleElement) {</span>
+<span class="nc" id="L371">      NumberTextStyleElement textStyle = (NumberTextStyleElement) node;</span>
+
+<span class="nc bnc" id="L373" title="All 2 branches missed.">      if (mTextStyles == null) {</span>
+<span class="nc" id="L374">        mTextStyles = new HashMap&lt;String, NumberTextStyleElement&gt;();</span>
+      }
+
+<span class="nc" id="L377">      mTextStyles.put(textStyle.getStyleNameAttribute(), textStyle);</span>
+    }
+<span class="nc" id="L379">  }</span>
+
+  // For documentation see OdfAutomaticStyles or OdfStyles.
+  @Override
+  public void onOdfNodeRemoved(OdfElement node) {
+<span class="nc bnc" id="L384" title="All 2 branches missed.">    if (node instanceof DataStyleElement) {</span>
+<span class="nc" id="L385">      OdfAttribute name = node.getOdfAttribute(OdfDocumentNamespace.STYLE, &quot;name&quot;);</span>
+<span class="nc" id="L386">      mAllDataStyles.remove(name.getValue());</span>
+    }
+<span class="nc bnc" id="L388" title="All 2 branches missed.">    if (node instanceof OdfStyle) {</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">      if (mStyles != null) {</span>
+<span class="nc" id="L390">        OdfStyle style = (OdfStyle) node;</span>
+<span class="nc" id="L391">        HashMap&lt;String, OdfStyle&gt; familyMap = mStyles.get(style.getFamily());</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (familyMap != null) {</span>
+<span class="nc" id="L393">          familyMap.remove(style.getStyleNameAttribute());</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">          if (familyMap.isEmpty()) {</span>
+<span class="nc" id="L395">            mStyles.remove(style.getFamily());</span>
+          }
+        }
+<span class="nc" id="L398">      }</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">    } else if (node instanceof OdfTextListStyle) {</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">      if (mListStyles != null) {</span>
+<span class="nc" id="L401">        OdfTextListStyle listStyle = (OdfTextListStyle) node;</span>
+<span class="nc" id="L402">        mListStyles.remove(listStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L403">      }</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">    } else if (node instanceof OdfNumberStyle) {</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">      if (mNumberStyles != null) {</span>
+<span class="nc" id="L406">        OdfNumberStyle numberStyle = (OdfNumberStyle) node;</span>
+<span class="nc" id="L407">        mNumberStyles.remove(numberStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L408">      }</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">    } else if (node instanceof OdfNumberDateStyle) {</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">      if (mDateStyles != null) {</span>
+<span class="nc" id="L411">        OdfNumberDateStyle dateStyle = (OdfNumberDateStyle) node;</span>
+<span class="nc" id="L412">        mDateStyles.remove(dateStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L413">      }</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">    } else if (node instanceof OdfNumberPercentageStyle) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">      if (mPercentageStyles != null) {</span>
+<span class="nc" id="L416">        OdfNumberPercentageStyle percentageStyle = (OdfNumberPercentageStyle) node;</span>
+<span class="nc" id="L417">        mPercentageStyles.remove(percentageStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L418">      }</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">    } else if (node instanceof OdfNumberCurrencyStyle) {</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">      if (mCurrencyStyles != null) {</span>
+<span class="nc" id="L421">        OdfNumberCurrencyStyle currencyStyle = (OdfNumberCurrencyStyle) node;</span>
+<span class="nc" id="L422">        mCurrencyStyles.remove(currencyStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L423">      }</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">    } else if (node instanceof OdfNumberTimeStyle) {</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">      if (mTimeStyles != null) {</span>
+<span class="nc" id="L426">        OdfNumberTimeStyle timeStyle = (OdfNumberTimeStyle) node;</span>
+<span class="nc" id="L427">        mTimeStyles.remove(timeStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L428">      }</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">    } else if (node instanceof NumberBooleanStyleElement) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">      if (mBooleanStyles != null) {</span>
+<span class="nc" id="L431">        NumberBooleanStyleElement booleanStyle = (NumberBooleanStyleElement) node;</span>
+<span class="nc" id="L432">        mBooleanStyles.remove(booleanStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L433">      }</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">    } else if (node instanceof NumberTextStyleElement) {</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">      if (mTextStyles != null) {</span>
+<span class="nc" id="L436">        NumberTextStyleElement textStyle = (NumberTextStyleElement) node;</span>
+<span class="nc" id="L437">        mTextStyles.remove(textStyle.getStyleNameAttribute());</span>
+      }
+    }
+<span class="nc" id="L440">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

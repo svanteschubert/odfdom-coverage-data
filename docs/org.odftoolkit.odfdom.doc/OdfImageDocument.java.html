@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfImageDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc</a> &gt; <span class="el_source">OdfImageDocument.java</span></div><h1>OdfImageDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc;
+
+import java.io.File;
+import java.io.InputStream;
+import org.odftoolkit.odfdom.dom.element.office.OfficeImageElement;
+import org.odftoolkit.odfdom.pkg.MediaType;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.xml.sax.SAXException;
+
+/** This class represents an ODF image document. */
+public class OdfImageDocument extends OdfDocument {
+
+  private static final String EMPTY_IMAGE_DOCUMENT_PATH = &quot;/OdfImageDocument.odi&quot;;
+<span class="nc" id="L37">  static final Resource EMPTY_IMAGE_DOCUMENT_RESOURCE = new Resource(EMPTY_IMAGE_DOCUMENT_PATH);</span>
+
+  /** This enum contains all possible media types of OdfImageDocument documents. */
+<span class="nc" id="L40">  public enum OdfMediaType implements MediaType {</span>
+<span class="nc" id="L41">    IMAGE(OdfDocument.OdfMediaType.IMAGE),</span>
+<span class="nc" id="L42">    IMAGE_TEMPLATE(OdfDocument.OdfMediaType.IMAGE_TEMPLATE);</span>
+    private final OdfDocument.OdfMediaType mMediaType;
+
+<span class="nc" id="L45">    OdfMediaType(OdfDocument.OdfMediaType mediaType) {</span>
+<span class="nc" id="L46">      this.mMediaType = mediaType;</span>
+<span class="nc" id="L47">    }</span>
+
+    /** @return the mediatype of this document */
+    public String getMediaTypeString() {
+<span class="nc" id="L51">      return mMediaType.getMediaTypeString();</span>
+    }
+
+    /** @return the ODF file suffix of this document */
+    public String getSuffix() {
+<span class="nc" id="L56">      return mMediaType.getSuffix();</span>
+    }
+
+    /**
+     * @param mediaType string defining an ODF document
+     * @return the according OdfMediatype encapsulating the given string and the suffix
+     */
+    public static OdfDocument.OdfMediaType getOdfMediaType(String mediaType) {
+<span class="nc" id="L64">      return OdfDocument.OdfMediaType.getOdfMediaType(mediaType);</span>
+    }
+  }
+
+  /**
+   * Creates an empty image document.
+   *
+   * @return ODF image document based on a default template
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfImageDocument newImageDocument() throws Exception {
+<span class="nc" id="L75">    return (OdfImageDocument)</span>
+<span class="nc" id="L76">        OdfDocument.loadTemplate(EMPTY_IMAGE_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.IMAGE);</span>
+  }
+
+  /**
+   * Creates an empty image template.
+   *
+   * @return ODF image template based on a default
+   * @throws java.lang.Exception - if the template could not be created
+   */
+  public static OdfImageDocument newImageTemplateDocument() throws Exception {
+<span class="nc" id="L86">    OdfImageDocument doc =</span>
+        (OdfImageDocument)
+<span class="nc" id="L88">            OdfDocument.loadTemplate(</span>
+                EMPTY_IMAGE_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.IMAGE_TEMPLATE);
+<span class="nc" id="L90">    doc.changeMode(OdfMediaType.IMAGE_TEMPLATE);</span>
+<span class="nc" id="L91">    return doc;</span>
+  }
+
+  /**
+   * To avoid data duplication a new document is only created, if not already opened. A document is
+   * cached by this constructor using the internal path as key.
+   */
+  protected OdfImageDocument(
+      OdfPackage pkg, String internalPath, OdfImageDocument.OdfMediaType odfMediaType)
+      throws SAXException {
+<span class="nc" id="L101">    super(pkg, internalPath, odfMediaType.mMediaType);</span>
+<span class="nc" id="L102">  }</span>
+
+  /**
+   * Creates an OdfImageDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequentiell) read access needed by
+   * OdfImageDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF image document, ClassCastException might be thrown.
+   *
+   * @param inputStream - the InputStream of the ODF image document.
+   * @return the image document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfImageDocument loadDocument(InputStream inputStream) throws Exception {
+<span class="nc" id="L119">    return (OdfImageDocument) OdfDocument.loadDocument(inputStream);</span>
+  }
+
+  /**
+   * Loads an OdfImageDocument from the provided path.
+   *
+   * &lt;p&gt;OdfImageDocument relies on the file being available for read access over the whole lifecycle
+   * of OdfImageDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF image document, ClassCastException might be thrown.
+   *
+   * @param documentPath - the path from where the document can be loaded
+   * @return the image document from the given path or NULL if the media type is not supported by
+   *     ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfImageDocument loadDocument(String documentPath) throws Exception {
+<span class="nc" id="L136">    return (OdfImageDocument) OdfDocument.loadDocument(documentPath);</span>
+  }
+
+  /**
+   * Creates an OdfImageDocument from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfImageDocument relies on the file being available for read access over the whole lifecycle
+   * of OdfImageDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF image document, ClassCastException might be thrown.
+   *
+   * @param file - a file representing the ODF image document.
+   * @return the image document created from the given File
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfImageDocument loadDocument(File file) throws Exception {
+<span class="nc" id="L152">    return (OdfImageDocument) OdfDocument.loadDocument(file);</span>
+  }
+  /**
+   * Get the content root of a image document.
+   *
+   * @return content root, representing the office:drawing tag
+   * @throws Exception if the file DOM could not be created.
+   */
+  @Override
+  public OfficeImageElement getContentRoot() throws Exception {
+<span class="nc" id="L162">    return super.getContentRoot(OfficeImageElement.class);</span>
+  }
+
+  /**
+   * Changes the document to the given mediatype. This method can only be used to convert a document
+   * to a related mediatype, e.g. template.
+   *
+   * @param mediaType the related ODF mimetype
+   */
+  public void changeMode(OdfMediaType mediaType) {
+<span class="nc" id="L172">    setOdfMediaType(mediaType.mMediaType);</span>
+<span class="nc" id="L173">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

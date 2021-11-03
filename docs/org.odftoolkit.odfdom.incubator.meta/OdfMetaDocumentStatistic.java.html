@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfMetaDocumentStatistic.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.meta</a> &gt; <span class="el_source">OdfMetaDocumentStatistic.java</span></div><h1>OdfMetaDocumentStatistic.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.meta;
+
+import org.odftoolkit.odfdom.dom.element.meta.MetaDocumentStatisticElement;
+
+/** &lt;code&gt;OdfMetaDocumentStatistic&lt;/code&gt; feature specifies the statistics about the document. */
+public class OdfMetaDocumentStatistic {
+
+  private MetaDocumentStatisticElement mDocStatistic;
+
+  /**
+   * Constructor of &lt;code&gt;OdfMetaDocumentStatistic&lt;/code&gt; feature.
+   *
+   * @param docStatistic the &lt;code&gt;MetaDocumentStatisticElement&lt;/code&gt; represent this feature
+   */
+<span class="nc" id="L38">  public OdfMetaDocumentStatistic(MetaDocumentStatisticElement docStatistic) {</span>
+<span class="nc" id="L39">    this.mDocStatistic = docStatistic;</span>
+<span class="nc" id="L40">  }</span>
+
+  /**
+   * Get the instance of &lt;code&gt;MetaDocumentStatisticElement&lt;/code&gt; which represents this feature.
+   *
+   * @return an instance of &lt;code&gt;MetaDocumentStatisticElement&lt;/code&gt;
+   */
+  private MetaDocumentStatisticElement getMetaDocumentStatisticElement() {
+<span class="nc" id="L48">    return mDocStatistic;</span>
+  }
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaCellCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:cell-count}.
+   *
+   * @return the number of table cells contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getCellCount() {
+<span class="nc" id="L59">    return mDocStatistic.getMetaCellCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaCellCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:cell-count}.
+   *
+   * @param cellCount the number of table cells need to be set
+   */
+  public void setCellCount(int cellCount) {
+<span class="nc" id="L69">    mDocStatistic.setMetaCellCountAttribute(cellCount);</span>
+<span class="nc" id="L70">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaCharacterCountAttribute
+   * &lt;/code&gt; , See {@odf.attribute meta:character-count}.
+   *
+   * @return the number of characters contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getCharacterCount() {
+<span class="nc" id="L80">    return mDocStatistic.getMetaCharacterCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaCharacterCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:character-count}.
+   *
+   * @param characterCount the number of characters need to set
+   */
+  public void setCharacterCount(Integer characterCount) {
+<span class="nc" id="L90">    mDocStatistic.setMetaCharacterCountAttribute(characterCount);</span>
+<span class="nc" id="L91">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaDrawCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:draw-count}.
+   *
+   * @return the number of all the graphic related element in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getDrawCount() {
+<span class="nc" id="L101">    return mDocStatistic.getMetaDrawCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaDrawCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:draw-count}.
+   *
+   * @param drawCount the number of all the graphic related element need to set
+   */
+  public void setDrawCount(Integer drawCount) {
+<span class="nc" id="L111">    mDocStatistic.setMetaDrawCountAttribute(drawCount);</span>
+<span class="nc" id="L112">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaFrameCountAttribute&lt;/code&gt;
+   * , See {@odf.attribute meta:frame-count}.
+   *
+   * @return the number of &lt;code&gt;&lt;draw:frame&gt;&lt;/code&gt; element contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getFrameCount() {
+<span class="nc" id="L122">    return mDocStatistic.getMetaFrameCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaFrameCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:frame-count}.
+   *
+   * @param frameCount the number of &lt;code&gt;&lt;draw:frame&gt;&lt;/code&gt; element need to set
+   */
+  public void setFrameCount(Integer frameCount) {
+<span class="nc" id="L132">    mDocStatistic.setMetaFrameCountAttribute(frameCount);</span>
+<span class="nc" id="L133">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaImageCountAttribute&lt;/code&gt;
+   * , See {@odf.attribute meta:image-count}.
+   *
+   * @return the number of &lt;code&gt;&lt;draw:image&gt;&lt;/code&gt; element contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getImageCount() {
+<span class="nc" id="L143">    return mDocStatistic.getMetaImageCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaImageCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:image-count}.
+   *
+   * @param imageCount the number of &lt;code&gt;&lt;draw:image&gt;&lt;/code&gt; element need to set
+   */
+  public void setImageCount(Integer imageCount) {
+<span class="nc" id="L153">    mDocStatistic.setMetaImageCountAttribute(imageCount);</span>
+<span class="nc" id="L154">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;
+   * MetaNonWhitespaceCharacterCountAttribute&lt;/code&gt; , See {@odf.attribute
+   * meta:non-whitespace-character-count}.
+   *
+   * @return the number of non-whitespace characters contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getNonWhitespaceCharacterCount() {
+<span class="nc" id="L165">    return mDocStatistic.getMetaNonWhitespaceCharacterCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;
+   * MetaNonWhitespaceCharacterCountAttribute&lt;/code&gt; , See {@odf.attribute
+   * meta:non-whitespace-character-count}.
+   *
+   * @param nonWhitespaceCharacterCount the number of non-whitespace characters need to set
+   */
+  public void setNonWhitespaceCharacterCount(Integer nonWhitespaceCharacterCount) {
+<span class="nc" id="L176">    mDocStatistic.setMetaNonWhitespaceCharacterCountAttribute(nonWhitespaceCharacterCount);</span>
+<span class="nc" id="L177">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaObjectCountAttribute&lt;/code&gt;
+   * , See {@odf.attribute meta:object-count}
+   *
+   * @return the number of &lt;code&gt;&lt;draw:object&gt;&lt;/code&gt; element contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getObjectCount() {
+<span class="nc" id="L187">    return mDocStatistic.getMetaObjectCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaObjectCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:object-count}.
+   *
+   * @param objectCount the number of &lt;code&gt;&lt;draw:object&gt;&lt;/code&gt; element need to set
+   */
+  public void setObjectCount(Integer objectCount) {
+<span class="nc" id="L197">    mDocStatistic.setMetaObjectCountAttribute(objectCount);</span>
+<span class="nc" id="L198">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaOleObjectCountAttribute
+   * &lt;/code&gt; , See {@odf.attribute meta:ole-object-count}.
+   *
+   * @return the number of &lt;code&gt;&lt;draw:object-ole&gt;&lt;/code&gt; element contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getOleObjectCount() {
+<span class="nc" id="L208">    return mDocStatistic.getMetaOleObjectCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaOleObjectCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:ole-object-count}.
+   *
+   * @param oleObjectCount the number of &lt;code&gt;&lt;draw:object-ole&gt;&lt;/code&gt; element need to set
+   */
+  public void setOleObjectCount(Integer oleObjectCount) {
+<span class="nc" id="L218">    mDocStatistic.setMetaOleObjectCountAttribute(oleObjectCount);</span>
+<span class="nc" id="L219">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaPageCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:page-count}.
+   *
+   * @return the number of page count contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getPageCount() {
+<span class="nc" id="L229">    return mDocStatistic.getMetaPageCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaPageCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:page-count}.
+   *
+   * @param pageCount the number of page count need to set
+   */
+  public void setPageCount(Integer pageCount) {
+<span class="nc" id="L239">    mDocStatistic.setMetaPageCountAttribute(pageCount);</span>
+<span class="nc" id="L240">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaParagraphCountAttribute
+   * &lt;/code&gt; , See {@odf.attribute meta:paragraph-count}.
+   *
+   * @return the number of &lt;code&gt;&lt;text:p&gt;&lt;/code&gt; element contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getParagraphCount() {
+<span class="nc" id="L250">    return mDocStatistic.getMetaParagraphCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaParagraphCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:paragraph-count}.
+   *
+   * @param paragraphCount the number of &lt;code&gt;&lt;text:p&gt;&lt;/code&gt; element need to set
+   */
+  public void setParagraphCount(Integer paragraphCount) {
+<span class="nc" id="L260">    mDocStatistic.setMetaParagraphCountAttribute(paragraphCount);</span>
+<span class="nc" id="L261">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaRowCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:row-count}.
+   *
+   * @return the number of lines contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getRowCount() {
+<span class="nc" id="L271">    return mDocStatistic.getMetaRowCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaRowCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:row-count}.
+   *
+   * @param rowCount the number of lines need to set
+   */
+  public void setRowCount(Integer rowCount) {
+<span class="nc" id="L281">    mDocStatistic.setMetaRowCountAttribute(rowCount);</span>
+<span class="nc" id="L282">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaSentenceCountAttribute
+   * &lt;/code&gt; , See {@odf.attribute meta:sentence-count}.
+   *
+   * @return the number of sentences contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getSentenceCount() {
+<span class="nc" id="L292">    return mDocStatistic.getMetaSentenceCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaSentenceCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:sentence-count}.
+   *
+   * @param sentenceCount the number of sentences need to set
+   */
+  public void setSentenceCount(Integer sentenceCount) {
+<span class="nc" id="L302">    mDocStatistic.setMetaSentenceCountAttribute(sentenceCount);</span>
+<span class="nc" id="L303">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaSyllableCountAttribute
+   * &lt;/code&gt; , See {@odf.attribute meta:syllable-count}.
+   *
+   * @return the number of syllables contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getSyllableCount() {
+<span class="nc" id="L313">    return mDocStatistic.getMetaSyllableCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaSyllableCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:syllable-count}.
+   *
+   * @param syllableCount the number of syllables need to set
+   */
+  public void setSyllableCount(Integer syllableCount) {
+<span class="nc" id="L323">    mDocStatistic.setMetaSyllableCountAttribute(syllableCount);</span>
+<span class="nc" id="L324">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation
+   * &lt;code&gt;MetaTableCountAttribute&lt;/code&gt; , See {@odf.attribute
+   *  meta:table-count}.
+   *
+   * @return the number of &lt;code&gt;&lt;table:table&gt;&lt;/code&gt; element contained in the current document;
+   * &lt;p&gt;
+   * &lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getTableCount() {
+<span class="nc" id="L336">    return mDocStatistic.getMetaTableCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation
+   * &lt;code&gt;MetaTableCountAttribute&lt;/code&gt; , See {@odf.attribute
+   *  meta:table-count}.
+   *
+   * @param tableCount the number of &lt;code&gt;&lt;table:table&gt;&lt;/code&gt; need to set
+   */
+  public void setTableCount(Integer tableCount) {
+<span class="nc" id="L347">    mDocStatistic.setMetaTableCountAttribute(tableCount);</span>
+<span class="nc" id="L348">  }</span>
+
+  /**
+   * Receives the value of the ODFDOM attribute representation &lt;code&gt;MetaWordCountAttribute&lt;/code&gt; ,
+   * See {@odf.attribute meta:word-count}.
+   *
+   * @return the number of words contained in the current document;
+   *     &lt;p&gt;&lt;code&gt;null&lt;/code&gt;, if the attribute is not set and no default value defined.
+   */
+  public Integer getWordCount() {
+<span class="nc" id="L358">    return mDocStatistic.getMetaWordCountAttribute();</span>
+  }
+
+  /**
+   * Sets the value of ODFDOM attribute representation &lt;code&gt;MetaWordCountAttribute&lt;/code&gt; , See
+   * {@odf.attribute meta:word-count}.
+   *
+   * @param wordCount the number of words need to set
+   */
+  public void setWordCount(Integer wordCount) {
+<span class="nc" id="L368">    mDocStatistic.setMetaWordCountAttribute(wordCount);</span>
+<span class="nc" id="L369">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

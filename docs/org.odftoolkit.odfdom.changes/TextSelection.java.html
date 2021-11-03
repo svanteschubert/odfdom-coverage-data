@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextSelection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">TextSelection.java</span></div><h1>TextSelection.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2013 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.List;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+
+/** @author svante.schubertATgmail.com */
+<span class="nc" id="L22">public abstract class TextSelection {</span>
+
+  protected List&lt;Integer&gt; mStartPosition;
+  protected List&lt;Integer&gt; mEndPosition;
+  protected OdfElement mSelectionElement;
+  protected String mUrl;
+
+  /**
+   * Returns the startPosition of the Anchor element.
+   *
+   * @return the startPosition of the Anchor element.
+   */
+  public List&lt;Integer&gt; getStartPosition() {
+<span class="nc" id="L35">    return mStartPosition;</span>
+  }
+
+  /**
+   * Returns the endPosition of the Anchor element.
+   *
+   * @return the endPosition of the Anchor element.
+   */
+  public List&lt;Integer&gt; getEndPosition() {
+<span class="nc" id="L44">    return mEndPosition;</span>
+  }
+
+  /** @param endPosition end position of the Anchor element. */
+  public void setEndPosition(List&lt;Integer&gt; endPosition) {
+<span class="nc" id="L49">    this.mEndPosition = endPosition;</span>
+<span class="nc" id="L50">  }</span>
+
+  /** @return the element being used for selecting the text. */
+  public OdfElement getSelectionElement() {
+<span class="nc" id="L54">    return mSelectionElement;</span>
+  }
+
+  /**
+   * Hyperlinks need to keep their URL even if merged with spans.
+   *
+   * @return true if a text hyperlink, or a span a hyperlink was merged into
+   */
+  public boolean hasUrl() {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    return mUrl != null;</span>
+  }
+
+  /** @return the hyperlink URL */
+  public String getURL() {
+<span class="nc" id="L68">    return mUrl;</span>
+  }
+
+  /** Even on a spanSelection a URL must be able to be set, in case an anchor is merged into it */
+  public void setURL(String url) {
+<span class="nc" id="L73">    mUrl = url;</span>
+<span class="nc" id="L74">  }</span>
+
+  /** Test if one of the two given TextSelection is overlapping */
+  public static boolean overLapping(TextSelection s1, TextSelection s2) {
+    boolean isOverlapping;
+    // S1 INBETWEEN S2
+    // is the start of s1 inbetween s2  positions
+<span class="nc" id="L81">    isOverlapping = isInbetween(s1.mStartPosition, s2);</span>
+
+    // is the end of s1 inbetween s2 positions
+<span class="nc bnc" id="L84" title="All 2 branches missed.">    if (!isOverlapping) {</span>
+<span class="nc" id="L85">      isOverlapping = isInbetween(s1.mEndPosition, s2);</span>
+    }
+<span class="nc bnc" id="L87" title="All 2 branches missed.">    if (!isOverlapping) {</span>
+      // S2 INBETWEEN S1
+      // is the start of s2 inbetween s1  positions
+<span class="nc" id="L90">      isOverlapping = isInbetween(s2.mStartPosition, s1);</span>
+
+      // is the end of s2 inbetween s1 positions
+<span class="nc bnc" id="L93" title="All 2 branches missed.">      if (!isOverlapping) {</span>
+<span class="nc" id="L94">        isOverlapping = isInbetween(s2.mEndPosition, s1);</span>
+      }
+    }
+
+<span class="nc" id="L98">    return isOverlapping;</span>
+  }
+
+  /** Tests if the given position is in between the given TextSelection */
+  private static boolean isInbetween(List&lt;Integer&gt; firstPosition, TextSelection s2) {
+<span class="nc" id="L103">    boolean isInbetween = false;</span>
+<span class="nc" id="L104">    boolean firstPositionIsAfter2ndStart = false;</span>
+<span class="nc" id="L105">    boolean firstPositionIsBefore2ndEnd = false;</span>
+    // first position after START position
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (1 == comparePosition(firstPosition, s2.mStartPosition)) {</span>
+<span class="nc" id="L108">      firstPositionIsAfter2ndStart = true;</span>
+    }
+    // first position before END position
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    if (-1 == comparePosition(firstPosition, s2.mEndPosition)) {</span>
+<span class="nc" id="L112">      firstPositionIsBefore2ndEnd = true;</span>
+    }
+<span class="nc bnc" id="L114" title="All 4 branches missed.">    if (firstPositionIsAfter2ndStart &amp;&amp; firstPositionIsBefore2ndEnd) {</span>
+<span class="nc" id="L115">      isInbetween = true;</span>
+    }
+<span class="nc" id="L117">    return isInbetween;</span>
+  }
+
+  /**
+   * int compareTo(T o) Compares this object with the specified object for order. Returns a negative
+   * integer, zero, or a positive integer as this object is less than, equal to, or greater than the
+   * specified object. The implementor must ensure sgn(x.compareTo(y)) == -sgn(y.compareTo(x)) for
+   * all x and y. (This implies that x.compareTo(y) must throw an exception iff y.compareTo(x)
+   * throws an exception.)
+   *
+   * &lt;p&gt;The implementor must also ensure that the relation is transitive: (x.compareTo(y)&gt;0 &amp;&amp;
+   * y.compareTo(z)&gt;0) implies x.compareTo(z)&gt;0.
+   *
+   * &lt;p&gt;Finally, the implementor must ensure that x.compareTo(y)==0 implies that sgn(x.compareTo(z))
+   * == sgn(y.compareTo(z)), for all z.
+   *
+   * &lt;p&gt;It is strongly recommended, but not strictly required that (x.compareTo(y)==0) ==
+   * (x.equals(y)). Generally speaking, any class that implements the Comparable interface and
+   * violates this condition should clearly indicate this fact. The recommended language is &quot;Note:
+   * this class has a natural ordering that is inconsistent with equals.&quot;
+   *
+   * &lt;p&gt;In the foregoing description, the notation sgn(expression) designates the mathematical
+   * signum function, which is defined to return one of -1, 0, or 1 according to whether the value
+   * of expression is negative, zero or positive.
+   *
+   * &lt;p&gt;Parameters: o - the object to be compared. Returns: a negative integer, zero, or a positive
+   * integer as this object is less than, equal to, or greater than the specified object. Throws:
+   * ClassCastException - if the specified object's type prevents it from being compared to this
+   * object.
+   */
+  public int compareTo(Object o) {
+<span class="nc" id="L148">    TextSelection s2 = (TextSelection) o;</span>
+
+<span class="nc" id="L150">    int result = 0;</span>
+<span class="nc" id="L151">    result = comparePosition(this.getStartPosition(), s2.getStartPosition());</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">    if (result == 0) {</span>
+<span class="nc" id="L153">      result = comparePosition(this.getEndPosition(), s2.getEndPosition());</span>
+    }
+<span class="nc" id="L155">    return result;</span>
+  }
+
+  /**
+   * @returns 1 if pos1 is after pos2, -1 if pos1 was before pos2 and 0 if both positions are equal
+   */
+  private static int comparePosition(List&lt;Integer&gt; pos1, List&lt;Integer&gt; pos2) {
+<span class="nc" id="L162">    int result = 0;</span>
+<span class="nc" id="L163">    int length1 = pos1.size();</span>
+<span class="nc" id="L164">    int length2 = pos2.size();</span>
+<span class="nc" id="L165">    int i = 0;</span>
+    int value1;
+    int value2;
+    do {
+      // check if length is sufficent
+<span class="nc bnc" id="L170" title="All 2 branches missed.">      if (length1 &gt; i) {</span>
+<span class="nc" id="L171">        value1 = pos1.get(i);</span>
+      } else {
+<span class="nc" id="L173">        value1 = -1;</span>
+      }
+<span class="nc bnc" id="L175" title="All 2 branches missed.">      if (length2 &gt; i) {</span>
+<span class="nc" id="L176">        value2 = pos2.get(i);</span>
+      } else {
+<span class="nc" id="L178">        value2 = -1;</span>
+      }
+<span class="nc bnc" id="L180" title="All 2 branches missed.">      if (value1 &gt; value2) {</span>
+<span class="nc" id="L181">        result = 1;</span>
+<span class="nc" id="L182">        break;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">      } else if (value2 &gt; value1) {</span>
+<span class="nc" id="L184">        result = -1;</span>
+<span class="nc" id="L185">        break;</span>
+      }
+<span class="nc bnc" id="L187" title="All 4 branches missed.">      if (value1 == -1 || value2 == -1) {</span>
+<span class="nc" id="L188">        break;</span>
+      }
+<span class="nc" id="L190">      i++;</span>
+<span class="nc" id="L191">    } while (true);</span>
+<span class="nc" id="L192">    return result;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StyleNameRef.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">StyleNameRef.java</span></div><h1>StyleNameRef.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype styleNameRef} */
+public class StyleNameRef implements OdfDataType {
+
+  String mStyleNameRef;
+
+  /**
+   * Construct StyleNameRef by the parsing the given string
+   *
+   * @param styleNameRef The String to be parsed into StyleNameRef
+   * @throws IllegalArgumentException if the given argument is not a valid StyleNameRef
+   */
+<span class="nc" id="L32">  public StyleNameRef(String styleNameRef) throws IllegalArgumentException {</span>
+
+<span class="nc bnc" id="L34" title="All 2 branches missed.">    if (styleNameRef == null) {</span>
+<span class="nc" id="L35">      throw new IllegalArgumentException(&quot;parameter can not be null for StyleNameRef&quot;);</span>
+    }
+<span class="nc bnc" id="L37" title="All 2 branches missed.">    if (styleNameRef.length() == 0) {</span>
+<span class="nc" id="L38">      mStyleNameRef = styleNameRef;</span>
+<span class="nc" id="L39">      return;</span>
+    }
+    // validate 'NCName' type which is defined in W3C schema
+    // http://www.w3.org/TR/xmlschema-2/#NCName
+<span class="nc bnc" id="L43" title="All 2 branches missed.">    if (!W3CSchemaType.isValid(&quot;NCName&quot;, styleNameRef)) {</span>
+<span class="nc" id="L44">      throw new IllegalArgumentException(</span>
+          &quot;parameter '&quot; + styleNameRef + &quot;' is invalid for datatype StyleNameRef&quot;);
+    }
+<span class="nc" id="L47">    mStyleNameRef = styleNameRef;</span>
+<span class="nc" id="L48">  }</span>
+
+  /**
+   * Returns a String Object representing this StyleNameRef's value
+   *
+   * @return return a string representation of the value of this StyleNameRef object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L57">    return mStyleNameRef;</span>
+  }
+
+  /**
+   * Returns a StyleNameRef instance representing the specified String value
+   *
+   * @param stringValue a String value which can construct an OdfStyleNameRef
+   * @return a StyleNameRef instance representing stringValue
+   * @throws IllegalArgumentException
+   */
+  public static StyleNameRef valueOf(String stringValue) throws IllegalArgumentException {
+<span class="nc" id="L68">    return new StyleNameRef(stringValue);</span>
+  }
+
+  /**
+   * check if the specified String is a valid {@odf.datatype styleNameRef} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype styleNameRef} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L80">      return false;</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">    } else if (stringValue.length() == 0) {</span>
+<span class="nc" id="L82">      return true;</span>
+    } else {
+<span class="nc" id="L84">      return W3CSchemaType.isValid(&quot;NCName&quot;, stringValue);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

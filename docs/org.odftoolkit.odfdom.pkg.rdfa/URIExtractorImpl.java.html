@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>URIExtractorImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.rdfa</a> &gt; <span class="el_source">URIExtractorImpl.java</span></div><h1>URIExtractorImpl.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.rdfa;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.xml.namespace.QName;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.StartElement;
+import net.rootdev.javardfa.Constants;
+import net.rootdev.javardfa.Resolver;
+import net.rootdev.javardfa.Setting;
+import org.apache.commons.validator.routines.UrlValidator;
+
+/** URIExtractorImpl modified from net.rootdev.javardfa.uri.URIExtractor */
+class URIExtractorImpl implements URIExtractor {
+  private Set&lt;Setting&gt; settings;
+  private final Resolver resolver;
+<span class="nc" id="L44">  private Map&lt;String, String&gt; xmlnsMap = Collections.EMPTY_MAP;</span>
+  private boolean isForSAX;
+  private UrlValidator urlValidator;
+
+<span class="nc" id="L48">  public URIExtractorImpl(Resolver resolver, boolean isForSAX) {</span>
+<span class="nc" id="L49">    this.resolver = resolver;</span>
+<span class="nc" id="L50">    this.isForSAX = isForSAX;</span>
+<span class="nc" id="L51">    this.urlValidator = new UrlValidator();</span>
+<span class="nc" id="L52">  }</span>
+
+  public void setForSAX(boolean isForSAX) {
+<span class="nc" id="L55">    this.isForSAX = isForSAX;</span>
+<span class="nc" id="L56">  }</span>
+
+  public void setSettings(Set&lt;Setting&gt; settings) {
+<span class="nc" id="L59">    this.settings = settings;</span>
+<span class="nc" id="L60">  }</span>
+
+  public String getURI(StartElement element, Attribute attr, EvalContext context) {
+<span class="nc" id="L63">    QName attrName = attr.getName();</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">    if (Util.qNameEquals(attrName, Constants.about)) // Safe CURIE or URI</span>
+    {
+<span class="nc" id="L66">      return expandSafeCURIE(element, attr.getValue(), context);</span>
+    }
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    if (Util.qNameEquals(attrName, Constants.datatype)) // A CURIE</span>
+    {
+<span class="nc" id="L70">      return expandCURIE(element, attr.getValue(), context);</span>
+    }
+<span class="nc" id="L72">    throw new RuntimeException(&quot;Unexpected attribute: &quot; + attr);</span>
+  }
+
+  private boolean isValidURI(String uri) {
+<span class="nc" id="L76">    return this.urlValidator.isValid(uri);</span>
+  }
+
+  public List&lt;String&gt; getURIs(StartElement element, Attribute attr, EvalContext context) {
+
+<span class="nc" id="L81">    List&lt;String&gt; uris = new LinkedList&lt;String&gt;();</span>
+
+<span class="nc" id="L83">    String[] curies = attr.getValue().split(&quot;\\s+&quot;);</span>
+<span class="nc" id="L84">    boolean permitReserved =</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        Util.qNameEquals(Constants.rel, attr.getName())</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            || Util.qNameEquals(Constants.rev, attr.getName());</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">    for (String curie : curies) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">      if (Constants.SpecialRels.contains(curie.toLowerCase())) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (permitReserved) uris.add(&quot;http://www.w3.org/1999/xhtml/vocab#&quot; + curie.toLowerCase());</span>
+      } else {
+<span class="nc" id="L91">        String uri = expandCURIE(element, curie, context);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (uri != null) {</span>
+<span class="nc" id="L93">          uris.add(uri);</span>
+        }
+      }
+    }
+<span class="nc" id="L97">    return uris;</span>
+  }
+
+  public String expandCURIE(StartElement element, String value, EvalContext context) {
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">    if (value.startsWith(&quot;_:&quot;)) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">      if (!settings.contains(Setting.ManualNamespaces)) return value;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">      if (element.getNamespaceURI(&quot;_&quot;) == null) return value;</span>
+    }
+<span class="nc bnc" id="L106" title="All 2 branches missed.">    if (settings.contains(Setting.FormMode)</span>
+        &amp;&amp; // variable
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        value.startsWith(&quot;?&quot;)) {</span>
+<span class="nc" id="L109">      return value;</span>
+    }
+<span class="nc" id="L111">    int offset = value.indexOf(&quot;:&quot;) + 1;</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    if (offset == 0) {</span>
+<span class="nc" id="L113">      return null;</span>
+    }
+<span class="nc" id="L115">    String prefix = value.substring(0, offset - 1);</span>
+
+    // Apparently these are not allowed to expand
+<span class="nc bnc" id="L118" title="All 4 branches missed.">    if (&quot;xml&quot;.equals(prefix) || &quot;xmlns&quot;.equals(prefix)) return null;</span>
+
+<span class="nc" id="L120">    String namespaceURI = null;</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">    if (prefix.length() == 0) {</span>
+<span class="nc" id="L122">      namespaceURI = &quot;http://www.w3.org/1999/xhtml/vocab#&quot;;</span>
+    } else {
+<span class="nc" id="L124">      namespaceURI = element.getNamespaceURI(prefix);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">      if (isForSAX) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (namespaceURI != null) {</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">          if (xmlnsMap == Collections.EMPTY_MAP) xmlnsMap = new HashMap&lt;String, String&gt;();</span>
+<span class="nc" id="L128">          xmlnsMap.put(prefix, namespaceURI);</span>
+        }
+      } else {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (namespaceURI == null) {</span>
+<span class="nc" id="L132">          namespaceURI = xmlnsMap.get(prefix);</span>
+        }
+      }
+    }
+<span class="nc bnc" id="L136" title="All 2 branches missed.">    if (namespaceURI == null) {</span>
+<span class="nc" id="L137">      return null;</span>
+      // throw new RuntimeException(&quot;Unknown prefix: &quot; + prefix);
+    }
+
+<span class="nc" id="L141">    return namespaceURI + value.substring(offset);</span>
+  }
+
+  @Override
+  public String expandSafeCURIE(StartElement element, String value, EvalContext context) {
+<span class="nc bnc" id="L146" title="All 4 branches missed.">    if (value.startsWith(&quot;[&quot;) &amp;&amp; value.endsWith(&quot;]&quot;)) {</span>
+<span class="nc" id="L147">      return expandCURIE(element, value.substring(1, value.length() - 1), context);</span>
+    } else {
+<span class="nc bnc" id="L149" title="All 2 branches missed.">      if (value.length() == 0) {</span>
+<span class="nc" id="L150">        return context.getBase();</span>
+      }
+
+<span class="nc bnc" id="L153" title="All 4 branches missed.">      if (settings.contains(Setting.FormMode) &amp;&amp; value.startsWith(&quot;?&quot;)) {</span>
+<span class="nc" id="L154">        return value;</span>
+      }
+
+      // earlier &quot;return resolver.resolve(context.getBase(), value);&quot;
+      // now has JENA problem with '/' slash as base URL
+      // &lt;/&gt; Code: 57/REQUIRED_COMPONENT_MISSING in SCHEME: A component that is required by the
+      // scheme is missing.
+<span class="nc" id="L161">      return value;</span>
+    }
+  }
+
+  public String resolveURI(String uri, EvalContext context) {
+<span class="nc" id="L166">    return resolver.resolve(context.getBase(), uri);</span>
+  }
+
+  public String getNamespaceURI(String prefix) {
+<span class="nc bnc" id="L170" title="All 2 branches missed.">    if (xmlnsMap.containsKey(prefix)) {</span>
+<span class="nc" id="L171">      return xmlnsMap.get(prefix);</span>
+    } else {
+<span class="nc" id="L173">      return null;</span>
+    }
+  }
+
+  public void setNamespaceURI(String prefix, String namespaceURI) {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">    if (xmlnsMap == Collections.EMPTY_MAP) xmlnsMap = new HashMap&lt;String, String&gt;();</span>
+<span class="nc" id="L179">    xmlnsMap.put(prefix, namespaceURI);</span>
+<span class="nc" id="L180">  }</span>
+}
+
+/*
+ * (c) Copyright 2009 University of Bristol All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer. 2. Redistributions in
+ * binary form must reproduce the above copyright notice, this list of
+ * conditions and the following disclaimer in the documentation and/or other
+ * materials provided with the distribution. 3. The name of the author may not
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

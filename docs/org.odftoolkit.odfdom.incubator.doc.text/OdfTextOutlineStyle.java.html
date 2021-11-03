@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextOutlineStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfTextOutlineStyle.java</span></div><h1>OdfTextOutlineStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import org.odftoolkit.odfdom.dom.element.text.TextOutlineStyleElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/** Convenient functionalty for the parent ODF OpenDocument element */
+public class OdfTextOutlineStyle extends TextOutlineStyleElement {
+  private static final long serialVersionUID = -337172468409606629L;
+
+  public OdfTextOutlineStyle(OdfFileDom ownerDoc) {
+<span class="nc" id="L35">    super(ownerDoc);</span>
+<span class="nc" id="L36">  }</span>
+
+  /**
+   * Retrieves the ODF TextOutlineLevelStyle with level count
+   *
+   * @param level The level count
+   * @return The &lt;code&gt;OdfTextOutlineLevelStyle&lt;/code&gt;
+   */
+  public OdfTextOutlineLevelStyle getLevel(int level) {
+<span class="nc" id="L45">    Node levelElement = this.getFirstChild();</span>
+
+<span class="nc bnc" id="L47" title="All 2 branches missed.">    while (levelElement != null) {</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">      if (levelElement instanceof OdfTextOutlineLevelStyle) {</span>
+<span class="nc" id="L49">        OdfTextOutlineLevelStyle levelStyle = (OdfTextOutlineLevelStyle) levelElement;</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (levelStyle.getTextLevelAttribute().intValue() == level) {</span>
+<span class="nc" id="L51">          return levelStyle;</span>
+        }
+      }
+<span class="nc" id="L54">      levelElement = levelElement.getNextSibling();</span>
+    }
+<span class="nc" id="L56">    return null;</span>
+  }
+
+  /**
+   * Retrieves or create the ODF TextOutlineLevelStyle with level count
+   *
+   * @param level The level count
+   * @return The &lt;code&gt;OdfTextOutlineLevelStyle&lt;/code&gt;
+   */
+  public OdfTextOutlineLevelStyle getOrCreateLevel(int level) {
+<span class="nc" id="L66">    OdfTextOutlineLevelStyle style = getLevel(level);</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">    if (style == null) {</span>
+<span class="nc" id="L68">      style = ((OdfFileDom) this.ownerDocument).newOdfElement(OdfTextOutlineLevelStyle.class);</span>
+<span class="nc" id="L69">      style.setTextLevelAttribute(level);</span>
+<span class="nc" id="L70">      this.appendChild(style);</span>
+    }
+<span class="nc" id="L72">    return style;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

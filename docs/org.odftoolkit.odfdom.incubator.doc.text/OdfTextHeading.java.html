@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextHeading.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfTextHeading.java</span></div><h1>OdfTextHeading.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import org.odftoolkit.odfdom.dom.element.text.TextHElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public class OdfTextHeading extends TextHElement {
+  public OdfTextHeading(OdfFileDom ownerDoc) {
+<span class="nc" id="L32">    super(ownerDoc);</span>
+<span class="nc" id="L33">  }</span>
+
+  /**
+   * Creates a new instance of this class with the given style name. If the style name is null or
+   * the null string, no style is added.
+   */
+  public OdfTextHeading(OdfFileDom ownerDoc, String styleName) {
+<span class="nc" id="L40">    super(ownerDoc);</span>
+<span class="nc bnc" id="L41" title="All 4 branches missed.">    if (styleName != null &amp;&amp; (!(styleName.equals(&quot;&quot;)))) {</span>
+<span class="nc" id="L42">      this.setStyleName(styleName);</span>
+    }
+<span class="nc" id="L44">  }</span>
+
+  /**
+   * Creates an instance of this class with the given styleName and content. If the style name is
+   * null or the null string, no style is added. If the content is null or the null string, no
+   * content is added.
+   *
+   * @param ownerDoc the owner document DOM
+   * @param styleName the style:style-name value
+   * @param content the heading content
+   */
+  public OdfTextHeading(OdfFileDom ownerDoc, String styleName, String content) {
+<span class="nc" id="L56">    super(ownerDoc);</span>
+<span class="nc" id="L57">    this.addStyledContent(styleName, content);</span>
+<span class="nc" id="L58">  }</span>
+
+  /**
+   * Add the given content to the paragraph. If the content is null or the null string, no content
+   * is added.
+   *
+   * @param content the heading content
+   * @return the heading object
+   */
+  public OdfTextHeading addContent(String content) {
+<span class="nc bnc" id="L68" title="All 4 branches missed.">    if (content != null &amp;&amp; !content.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L69">      this.appendChild(this.getOwnerDocument().createTextNode(content));</span>
+    }
+<span class="nc" id="L71">    return this;</span>
+  }
+
+  /**
+   * Add the given content to the heading. If the content is null or the null string, no content is
+   * added. Embedded \n are converted to &lt;code&gt;&amp;lt;text:line-break&amp;gt;&lt;/code&gt; elements, and multiple
+   * blanks to &lt;code&gt;&amp;lt;text:s&lt;/code&gt;
+   *
+   * @param content the heading content
+   * @return the heading object
+   */
+  public OdfTextHeading addContentWhitespace(String content) {
+<span class="nc bnc" id="L83" title="All 4 branches missed.">    if (content != null &amp;&amp; !content.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L84">      new OdfWhitespaceProcessor().append(this, content);</span>
+    }
+<span class="nc" id="L86">    return this;</span>
+  }
+
+  /**
+   * Set a heading to have the given styleName and add the given content. If the style name is null
+   * or the null string, no style is added.
+   *
+   * @param styleName the style:style-name value
+   * @param content the heading content
+   * @return the heading object
+   */
+  public OdfTextHeading addStyledContent(String styleName, String content) {
+<span class="nc bnc" id="L98" title="All 4 branches missed.">    if (styleName != null &amp;&amp; (!(styleName.equals(&quot;&quot;)))) {</span>
+<span class="nc" id="L99">      setStyleName(styleName);</span>
+    }
+<span class="nc" id="L101">    return addContent(content);</span>
+  }
+
+  /**
+   * Set a heading to have the given styleName and add the given content. If the style name is null
+   * or the null string, no style is added. Embedded \n are converted to &lt;code&gt;
+   * &amp;lt;text:line-break&amp;gt;&lt;/code&gt; elements, and multiple blanks to &lt;code&gt;&amp;lt;text:s&lt;/code&gt;
+   *
+   * @param styleName the style:style-name value
+   * @param content the heading content
+   * @return the heading object
+   */
+  public OdfTextHeading addStyledContentWhitespace(String styleName, String content) {
+<span class="nc bnc" id="L114" title="All 4 branches missed.">    if (styleName != null &amp;&amp; (!(styleName.equals(&quot;&quot;)))) {</span>
+<span class="nc" id="L115">      setStyleName(styleName);</span>
+    }
+<span class="nc" id="L117">    return addContentWhitespace(content);</span>
+  }
+
+  /**
+   * Add a span with the given styleName and content to this heading. If the style name is null or
+   * the null string, no span is added. If the content is null or the null string, no span is added.
+   *
+   * @param styleName
+   * @param content
+   * @return the heading object
+   */
+  public OdfTextHeading addStyledSpan(String styleName, String content) {
+<span class="nc bnc" id="L129" title="All 8 branches missed.">    if (styleName != null &amp;&amp; !styleName.equals(&quot;&quot;) &amp;&amp; content != null &amp;&amp; !content.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L130">      this.appendChild(new OdfTextSpan((OdfFileDom) this.getOwnerDocument(), styleName, content));</span>
+    }
+<span class="nc" id="L132">    return this;</span>
+  }
+
+  /**
+   * Add a span with the given styleName and content to this paragraph. If the style name is null or
+   * the null string, no span is added. If the content is null or the null string, no span is added.
+   *
+   * @param styleName
+   * @param content
+   * @return the heading object
+   */
+  public OdfTextHeading addStyledSpanWhitespace(String styleName, String content) {
+    OdfTextSpan span;
+<span class="nc bnc" id="L145" title="All 8 branches missed.">    if (styleName != null &amp;&amp; !styleName.equals(&quot;&quot;) &amp;&amp; content != null &amp;&amp; !content.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L146">      span = new OdfTextSpan((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L147">      span.addStyledContentWhitespace(styleName, content);</span>
+<span class="nc" id="L148">      appendChild(span);</span>
+    }
+<span class="nc" id="L150">    return this;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

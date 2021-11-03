@@ -1,0 +1,859 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfSchemaDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom</a> &gt; <span class="el_source">OdfSchemaDocument.java</span></div><h1>OdfSchemaDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom;
+
+import static org.odftoolkit.odfdom.changes.PageArea.FOOTER_DEFAULT;
+import static org.odftoolkit.odfdom.changes.PageArea.FOOTER_EVEN;
+import static org.odftoolkit.odfdom.changes.PageArea.FOOTER_FIRST;
+import static org.odftoolkit.odfdom.changes.PageArea.HEADER_DEFAULT;
+import static org.odftoolkit.odfdom.changes.PageArea.HEADER_EVEN;
+import static org.odftoolkit.odfdom.changes.PageArea.HEADER_FIRST;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.util.ResourceUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.changes.CollabTextDocument;
+import org.odftoolkit.odfdom.changes.Component;
+import org.odftoolkit.odfdom.changes.JsonOperationProducer;
+import org.odftoolkit.odfdom.changes.PageArea;
+import org.odftoolkit.odfdom.dom.element.office.OfficeBodyElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeMasterStylesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleFooterElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleFooterLeftElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHeaderElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHeaderLeftElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMasterPageElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeMasterStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfStylesBase;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStylePageLayout;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.odftoolkit.odfdom.pkg.OdfPackageDocument;
+import org.odftoolkit.odfdom.pkg.OdfValidationException;
+import org.odftoolkit.odfdom.pkg.OdfXMLFactory;
+import org.odftoolkit.odfdom.pkg.rdfa.Util;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+
+/**
+ * A document in ODF is from the package view a directory with a media type. If the media type
+ * represents a document described by the ODF 1.2 Schema, certain files are assumed within:
+ * content.xml, styles.xml, metadata.xml and settings.xml.
+ *
+ * &lt;p&gt;The class represents such a document, providing easier access to its XML files.
+ */
+public abstract class OdfSchemaDocument extends OdfPackageDocument {
+
+  /* OdfFileSaxHandler needs to deal with at least two XML files at the same time.
+  They are here cached to not dispatch a parsing, whenever the other is received.
+  Package DOM caching is used to map to a inputstream and the inital root before parsing would be used by this mechanism */
+  protected OdfContentDom mContentDom;
+  protected OdfStylesDom mStylesDom;
+  protected OdfMetaDom mMetaDom;
+  protected OdfSettingsDom mSettingsDom;
+  protected JsonOperationProducer mJsonOperationQueue;
+
+  /**
+   * Creates a new OdfSchemaDocument.
+   *
+   * @param pkg - the ODF Package that contains the document. A baseURL is being generated based on
+   *     its location.
+   * @param internalPath - the directory path within the package from where the document should be
+   *     loaded.
+   * @param mediaTypeString - media type of stream. If unknown null can be used.
+   */
+  protected OdfSchemaDocument(OdfPackage pkg, String internalPath, String mediaTypeString) {
+<span class="nc" id="L108">    super(pkg, internalPath, mediaTypeString);</span>
+<span class="nc" id="L109">    ErrorHandler errorHandler = pkg.getErrorHandler();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">    if (errorHandler != null) {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">      if (pkg.getFileEntry(internalPath + &quot;content.xml&quot;) == null</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">          &amp;&amp; pkg.getFileEntry(internalPath + &quot;styles.xml&quot;) == null) {</span>
+        try {
+<span class="nc" id="L114">          String baseURI = pkg.getBaseURI();</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">          if (baseURI == null) {</span>
+<span class="nc" id="L116">            baseURI = internalPath;</span>
+          } else {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (!internalPath.equals(ROOT_DOCUMENT_PATH)) {</span>
+<span class="nc" id="L119">              baseURI = &quot;/&quot; + internalPath;</span>
+            }
+          }
+<span class="nc" id="L122">          errorHandler.error(</span>
+              new OdfValidationException(
+                  OdfSchemaConstraint.DOCUMENT_WITHOUT_CONTENT_NOR_STYLES_XML, baseURI));
+<span class="nc" id="L125">        } catch (SAXException ex) {</span>
+<span class="nc" id="L126">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L127">        }</span>
+      }
+<span class="nc" id="L129">      InputStream mimetypeStream =</span>
+<span class="nc" id="L130">          pkg.getInputStream(OdfPackage.OdfFile.MEDIA_TYPE.getPath(), true);</span>
+<span class="nc bnc" id="L131" title="All 4 branches missed.">      if (internalPath.equals(ROOT_DOCUMENT_PATH) &amp;&amp; mimetypeStream == null) {</span>
+        try {
+<span class="nc" id="L133">          errorHandler.error(</span>
+              new OdfValidationException(
+<span class="nc" id="L135">                  OdfSchemaConstraint.PACKAGE_SHALL_CONTAIN_MIMETYPE, pkg.getBaseURI()));</span>
+<span class="nc" id="L136">        } catch (SAXException ex) {</span>
+<span class="nc" id="L137">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L138">        }</span>
+      }
+    }
+<span class="nc" id="L141">  }</span>
+
+  /** This enum contains all possible standardized XML ODF files of the OpenDocument document. */
+<span class="nc" id="L144">  public static enum OdfXMLFile {</span>
+
+    /**
+     * The XML file containing the content of an ODF document as specified by the ODF 1.2
+     * specification part 1.
+     */
+<span class="nc" id="L150">    CONTENT(&quot;content.xml&quot;),</span>
+    /**
+     * The XML file containing a predifined set of metadata related to an ODF document as specified
+     * by the ODF 1.2 specification part 1.
+     */
+<span class="nc" id="L155">    META(&quot;meta.xml&quot;),</span>
+    /**
+     * The XML file containing the settings of an ODF document as specified by the ODF 1.2
+     * specification part 1.
+     */
+<span class="nc" id="L160">    SETTINGS(&quot;settings.xml&quot;),</span>
+    /**
+     * The XML file containing the styles of an ODF document as specified by the ODF 1.2
+     * specification part 1.
+     */
+<span class="nc" id="L165">    STYLES(&quot;styles.xml&quot;);</span>
+    private final String mFileName;
+
+    /** @return the file name of xml files contained in odf packages. */
+    public String getFileName() {
+<span class="nc" id="L170">      return mFileName;</span>
+    }
+
+<span class="nc" id="L173">    OdfXMLFile(String fileName) {</span>
+<span class="nc" id="L174">      this.mFileName = fileName;</span>
+<span class="nc" id="L175">    }</span>
+  }
+
+  /** @return JSONObject of operations */
+  // ToDo - JSONObject is to be considered..
+  public JsonOperationProducer getJsonOperationQueue() {
+<span class="nc" id="L181">    return mJsonOperationQueue;</span>
+  }
+
+  public void setJsonOperationQueue(JsonOperationProducer queue) {
+<span class="nc" id="L185">    mJsonOperationQueue = queue;</span>
+<span class="nc" id="L186">  }</span>
+
+  public JSONObject getOperations(CollabTextDocument operationDoc)
+      throws SAXException, JSONException, IOException {
+
+<span class="nc" id="L191">    JSONObject ops = null;</span>
+<span class="nc" id="L192">    JsonOperationProducer queue = getJsonOperationQueue();</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">    if (queue == null) {</span>
+      try {
+<span class="nc" id="L195">        this.getStylesDom();</span>
+<span class="nc" id="L196">        this.getContentDom();</span>
+<span class="nc" id="L197">        queue = getJsonOperationQueue();</span>
+<span class="nc" id="L198">      } catch (SAXException ex) {</span>
+<span class="nc" id="L199">        Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L200">        throw ex;</span>
+<span class="nc" id="L201">      }</span>
+    }
+<span class="nc bnc" id="L203" title="All 2 branches missed.">    if (queue != null) {</span>
+<span class="nc" id="L204">      ops = queue.getDocumentOperations();</span>
+    }
+<span class="nc" id="L206">    return ops;</span>
+  }
+
+  /**
+   * The component tree is a high level abstraction of components (table, paragraph, character,
+   * etc.) from the XML implementation details of the document.
+   */
+  private Component mRootComponent;
+
+  /**
+   * Returns the component tree of the document. The component tree is a high level abstraction of
+   * components (table, paragraph, character, etc.) from the XML implementation details of the
+   * document.
+   *
+   * &lt;p&gt;The DOM of the content.xml will be created if not done before.
+   */
+  public Component getRootComponent() {
+<span class="nc bnc" id="L223" title="All 2 branches missed.">    if (mRootComponent == null) {</span>
+      try {
+        // Access the DOM of the content.xml so the XML is parsed once!!
+<span class="nc" id="L226">        this.getContentDom();</span>
+<span class="nc" id="L227">      } catch (Exception ex) {</span>
+<span class="nc" id="L228">        Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L229">      }</span>
+    }
+<span class="nc" id="L231">    return mRootComponent;</span>
+  }
+
+  /**
+   * Returns the component tree of the document. The component tree is a high level abstraction of
+   * components (table, paragraph, character, etc.) from the XML implementation details of the
+   * document.
+   *
+   * &lt;p&gt;The DOM of the content.xml will be created if not done before.
+   *
+   * @param masterStyleName the name of the master style
+   * @param localName the local name of the header or footer XML element
+   * @return the header or footer element belonging to the given master page style
+   */
+  public OdfElement getRootComponentElement(
+      String masterStyleName, PageArea pageArea, boolean createIfNotExisting) {
+<span class="nc" id="L247">    OdfElement targetElement = null;</span>
+    try {
+<span class="nc" id="L249">      OdfStylesDom stylesDom = getStylesDom();</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">      if (stylesDom != null) {</span>
+<span class="nc" id="L251">        OdfOfficeMasterStyles masterStyles = stylesDom.getMasterStyles();</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (masterStyles == null) {</span>
+<span class="nc" id="L253">          masterStyles = stylesDom.getOrCreateMasterStyles();</span>
+        }
+<span class="nc" id="L255">        StyleMasterPageElement masterPage = masterStyles.getOrCreateMasterPage(masterStyleName);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">        if (pageArea.getPageAreaName().contains(&quot;header&quot;)) {</span>
+<span class="nc" id="L257">          String localName = null;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">          if (pageArea.equals(HEADER_FIRST)) {</span>
+            // header-first
+<span class="nc" id="L260">            localName = HEADER_FIRST.getLocalName();</span>
+            // targetElement =  OdfXMLFactory.newOdfElement(stylesDom, STYLE_FIRST_PAGE);
+<span class="nc bnc" id="L262" title="All 2 branches missed.">          } else if (pageArea.equals(HEADER_EVEN)) {</span>
+<span class="nc" id="L263">            localName = HEADER_EVEN.getLocalName();</span>
+          } else {
+<span class="nc" id="L265">            localName = HEADER_DEFAULT.getLocalName();</span>
+          }
+<span class="nc" id="L267">          targetElement =</span>
+              (OdfElement)
+<span class="nc" id="L269">                  masterPage.getChildElement(</span>
+<span class="nc" id="L270">                      StyleHeaderElement.ELEMENT_NAME.getUri(), localName, 0);</span>
+
+<span class="nc" id="L272">          OdfOfficeAutomaticStyles autoStyles = stylesDom.getOrCreateAutomaticStyles();</span>
+<span class="nc" id="L273">          String pageLayoutName = masterPage.getStylePageLayoutNameAttribute();</span>
+<span class="nc bnc" id="L274" title="All 4 branches missed.">          if (targetElement == null &amp;&amp; createIfNotExisting) { // create a new page area</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">            if (pageArea.equals(HEADER_FIRST)) {</span>
+              // header-first
+<span class="nc" id="L277">              targetElement = OdfXMLFactory.newOdfElement(stylesDom, STYLE_HEADER_FIRST);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            } else if (pageArea.equals(HEADER_EVEN)) {</span>
+<span class="nc" id="L279">              targetElement = new StyleHeaderLeftElement(stylesDom);</span>
+<span class="nc" id="L280">              OdfStylePageLayout pageLayout = null;</span>
+<span class="nc bnc" id="L281" title="All 4 branches missed.">              if (pageLayoutName != null &amp;&amp; !pageLayoutName.isEmpty()) {</span>
+<span class="nc" id="L282">                pageLayout = autoStyles.getOrCreatePageLayout(pageLayoutName);</span>
+              } else {
+<span class="nc" id="L284">                pageLayout = autoStyles.newPageLayout();</span>
+              }
+<span class="nc" id="L286">              pageLayout.setStylePageUsageAttribute(&quot;right&quot;);</span>
+
+<span class="nc" id="L288">            } else {</span>
+<span class="nc" id="L289">              targetElement = new StyleHeaderElement(stylesDom);</span>
+            }
+<span class="nc" id="L291">            masterPage.appendChild(targetElement);</span>
+          }
+<span class="nc" id="L293">        } else {</span>
+<span class="nc" id="L294">          String localName = null;</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">          if (pageArea.equals(FOOTER_FIRST)) {</span>
+            // header-first
+<span class="nc" id="L297">            localName = FOOTER_FIRST.getLocalName();</span>
+            // targetElement =  OdfXMLFactory.newOdfElement(stylesDom, STYLE_FIRST_PAGE);
+<span class="nc bnc" id="L299" title="All 2 branches missed.">          } else if (pageArea.equals(FOOTER_EVEN)) {</span>
+<span class="nc" id="L300">            localName = FOOTER_EVEN.getLocalName();</span>
+          } else {
+<span class="nc" id="L302">            localName = FOOTER_DEFAULT.getLocalName();</span>
+          }
+<span class="nc" id="L304">          targetElement =</span>
+              (OdfElement)
+<span class="nc" id="L306">                  masterPage.getChildElement(</span>
+<span class="nc" id="L307">                      StyleFooterElement.ELEMENT_NAME.getUri(), localName, 0);</span>
+
+<span class="nc" id="L309">          OdfOfficeAutomaticStyles autoStyles = stylesDom.getOrCreateAutomaticStyles();</span>
+<span class="nc" id="L310">          String pageLayoutName = masterPage.getStylePageLayoutNameAttribute();</span>
+<span class="nc bnc" id="L311" title="All 4 branches missed.">          if (targetElement == null &amp;&amp; createIfNotExisting) { // create a new page area</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">            if (pageArea.equals(FOOTER_FIRST)) {</span>
+              // header-first
+<span class="nc" id="L314">              targetElement = OdfXMLFactory.newOdfElement(stylesDom, STYLE_FOOTER_FIRST);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            } else if (pageArea.equals(FOOTER_EVEN)) {</span>
+<span class="nc" id="L316">              targetElement = new StyleFooterLeftElement(stylesDom);</span>
+<span class="nc" id="L317">              OdfStylePageLayout pageLayout = autoStyles.getOrCreatePageLayout(pageLayoutName);</span>
+<span class="nc" id="L318">              pageLayout.setStylePageUsageAttribute(&quot;right&quot;);</span>
+
+<span class="nc" id="L320">            } else {</span>
+<span class="nc" id="L321">              targetElement = new StyleFooterElement(stylesDom);</span>
+            }
+<span class="nc" id="L323">            masterPage.appendChild(targetElement);</span>
+          }
+        }
+      }
+<span class="nc" id="L327">    } catch (Exception ex) {</span>
+<span class="nc" id="L328">      Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L329">    }</span>
+<span class="nc" id="L330">    return targetElement;</span>
+  }
+
+<span class="nc" id="L333">  private static final OdfName STYLE_HEADER_FIRST =</span>
+<span class="nc" id="L334">      OdfName.newName(OdfDocumentNamespace.STYLE, &quot;header-first&quot;);</span>
+<span class="nc" id="L335">  private static final OdfName STYLE_FOOTER_FIRST =</span>
+<span class="nc" id="L336">      OdfName.newName(OdfDocumentNamespace.STYLE, &quot;footer-first&quot;);</span>
+
+  /**
+   * For instance, header and footer have their own component trees aside the main document.
+   * Therefore in a text document may exist three root components.
+   */
+  public void setRootComponent(Component rootComponent) {
+<span class="nc" id="L343">    mRootComponent = rootComponent;</span>
+<span class="nc" id="L344">  }</span>
+
+  /**
+   * Gets the ODF content.xml file as stream.
+   *
+   * @return - a stream of the ODF content 'content.xml' file
+   * @throws java.lang.Exception - if the stream can not be extracted
+   */
+  public InputStream getContentStream() throws Exception {
+<span class="nc" id="L353">    String path = getXMLFilePath(OdfXMLFile.CONTENT);</span>
+<span class="nc" id="L354">    return mPackage.getInputStream(path);</span>
+  }
+
+  /**
+   * Gets the ODF style.xml file as stream.
+   *
+   * @return - a stream of the ODF style 'styles.xml' file
+   * @throws java.lang.Exception - if the stream can not be extracted
+   */
+  public InputStream getStylesStream() throws Exception {
+<span class="nc" id="L364">    return mPackage.getInputStream(getXMLFilePath(OdfXMLFile.STYLES));</span>
+  }
+
+  /**
+   * Gets the ODF settings.xml file as stream.
+   *
+   * @return - a stream of the ODF settings 'setting.xml' file
+   * @throws java.lang.Exception - if the stream can not be extracted
+   */
+  public InputStream getSettingsStream() throws Exception {
+<span class="nc" id="L374">    return mPackage.getInputStream(getXMLFilePath(OdfXMLFile.SETTINGS));</span>
+  }
+
+  /**
+   * Gets the ODF metadata.xml file as stream.
+   *
+   * @return - a stream of the ODF metadata 'meta.xml' file
+   * @throws java.lang.Exception - if the stream can not be extracted
+   */
+  public InputStream getMetaStream() throws Exception {
+<span class="nc" id="L384">    return mPackage.getInputStream(getXMLFilePath(OdfXMLFile.META));</span>
+  }
+
+  /**
+   * Get the relative path for an embedded ODF document including its file name.
+   *
+   * @param file represents one of the standardized XML ODF files.
+   * @return path to embedded ODF XML file relative to ODF package root.
+   */
+  protected String getXMLFilePath(OdfXMLFile file) {
+<span class="nc" id="L394">    return file.mFileName;</span>
+  }
+
+  /**
+   * Get the URI, where this ODF document is stored.
+   *
+   * @return the URI to the ODF document. Returns null if document is not stored yet.
+   */
+  public String getBaseURI() {
+<span class="nc" id="L403">    return mPackage.getBaseURI();</span>
+  }
+
+  /**
+   * Return the ODF type-based content DOM of the content.xml
+   *
+   * @return ODF type-based content DOM or null if no content.xml exists.
+   * @throws Exception if content DOM could not be initialized
+   */
+  public OdfContentDom getContentDom() throws SAXException, IOException {
+<span class="nc bnc" id="L413" title="All 2 branches missed.">    if (mContentDom == null) {</span>
+<span class="nc" id="L414">      mContentDom =</span>
+<span class="nc" id="L415">          (OdfContentDom) getCachedDom(getAbsoluteFilePath(OdfXMLFile.CONTENT.getFileName()));</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">      if (mContentDom == null) {</span>
+<span class="nc" id="L417">        mContentDom =</span>
+<span class="nc" id="L418">            new OdfContentDom(this, getAbsoluteFilePath(OdfXMLFile.CONTENT.getFileName()));</span>
+      }
+    }
+<span class="nc" id="L421">    return mContentDom;</span>
+  }
+
+  /**
+   * Return the ODF type-based styles DOM of the styles.xml
+   *
+   * @return ODF type-based styles DOM or null if no styles.xml exists.
+   * @throws Exception if styles DOM could not be initialized
+   */
+  public OdfStylesDom getStylesDom() throws SAXException, IOException {
+<span class="nc bnc" id="L431" title="All 2 branches missed.">    if (mStylesDom == null) {</span>
+<span class="nc" id="L432">      mStylesDom =</span>
+<span class="nc" id="L433">          (OdfStylesDom) getCachedDom(getAbsoluteFilePath(OdfXMLFile.STYLES.getFileName()));</span>
+      ;
+<span class="nc bnc" id="L435" title="All 2 branches missed.">      if (mStylesDom == null) {</span>
+<span class="nc" id="L436">        mStylesDom = new OdfStylesDom(this, getAbsoluteFilePath(OdfXMLFile.STYLES.getFileName()));</span>
+      }
+    }
+<span class="nc" id="L439">    return mStylesDom;</span>
+  }
+
+  /**
+   * Return the ODF type-based metadata DOM of the meta.xml
+   *
+   * @return ODF type-based meta DOM or null if no meta.xml exists.
+   * @throws Exception if meta DOM could not be initialized
+   */
+  public OdfMetaDom getMetaDom() throws SAXException, IOException {
+<span class="nc bnc" id="L449" title="All 2 branches missed.">    if (mMetaDom == null) {</span>
+<span class="nc" id="L450">      mMetaDom = (OdfMetaDom) getCachedDom(getAbsoluteFilePath(OdfXMLFile.META.getFileName()));</span>
+      ;
+<span class="nc bnc" id="L452" title="All 2 branches missed.">      if (mMetaDom == null) {</span>
+<span class="nc" id="L453">        mMetaDom = new OdfMetaDom(this, getAbsoluteFilePath(OdfXMLFile.META.getFileName()));</span>
+      }
+    }
+<span class="nc" id="L456">    return mMetaDom;</span>
+  }
+
+  /**
+   * Return the ODF type-based settings DOM of the settings.xml
+   *
+   * @return ODF type-based settings DOM or null if no settings.xml exists.
+   * @throws Exception if settings DOM could not be initialized
+   */
+  public OdfSettingsDom getSettingsDom() throws SAXException, IOException {
+<span class="nc bnc" id="L466" title="All 2 branches missed.">    if (mSettingsDom == null) {</span>
+<span class="nc" id="L467">      mSettingsDom =</span>
+<span class="nc" id="L468">          (OdfSettingsDom) getCachedDom(getAbsoluteFilePath(OdfXMLFile.SETTINGS.getFileName()));</span>
+      ;
+<span class="nc bnc" id="L470" title="All 2 branches missed.">      if (mSettingsDom == null) {</span>
+<span class="nc" id="L471">        mSettingsDom =</span>
+<span class="nc" id="L472">            new OdfSettingsDom(this, getAbsoluteFilePath(OdfXMLFile.SETTINGS.getFileName()));</span>
+      }
+    }
+<span class="nc" id="L475">    return mSettingsDom;</span>
+  }
+
+  /**
+   * Sets the ODF type-based content DOM of the content.xml
+   *
+   * @param contentDom ODF type-based content DOM or null if no content.xml exists.
+   */
+  public void setContentDom(OdfContentDom contentDom) {
+<span class="nc" id="L484">    mContentDom = contentDom;</span>
+<span class="nc" id="L485">  }</span>
+
+  /**
+   * Sets the ODF type-based styles DOM of the styles.xml
+   *
+   * @param stylesDom ODF type-based styles DOM or null if no styles.xml exists.
+   */
+  public void setStylesDom(OdfStylesDom stylesDom) {
+<span class="nc" id="L493">    mStylesDom = stylesDom;</span>
+<span class="nc" id="L494">  }</span>
+
+  /**
+   * Sets the ODF type-based meta DOM of the meta.xml
+   *
+   * @param metaDom ODF type-based meta DOM or null if no meta.xml exists.
+   */
+  public void setMetaDom(OdfMetaDom metaDom) {
+<span class="nc" id="L502">    mMetaDom = metaDom;</span>
+<span class="nc" id="L503">  }</span>
+
+  /**
+   * Sets the ODF type-based settings DOM of the settings.xml
+   *
+   * @param settingsDom ODF type-based settings DOM or null if no settings.xml exists.
+   */
+  public void setSettingsDom(OdfSettingsDom settingsDom) {
+<span class="nc" id="L511">    mSettingsDom = settingsDom;</span>
+<span class="nc" id="L512">  }</span>
+
+  /** @return the office:styles element from the styles dom */
+  public OdfOfficeStyles getDocumentStyles() {
+<span class="nc" id="L516">    OdfOfficeStyles documentStyles = null;</span>
+    try {
+<span class="nc" id="L518">      OdfStylesDom stylesDom = getStylesDom();</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">      if (stylesDom != null) {</span>
+<span class="nc" id="L520">        documentStyles = stylesDom.getOfficeStyles();</span>
+      }
+<span class="nc" id="L522">    } catch (Exception ex) {</span>
+<span class="nc" id="L523">      Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L524">    }</span>
+<span class="nc" id="L525">    return documentStyles;</span>
+  }
+
+  /**
+   * return the office:master-styles element of this document.
+   *
+   * @return the office:master-styles element
+   */
+  public OdfOfficeMasterStyles getOfficeMasterStyles() {
+<span class="nc" id="L534">    OdfOfficeMasterStyles officeMasterStyles = null;</span>
+    try {
+<span class="nc" id="L536">      OdfStylesDom stylesDom = getStylesDom();</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">      if (stylesDom != null) {</span>
+<span class="nc" id="L538">        officeMasterStyles = stylesDom.getOrCreateMasterStyles();</span>
+      }
+<span class="nc" id="L540">    } catch (Exception ex) {</span>
+<span class="nc" id="L541">      Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L542">    }</span>
+<span class="nc" id="L543">    return officeMasterStyles;</span>
+  }
+
+  /**
+   * @return the office:styles element from the styles dom. If there is not yet such an element, it
+   *     is created.
+   */
+  public OdfOfficeStyles getOrCreateDocumentStyles() {
+<span class="nc" id="L551">    OdfOfficeStyles documentStyles = null;</span>
+    try {
+<span class="nc" id="L553">      OdfStylesDom stylesDom = getStylesDom();</span>
+<span class="nc bnc" id="L554" title="All 2 branches missed.">      if (stylesDom != null) {</span>
+<span class="nc" id="L555">        documentStyles = stylesDom.getOfficeStyles();</span>
+      }
+<span class="nc bnc" id="L557" title="All 2 branches missed.">      if (documentStyles == null) {</span>
+<span class="nc" id="L558">        stylesDom.getOrCreateOfficeStyles();</span>
+      }
+<span class="nc" id="L560">    } catch (Exception ex) {</span>
+<span class="nc" id="L561">      Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L562">    }</span>
+<span class="nc" id="L563">    return documentStyles;</span>
+  }
+
+  public OdfStyle getStyleByName(OdfStyleFamily styleFamily, String styleName)
+      throws SAXException, IOException {
+
+<span class="nc" id="L569">    OdfStyle odfStyle = getStyleByName(getStylesDom(), styleFamily, styleName);</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">    if (odfStyle == null) {</span>
+<span class="nc" id="L571">      final OdfContentDom odfContentDom = getContentDom();</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">      if (odfContentDom != null) {</span>
+<span class="nc" id="L573">        odfStyle = getStyleByName(odfContentDom.getAutomaticStyles(), styleFamily, styleName);</span>
+      }
+    }
+<span class="nc" id="L576">    return odfStyle;</span>
+  }
+
+  private OdfStyle getStyleByName(
+      OdfStylesDom odfStylesDom, OdfStyleFamily styleFamily, String styleName) {
+<span class="nc" id="L581">    OdfStyle odfStyle = null;</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">    if (odfStylesDom != null) {</span>
+<span class="nc" id="L583">      odfStyle = getStyleByName(odfStylesDom.getOfficeStyles(), styleFamily, styleName);</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">      if (odfStyle == null) {</span>
+<span class="nc" id="L585">        odfStyle = getStyleByName(odfStylesDom.getAutomaticStyles(), styleFamily, styleName);</span>
+      }
+    }
+<span class="nc" id="L588">    return odfStyle;</span>
+  }
+
+  private OdfStyle getStyleByName(
+      OdfStylesBase odfStylesBase, OdfStyleFamily styleFamily, String styleName) {
+<span class="nc" id="L593">    OdfStyle odfStyle = null;</span>
+<span class="nc bnc" id="L594" title="All 2 branches missed.">    if (odfStylesBase != null) {</span>
+<span class="nc" id="L595">      odfStyle = odfStylesBase.getStyle(styleName, styleFamily);</span>
+    }
+<span class="nc" id="L597">    return odfStyle;</span>
+  }
+
+  public OdfStyle getStyleByDisplayName(OdfStyleFamily styleFamily, String styleDisplayName)
+      throws SAXException, IOException {
+
+<span class="nc" id="L603">    OdfStyle odfStyle = getStyleByDisplayName(getStylesDom(), styleFamily, styleDisplayName);</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">    if (odfStyle == null) {</span>
+<span class="nc" id="L605">      final OdfContentDom odfContentDom = getContentDom();</span>
+<span class="nc bnc" id="L606" title="All 2 branches missed.">      if (odfContentDom != null) {</span>
+<span class="nc" id="L607">        odfStyle =</span>
+<span class="nc" id="L608">            getStyleByDisplayName(</span>
+<span class="nc" id="L609">                odfContentDom.getAutomaticStyles(), styleFamily, styleDisplayName);</span>
+      }
+    }
+<span class="nc" id="L612">    return odfStyle;</span>
+  }
+
+  private OdfStyle getStyleByDisplayName(
+      OdfStylesDom odfStylesDom, OdfStyleFamily styleFamily, String styleName) {
+<span class="nc" id="L617">    OdfStyle odfStyle = null;</span>
+<span class="nc bnc" id="L618" title="All 2 branches missed.">    if (odfStylesDom != null) {</span>
+<span class="nc" id="L619">      odfStyle = getStyleByDisplayName(odfStylesDom.getOfficeStyles(), styleFamily, styleName);</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">      if (odfStyle == null) {</span>
+<span class="nc" id="L621">        odfStyle = getStyleByDisplayName(odfStylesDom.getAutomaticStyles(), styleFamily, styleName);</span>
+      }
+    }
+<span class="nc" id="L624">    return odfStyle;</span>
+  }
+
+  private OdfStyle getStyleByDisplayName(
+      OdfStylesBase odfStylesBase, OdfStyleFamily styleFamily, String styleName) {
+<span class="nc bnc" id="L629" title="All 2 branches missed.">    if (odfStylesBase != null) {</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">      for (OdfStyle odfStyle : odfStylesBase.getStylesForFamily(styleFamily)) {</span>
+<span class="nc" id="L631">        final String displayName = odfStyle.getStyleDisplayNameAttribute();</span>
+<span class="nc bnc" id="L632" title="All 4 branches missed.">        if (displayName != null &amp;&amp; displayName.equals(styleName)) {</span>
+<span class="nc" id="L633">          return odfStyle;</span>
+        }
+<span class="nc" id="L635">      }</span>
+    }
+<span class="nc" id="L637">    return null;</span>
+  }
+
+  /**
+   * Return a list of table features in this document.
+   *
+   * @return a list of table features in this document.
+   */
+  @Deprecated(since = &quot;explicit state whether the search should be recursive&quot;)
+  public List&lt;TableTableElement&gt; getTables() {
+<span class="nc" id="L647">    return getTables(true);</span>
+  }
+
+  /**
+   * Return a list of table features in this document.
+   *
+   * @param deepSearch Go through the whole document in search for tables (including master pages,
+   *     headers, and footers), or search only at root level for ODS documents.
+   * @return a list of table features in this document.
+   */
+  // ToDo: Instead of a method to receive all possible feature/components on the document, there
+  // might be a generic or one each element?
+  public List&lt;TableTableElement&gt; getTables(boolean deepSearch) {
+<span class="nc" id="L660">    List&lt;TableTableElement&gt; tableList = new ArrayList&lt;TableTableElement&gt;();</span>
+    try {
+      // find tables from content.xml
+<span class="nc" id="L663">      OfficeBodyElement officeBody =</span>
+<span class="nc" id="L664">          OdfElement.findFirstChildNode(OfficeBodyElement.class, getContentDom().getRootElement());</span>
+<span class="nc" id="L665">      OdfElement contentRoot = OdfElement.findFirstChildNode(OdfElement.class, officeBody);</span>
+<span class="nc" id="L666">      fillTableList(contentRoot, tableList, deepSearch);</span>
+
+      // stop here for ODS
+<span class="nc bnc" id="L669" title="All 2 branches missed.">      if (!deepSearch) {</span>
+<span class="nc" id="L670">        return tableList;</span>
+      }
+
+      // find tables from styles.xml (header &amp; footer)
+<span class="nc" id="L674">      Map&lt;String, StyleMasterPageElement&gt; masterPages = getMasterPages();</span>
+<span class="nc bnc" id="L675" title="All 2 branches missed.">      if (masterPages != null) {</span>
+<span class="nc" id="L676">        StyleMasterPageElement defaultMasterPage = masterPages.get(&quot;Standard&quot;);</span>
+<span class="nc bnc" id="L677" title="All 2 branches missed.">        if (defaultMasterPage != null) {</span>
+<span class="nc" id="L678">          fillTableList(defaultMasterPage, tableList, deepSearch);</span>
+        }
+      }
+<span class="nc" id="L681">    } catch (Exception ex) {</span>
+<span class="nc" id="L682">      Logger.getLogger(OdfSchemaDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L683">    }</span>
+<span class="nc" id="L684">    return tableList;</span>
+  }
+
+  /**
+   * Fills tableList either for the found tables in children or do a (depth-first) search through
+   * the DOM tree for all tables.
+   *
+   * @param startElement Iterate throught the children of this node
+   * @param tableList filling the found table-table elements into this list.
+   * @param recurse Only tables being on startElement's children level are being considered (or
+   *     recurse through all xml tags)
+   * @return tableList
+   */
+  private List&lt;TableTableElement&gt; fillTableList(
+      Element startElement, List&lt;TableTableElement&gt; tableList, boolean recurse) {
+<span class="nc" id="L699">    NodeList childList = startElement.getChildNodes();</span>
+<span class="nc bnc" id="L700" title="All 2 branches missed.">    for (int i = 0; i &lt; childList.getLength(); i++) {</span>
+<span class="nc" id="L701">      Node childNode = childList.item(i);</span>
+<span class="nc bnc" id="L702" title="All 2 branches missed.">      if (childNode instanceof Element) {</span>
+<span class="nc bnc" id="L703" title="All 2 branches missed.">        if (childNode instanceof TableTableElement) {</span>
+<span class="nc" id="L704">          tableList.add((TableTableElement) childList.item(i));</span>
+        } else {
+<span class="nc bnc" id="L706" title="All 2 branches missed.">          if (recurse) {</span>
+<span class="nc" id="L707">            fillTableList((Element) childNode, tableList, recurse);</span>
+          }
+        }
+      }
+    }
+<span class="nc" id="L712">    return tableList;</span>
+  }
+
+  /**
+   * ToDo: Instead of adding all elements using an index to the document, we might add a pattern to
+   * the code generation to create a HashMap either on demand (whenever such a structure is required
+   * from the user) or by default
+   *
+   * @deprecated This method will be moved to the generated sources as soon code generation was
+   *     improved!
+   */
+  @Deprecated
+  public Map&lt;String, StyleMasterPageElement&gt; getMasterPages() throws Exception {
+
+    // get original values:
+<span class="nc" id="L727">    OdfStylesDom stylesDoc = getStylesDom();</span>
+<span class="nc" id="L728">    OfficeMasterStylesElement masterStyles =</span>
+<span class="nc" id="L729">        OdfElement.findFirstChildNode(OfficeMasterStylesElement.class, stylesDoc.getRootElement());</span>
+<span class="nc" id="L730">    Map&lt;String, StyleMasterPageElement&gt; masterPages = null;</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">    if (masterStyles != null) {</span>
+<span class="nc" id="L732">      NodeList lstMasterPages =</span>
+<span class="nc" id="L733">          stylesDoc.getElementsByTagNameNS(OdfDocumentNamespace.STYLE.getUri(), &quot;master-page&quot;);</span>
+<span class="nc bnc" id="L734" title="All 4 branches missed.">      if (lstMasterPages != null &amp;&amp; lstMasterPages.getLength() &gt; 0) {</span>
+<span class="nc" id="L735">        masterPages = new HashMap();</span>
+<span class="nc bnc" id="L736" title="All 2 branches missed.">        for (int i = 0; i &lt; lstMasterPages.getLength(); i++) {</span>
+<span class="nc" id="L737">          StyleMasterPageElement masterPage =</span>
+<span class="nc" id="L738">              (StyleMasterPageElement) lstMasterPages.item(i); // Take the node from the list</span>
+          // ToDo: Drop Attribute Suffix for methods returning String values and NOT Attributes
+<span class="nc" id="L740">          String styleName = masterPage.getStyleNameAttribute();</span>
+<span class="nc" id="L741">          masterPages.put(styleName, masterPage);</span>
+        }
+      }
+    }
+<span class="nc" id="L745">    return masterPages;</span>
+  }
+
+  /**
+   * Close the OdfPackage and release all temporary created data. After execution of this method,
+   * this class is no longer usable. Do this as the last action to free resources. Closing an
+   * already closed document has no effect. Note that this will not close any cached documents.
+   */
+  @Override
+  public void close() {
+<span class="nc" id="L755">    mContentDom = null;</span>
+<span class="nc" id="L756">    mStylesDom = null;</span>
+<span class="nc" id="L757">    mMetaDom = null;</span>
+<span class="nc" id="L758">    mSettingsDom = null;</span>
+<span class="nc" id="L759">    super.close();</span>
+<span class="nc" id="L760">  }</span>
+
+  public OdfFileDom getFileDom(OdfXMLFile file) throws SAXException, IOException {
+<span class="nc" id="L763">    return getFileDom(getXMLFilePath(file));</span>
+  }
+
+  /**
+   * Get all two types of RDF Metadata through GRDDL XSLT:
+   * http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#__RefHeading__1415068_253892949
+   */
+  public Model getRDFMetadata() throws Exception {
+<span class="nc" id="L771">    Model m = getInContentMetadata().union(this.getManifestRDFMetadata());</span>
+<span class="nc" id="L772">    return m;</span>
+  }
+
+  /**
+   * Get In Content RDF Metadata through GRDDL XSLT
+   * http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#__RefHeading__1415070_253892949
+   */
+  public Model getInContentMetadata() throws Exception {
+<span class="nc" id="L780">    Model documentRDFModel = ModelFactory.createDefaultModel();</span>
+<span class="nc" id="L781">    Model fileRDFModel = null;</span>
+<span class="nc bnc" id="L782" title="All 2 branches missed.">    for (String internalPath : this.getPackage().getFilePaths()) {</span>
+<span class="nc bnc" id="L783" title="All 2 branches missed.">      for (OdfXMLFile file : OdfXMLFile.values()) {</span>
+<span class="nc bnc" id="L784" title="All 2 branches missed.">        if (Util.isSubPathOf(internalPath, this.getDocumentPath())</span>
+<span class="nc bnc" id="L785" title="All 2 branches missed.">            &amp;&amp; internalPath.endsWith(file.getFileName())) {</span>
+<span class="nc" id="L786">          fileRDFModel = getXMLFileMetadata(internalPath);</span>
+<span class="nc bnc" id="L787" title="All 2 branches missed.">          if (fileRDFModel.size() &gt; 0) {</span>
+<span class="nc" id="L788">            documentRDFModel = documentRDFModel.union(fileRDFModel);</span>
+          }
+          break;
+        }
+      }
+<span class="nc" id="L793">    }</span>
+<span class="nc bnc" id="L794" title="All 2 branches missed.">    if (fileRDFModel.size() &gt; 0) {</span>
+<span class="nc" id="L795">      documentRDFModel = documentRDFModel.union(fileRDFModel);</span>
+    }
+<span class="nc" id="L797">    return documentRDFModel;</span>
+  }
+
+  /**
+   * Get in-content metadata cache model
+   *
+   * @return The in-content metadata cache model
+   * @throws Exception
+   */
+  public Model getInContentMetadataFromCache() throws Exception {
+<span class="nc" id="L807">    Model m = ModelFactory.createDefaultModel();</span>
+    // find and merge the RDF triples cache from the OdfXMLFile files
+<span class="nc bnc" id="L809" title="All 2 branches missed.">    for (OdfXMLFile file : OdfXMLFile.values()) {</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">      for (Model m1 : this.getFileDom(file).getInContentMetadataCache().values()) {</span>
+<span class="nc" id="L811">        m = m.union(m1);</span>
+<span class="nc" id="L812">      }</span>
+    }
+<span class="nc" id="L814">    return m;</span>
+  }
+
+  /**
+   * Get RDF metadata from manifest.rdf and those rdf files registered in the manifest.xml as
+   * &quot;application/rdf+xml&quot; through GRDDL XSLT
+   * http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#__RefHeading__1415072_253892949
+   */
+  public Model getManifestRDFMetadata() throws Exception {
+<span class="nc" id="L823">    Model m = ModelFactory.createDefaultModel();</span>
+<span class="nc bnc" id="L824" title="All 2 branches missed.">    for (String internalPath : this.getPackage().getFilePaths()) {</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">      if (Util.isSubPathOf(internalPath, this.getDocumentPath())</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">          &amp;&amp; this.getPackage().getMediaTypeString(internalPath).endsWith(&quot;application/rdf+xml&quot;)) {</span>
+<span class="nc" id="L827">        Model m1 = ModelFactory.createDefaultModel();</span>
+<span class="nc" id="L828">        String RDFBaseUri = Util.getRDFBaseUri(this.getPackage().getBaseURI(), internalPath);</span>
+<span class="nc" id="L829">        m1.read(</span>
+<span class="nc" id="L830">            new InputStreamReader(this.getPackage().getInputStream(internalPath), &quot;utf-8&quot;),</span>
+            RDFBaseUri);
+        // remove the last SLASH at the end of the RDFBaseUri:
+        // test_rdfmeta.odt/ --&gt; test_rdfmeta.odt
+<span class="nc" id="L834">        ResourceUtils.renameResource(</span>
+<span class="nc" id="L835">            m1.getResource(RDFBaseUri), RDFBaseUri.substring(0, RDFBaseUri.length() - 1));</span>
+<span class="nc bnc" id="L836" title="All 2 branches missed.">        if (m1.size() &gt; 0) {</span>
+<span class="nc" id="L837">          m = m.union(m1);</span>
+        }
+      }
+<span class="nc" id="L840">    }</span>
+<span class="nc" id="L841">    return m;</span>
+  }
+
+  /**
+   * Get in-content metadata model of bookmarks
+   *
+   * @return The in-content metadata model of bookmarks
+   * @throws Exception
+   */
+  public Model getBookmarkRDFMetadata() throws Exception {
+<span class="nc" id="L851">    Model m = ModelFactory.createDefaultModel();</span>
+<span class="nc bnc" id="L852" title="All 2 branches missed.">    for (OdfXMLFile file : OdfXMLFile.values()) {</span>
+<span class="nc" id="L853">      OdfFileDom dom = getFileDom(file);</span>
+<span class="nc" id="L854">      m = m.union(dom.getBookmarkRDFMetadata());</span>
+    }
+<span class="nc" id="L856">    return m;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

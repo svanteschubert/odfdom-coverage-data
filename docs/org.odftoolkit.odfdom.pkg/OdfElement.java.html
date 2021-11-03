@@ -1,0 +1,2628 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfElement.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfElement.java</span></div><h1>OdfElement.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.xerces.dom.ElementNSImpl;
+import org.apache.xerces.dom.NodeImpl;
+import org.apache.xerces.dom.ParentNode;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.changes.Component;
+import org.odftoolkit.odfdom.changes.JsonOperationConsumer;
+import org.odftoolkit.odfdom.doc.OdfSpreadsheetDocument;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.element.OdfStylePropertiesBase;
+import org.odftoolkit.odfdom.dom.element.office.OfficeAnnotationElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeBodyElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleHandoutMasterElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.table.TableContentValidationsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableCoveredTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableShapesElement;
+import org.odftoolkit.odfdom.dom.element.text.TextAElement;
+import org.odftoolkit.odfdom.dom.element.text.TextHElement;
+import org.odftoolkit.odfdom.dom.element.text.TextNoteElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.element.text.TextParagraphElementBase;
+import org.odftoolkit.odfdom.dom.element.text.TextSElement;
+import org.odftoolkit.odfdom.dom.element.text.TextSpanElement;
+import org.odftoolkit.odfdom.dom.element.text.TextTrackedChangesElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.w3c.dom.Attr;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+
+public abstract class OdfElement extends ElementNSImpl {
+
+  private static final long serialVersionUID = -4939293285696678939L;
+<span class="nc" id="L74">  private boolean isComponentRoot = false;</span>
+<span class="nc" id="L75">  private boolean mIsIgnoredComponent = false;</span>
+<span class="nc" id="L76">  private Component mComponent = null;</span>
+  // ToDo: Only on component roots
+<span class="nc" id="L78">  private int mComponentSize = 0;</span>
+
+  /** Creates a new instance of OdfElement */
+  public OdfElement(OdfFileDom ownerDocument, String namespaceURI, String qualifiedName)
+      throws DOMException {
+<span class="nc" id="L83">    super(ownerDocument, namespaceURI, qualifiedName);</span>
+<span class="nc" id="L84">  }</span>
+
+  /** Creates a new instance of OdfElement */
+  public OdfElement(OdfFileDom ownerDocument, OdfName aName) throws DOMException {
+<span class="nc" id="L88">    super(ownerDocument, aName.getUri(), aName.getQName());</span>
+<span class="nc" id="L89">  }</span>
+
+  public abstract OdfName getOdfName();
+
+  protected &lt;T extends OdfElement&gt; T getParentAs(Class&lt;T&gt; clazz) {
+<span class="nc" id="L94">    Node parent = getParentNode();</span>
+<span class="nc bnc" id="L95" title="All 4 branches missed.">    if (parent != null &amp;&amp; clazz.isInstance(parent)) {</span>
+<span class="nc" id="L96">      return clazz.cast(parent);</span>
+    } else {
+<span class="nc" id="L98">      return null;</span>
+    }
+  }
+
+  protected &lt;T extends OdfElement&gt; T getAncestorAs(Class&lt;T&gt; clazz) {
+<span class="nc" id="L103">    Node node = getParentNode();</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">      if (clazz.isInstance(node)) {</span>
+<span class="nc" id="L106">        return clazz.cast(node);</span>
+      }
+<span class="nc" id="L108">      node = node.getParentNode();</span>
+    }
+<span class="nc" id="L110">    return null;</span>
+  }
+
+  /** @returns true if the given potentialParent is an ancestor of this element */
+  public boolean hasAncestor(Node potentialParent) {
+<span class="nc" id="L115">    Node parentNode = this.getParentNode();</span>
+<span class="nc" id="L116">    boolean isParent = false;</span>
+    do {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">      if (parentNode == null) {</span>
+<span class="nc" id="L119">        break;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">      } else if (parentNode.equals(potentialParent)) {</span>
+<span class="nc" id="L121">        isParent = true;</span>
+<span class="nc" id="L122">        break;</span>
+      }
+<span class="nc bnc" id="L124" title="All 2 branches missed.">    } while ((parentNode = parentNode.getParentNode()) != null);</span>
+<span class="nc" id="L125">    return isParent;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L130">    return mapNode(this, new StringBuilder()).toString();</span>
+  }
+
+  /** Only Siblings will be traversed by this method as Children */
+  private static StringBuilder mapNodeTree(Node node, StringBuilder xml) {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">    while (node != null) {</span>
+      // mapping node and this mapping include always all descendants
+<span class="nc" id="L137">      xml = mapNode(node, xml);</span>
+      // next sibling will be mapped to XML
+<span class="nc" id="L139">      node = node.getNextSibling();</span>
+    }
+<span class="nc" id="L141">    return xml;</span>
+  }
+
+  private static StringBuilder mapNode(Node node, StringBuilder xml) {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">    if (node instanceof Element) {</span>
+<span class="nc" id="L146">      xml = mapElementNode(node, xml);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">    } else if (node instanceof Text) {</span>
+<span class="nc" id="L148">      xml = mapTextNode(node, xml);</span>
+    }
+<span class="nc" id="L150">    return xml;</span>
+  }
+
+  private static StringBuilder mapTextNode(Node node, StringBuilder xml) {
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    if (node != null) {</span>
+<span class="nc" id="L155">      xml = xml.append(node.getTextContent());</span>
+    }
+<span class="nc" id="L157">    return xml;</span>
+  }
+
+  private static StringBuilder mapElementNode(Node node, StringBuilder xml) {
+<span class="nc bnc" id="L161" title="All 2 branches missed.">    if (node != null) {</span>
+<span class="nc" id="L162">      xml = xml.append(&quot;&lt;&quot;);</span>
+<span class="nc" id="L163">      xml = xml.append(node.getNodeName());</span>
+<span class="nc" id="L164">      xml = mapAttributeNode(node, xml);</span>
+<span class="nc" id="L165">      xml = xml.append(&quot;&gt;&quot;);</span>
+<span class="nc" id="L166">      xml = mapNodeTree(node.getFirstChild(), xml);</span>
+<span class="nc" id="L167">      xml = xml.append(&quot;&lt;/&quot;);</span>
+<span class="nc" id="L168">      xml = xml.append(node.getNodeName());</span>
+<span class="nc" id="L169">      xml = xml.append(&quot;&gt;&quot;);</span>
+    }
+<span class="nc" id="L171">    return xml;</span>
+  }
+
+  private static StringBuilder mapAttributeNode(Node node, StringBuilder xml) {
+<span class="nc" id="L175">    NamedNodeMap attrs = null;</span>
+    int length;
+<span class="nc bnc" id="L177" title="All 4 branches missed.">    if ((attrs = node.getAttributes()) != null &amp;&amp; (length = attrs.getLength()) &gt; 0) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">      for (int i = 0; length &gt; i; i++) {</span>
+<span class="nc" id="L179">        xml = xml.append(&quot; &quot;);</span>
+<span class="nc" id="L180">        xml = xml.append(attrs.item(i).getNodeName());</span>
+<span class="nc" id="L181">        xml = xml.append(&quot;=\&quot;&quot;);</span>
+<span class="nc" id="L182">        xml = xml.append(attrs.item(i).getNodeValue());</span>
+<span class="nc" id="L183">        xml = xml.append(&quot;\&quot;&quot;);</span>
+      }
+    }
+<span class="nc" id="L186">    return xml;</span>
+  }
+
+  /**
+   * Set the value of an ODF attribute by &lt;code&gt;OdfName&lt;/code&gt;.
+   *
+   * @param name The qualified name of the ODF attribute.
+   * @param value The value to be set in &lt;code&gt;String&lt;/code&gt; form
+   */
+  public void setOdfAttributeValue(OdfName name, String value) {
+<span class="nc" id="L196">    setAttributeNS(name.getUri(), name.getQName(), value);</span>
+<span class="nc" id="L197">  }</span>
+
+  /**
+   * Set an ODF attribute to this element
+   *
+   * @param attribute the attribute to be set
+   */
+  public void setOdfAttribute(OdfAttribute attribute) {
+<span class="nc" id="L205">    setAttributeNodeNS(attribute);</span>
+<span class="nc" id="L206">  }</span>
+
+  /**
+   * Retrieves a value of an ODF attribute by &lt;code&gt;OdfName&lt;/code&gt;.
+   *
+   * @param name The qualified name of the ODF attribute.
+   * @return The value of the attribute as &lt;code&gt;String&lt;/code&gt; or &lt;code&gt;null&lt;/code&gt; if the attribute
+   *     does not exist.
+   */
+  public String getOdfAttributeValue(OdfName name) {
+<span class="nc" id="L216">    return getAttributeNS(name.getUri(), name.getLocalName());</span>
+  }
+
+  /**
+   * Retrieves an ODF attribute by &lt;code&gt;OdfName&lt;/code&gt;.
+   *
+   * @param name The qualified name of the ODF attribute.
+   * @return The &lt;code&gt;OdfAttribute&lt;/code&gt; or &lt;code&gt;null&lt;/code&gt; if the attribute does not exist.
+   */
+  public OdfAttribute getOdfAttribute(OdfName name) {
+<span class="nc" id="L226">    return (OdfAttribute) getAttributeNodeNS(name.getUri(), name.getLocalName());</span>
+  }
+
+  /**
+   * Retrieves an ODF attribute by &lt;code&gt;NamespaceName&lt;/code&gt;, and local name.
+   *
+   * @param namespace The namespace of the ODF attribute.
+   * @param localname The local name of the ODF attribute.
+   * @return The &lt;code&gt;OdfAttribute&lt;/code&gt; or &lt;code&gt;null&lt;/code&gt; if the attribute does not exist.
+   */
+  public OdfAttribute getOdfAttribute(NamespaceName namespace, String localname) {
+<span class="nc" id="L237">    return (OdfAttribute) getAttributeNodeNS(namespace.getUri(), localname);</span>
+  }
+
+  /**
+   * Determines if an ODF attribute exists.
+   *
+   * @param name The qualified name of the ODF attribute.
+   * @return True if the attribute exists.
+   */
+  public boolean hasOdfAttribute(OdfName name) {
+<span class="nc" id="L247">    return hasAttributeNS(name.getUri(), name.getLocalName());</span>
+  }
+
+  /**
+   * returns the first child node that implements the given class.
+   *
+   * @param &lt;T&gt; The type of the ODF element to be found.
+   * @param clazz is a class that extends OdfElement.
+   * @param parentNode is the parent O of the children to be found.
+   * @return the first child node of the given parentNode that is a clazz or null if none is found.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public static &lt;T extends OdfElement&gt; T findFirstChildNode(Class&lt;T&gt; clazz, Node parentNode) {
+<span class="nc bnc" id="L260" title="All 4 branches missed.">    if (parentNode != null &amp;&amp; parentNode instanceof ParentNode) {</span>
+<span class="nc" id="L261">      Node node = ((ParentNode) parentNode).getFirstChild();</span>
+<span class="nc bnc" id="L262" title="All 4 branches missed.">      while ((node != null) &amp;&amp; !clazz.isInstance(node)) {</span>
+<span class="nc" id="L263">        node = node.getNextSibling();</span>
+      }
+
+<span class="nc bnc" id="L266" title="All 2 branches missed.">      if (node != null) {</span>
+<span class="nc" id="L267">        return (T) node;</span>
+      }
+    }
+
+<span class="nc" id="L271">    return null;</span>
+  }
+
+  /**
+   * returns the first sibling after the given reference node that implements the given class.
+   *
+   * @param &lt;T&gt; The type of the ODF element to be found.
+   * @param clazz is a class that extends OdfElement.
+   * @param refNode the reference node of the siblings to be found.
+   * @return the first sibling of the given reference node that is a class or null if none is found.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public static &lt;T extends OdfElement&gt; T findNextChildNode(Class&lt;T&gt; clazz, Node refNode) {
+<span class="nc bnc" id="L284" title="All 2 branches missed.">    if (refNode != null) {</span>
+<span class="nc" id="L285">      Node node = refNode.getNextSibling();</span>
+<span class="nc bnc" id="L286" title="All 4 branches missed.">      while (node != null &amp;&amp; !clazz.isInstance(node)) {</span>
+<span class="nc" id="L287">        node = node.getNextSibling();</span>
+      }
+
+<span class="nc bnc" id="L290" title="All 2 branches missed.">      if (node != null) {</span>
+<span class="nc" id="L291">        return (T) node;</span>
+      }
+    }
+
+<span class="nc" id="L295">    return null;</span>
+  }
+
+  /**
+   * returns the first previous sibling before the given reference node that implements the given
+   * class.
+   *
+   * @param clazz is a class that extends OdfElement.
+   * @param refNode the reference node which siblings are to be searched.
+   * @return the first previous sibling of the given reference node that is a class or null if none
+   *     is found.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public static &lt;T extends OdfElement&gt; T findPreviousChildNode(Class&lt;T&gt; clazz, Node refNode) {
+<span class="nc bnc" id="L309" title="All 2 branches missed.">    if (refNode != null) {</span>
+<span class="nc" id="L310">      Node node = refNode.getPreviousSibling();</span>
+<span class="nc bnc" id="L311" title="All 4 branches missed.">      while (node != null &amp;&amp; !clazz.isInstance(node)) {</span>
+<span class="nc" id="L312">        node = node.getPreviousSibling();</span>
+      }
+
+<span class="nc bnc" id="L315" title="All 2 branches missed.">      if (node != null) {</span>
+<span class="nc" id="L316">        return (T) node;</span>
+      }
+    }
+
+<span class="nc" id="L320">    return null;</span>
+  }
+
+  /**
+   * Clones this complete element with all descendants.
+   *
+   * @return the cloned element
+   */
+  public OdfElement cloneElement() {
+<span class="nc" id="L329">    OdfElement cloneElement = ((OdfFileDom) this.ownerDocument).newOdfElement(this.getClass());</span>
+    // if it is an unknown ODF element
+<span class="nc bnc" id="L331" title="All 2 branches missed.">    if (cloneElement == null) {</span>
+<span class="nc" id="L332">      cloneElement =</span>
+          new OdfAlienElement(
+<span class="nc" id="L334">              (OdfFileDom) this.getOwnerDocument(),</span>
+<span class="nc" id="L335">              OdfName.newName(</span>
+<span class="nc" id="L336">                  OdfNamespace.getNamespace(this.getNamespaceURI()), this.getTagName()));</span>
+    }
+
+<span class="nc bnc" id="L339" title="All 2 branches missed.">    if (attributes != null) {</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">      for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L341">        Node item = attributes.item(i);</span>
+<span class="nc" id="L342">        String qname = null;</span>
+<span class="nc" id="L343">        String prefix = item.getPrefix();</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">        if (prefix == null) {</span>
+<span class="nc" id="L345">          qname = item.getLocalName();</span>
+<span class="nc" id="L346">          cloneElement.setAttribute(qname, item.getNodeValue());</span>
+        } else {
+<span class="nc" id="L348">          qname = prefix + &quot;:&quot; + item.getLocalName();</span>
+<span class="nc" id="L349">          cloneElement.setAttributeNS(item.getNamespaceURI(), qname, item.getNodeValue());</span>
+        }
+      }
+    }
+
+    // aside of the XML the flag of being a component root have to be copied
+<span class="nc bnc" id="L355" title="All 2 branches missed.">    if (this.isComponentRoot) {</span>
+<span class="nc" id="L356">      cloneElement.markAsComponentRoot(true);</span>
+<span class="nc" id="L357">      cloneElement.mComponentSize = this.mComponentSize;</span>
+<span class="nc" id="L358">      cloneElement.mIsIgnoredComponent = this.mIsIgnoredComponent;</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">      if (!this.mIsIgnoredComponent) {</span>
+<span class="nc" id="L360">        Component.createComponent(this.getComponent().getParent(), cloneElement);</span>
+      }
+    }
+
+<span class="nc" id="L364">    Node childNode = getFirstChild();</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">    while (childNode != null) {</span>
+<span class="nc" id="L366">      cloneElement.appendChild(childNode.cloneNode(true));</span>
+<span class="nc" id="L367">      childNode = childNode.getNextSibling();</span>
+    }
+    // ToDo: There should be an easier - more obvious - way than this...
+<span class="nc bnc" id="L370" title="All 2 branches missed.">    if (this.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L371">      cloneElement.ignoredComponent(true);</span>
+    }
+<span class="nc" id="L373">    cloneElement.mComponentSize = this.mComponentSize;</span>
+<span class="nc" id="L374">    cloneElement.mIsIgnoredComponent = this.mIsIgnoredComponent;</span>
+
+<span class="nc" id="L376">    return cloneElement;</span>
+  }
+
+  /** Overwritten by AlienElement class, which represents XML elements of various names */
+  protected OdfElement cloneOdfElement() {
+<span class="nc" id="L381">    return ((OdfFileDom) this.ownerDocument).newOdfElement(this.getClass());</span>
+  }
+
+  @Override
+  /**
+   * Clones this element but without cloning xml:id (and office:value) attributes
+   *
+   * @param deep if a deep copy should happen. If False, only the given element with attributes and
+   *     no content is copied
+   */
+  public Node cloneNode(boolean deep) {
+<span class="nc" id="L392">    OdfElement cloneElement = this.cloneOdfElement();</span>
+
+<span class="nc bnc" id="L394" title="All 2 branches missed.">    if (attributes != null) {</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">      for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L396">        Node item = attributes.item(i);</span>
+<span class="nc" id="L397">        String qname = null;</span>
+<span class="nc" id="L398">        String prefix = item.getPrefix();</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">        if (prefix == null) {</span>
+<span class="nc" id="L400">          qname = item.getLocalName();</span>
+<span class="nc" id="L401">          cloneElement.setAttribute(qname, item.getNodeValue());</span>
+        } else {
+<span class="nc" id="L403">          qname = prefix + &quot;:&quot; + item.getLocalName();</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">          if (!qname.equals(&quot;xml:id&quot;)</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">              &amp;&amp; !qname.equals(&quot;office:value&quot;)</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">              &amp;&amp; !qname.equals(&quot;calcext:value-type&quot;)</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">              &amp;&amp; !qname.equals(&quot;office:value-type&quot;)) {</span>
+<span class="nc" id="L408">            cloneElement.setAttributeNS(item.getNamespaceURI(), qname, item.getNodeValue());</span>
+          }
+        }
+      }
+    }
+
+    // aside of the XML the flag of being a component root have to be copied
+<span class="nc bnc" id="L415" title="All 2 branches missed.">    if (this.isComponentRoot) {</span>
+<span class="nc" id="L416">      cloneElement.markAsComponentRoot(true);</span>
+<span class="nc" id="L417">      cloneElement.mComponentSize = this.mComponentSize;</span>
+<span class="nc" id="L418">      cloneElement.mIsIgnoredComponent = this.mIsIgnoredComponent;</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">      if (!this.mIsIgnoredComponent) {</span>
+<span class="nc" id="L420">        Component.createComponent(this.getComponent().getParent(), cloneElement);</span>
+      }
+    }
+
+<span class="nc bnc" id="L424" title="All 2 branches missed.">    if (deep) {</span>
+<span class="nc" id="L425">      Node childNode = getFirstChild();</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">      while (childNode != null) {</span>
+<span class="nc" id="L427">        cloneElement.appendChild(childNode.cloneNode(true));</span>
+<span class="nc" id="L428">        childNode = childNode.getNextSibling();</span>
+      }
+    }
+    // ToDo: There should be an easier - more obvious - way than this...
+<span class="nc bnc" id="L432" title="All 2 branches missed.">    if (this.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L433">      cloneElement.ignoredComponent(true);</span>
+    }
+<span class="nc" id="L435">    cloneElement.mComponentSize = this.mComponentSize;</span>
+<span class="nc" id="L436">    cloneElement.mIsIgnoredComponent = this.mIsIgnoredComponent;</span>
+
+<span class="nc" id="L438">    return cloneElement;</span>
+  }
+
+  /**
+   * @param depth how many levels of children should be considered
+   * @return the cloned node (element)
+   * @depth level of children to be cloned All attributes except xml:id and office:value attributes
+   *     will not be cloned.
+   */
+  public Node cloneNode(int depth) {
+<span class="nc" id="L448">    OdfElement cloneElement = ((OdfFileDom) this.ownerDocument).newOdfElement(this.getClass());</span>
+    // if it is an unknown ODF element
+<span class="nc bnc" id="L450" title="All 2 branches missed.">    if (cloneElement == null) {</span>
+<span class="nc" id="L451">      cloneElement =</span>
+          new OdfAlienElement(
+<span class="nc" id="L453">              (OdfFileDom) this.getOwnerDocument(),</span>
+<span class="nc" id="L454">              OdfName.newName(</span>
+<span class="nc" id="L455">                  OdfNamespace.getNamespace(this.getNamespaceURI()), this.getTagName()));</span>
+    }
+
+<span class="nc bnc" id="L458" title="All 2 branches missed.">    if (attributes != null) {</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">      for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L460">        Node item = attributes.item(i);</span>
+<span class="nc" id="L461">        String qname = null;</span>
+<span class="nc" id="L462">        String prefix = item.getPrefix();</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">        if (prefix == null) {</span>
+<span class="nc" id="L464">          qname = item.getLocalName();</span>
+<span class="nc" id="L465">          cloneElement.setAttribute(qname, item.getNodeValue());</span>
+        } else {
+<span class="nc" id="L467">          qname = prefix + &quot;:&quot; + item.getLocalName();</span>
+          // cell value &amp; type handling might as well overwritten in cell class
+<span class="nc bnc" id="L469" title="All 2 branches missed.">          if (!qname.equals(&quot;xml:id&quot;)</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">              &amp;&amp; !qname.equals(&quot;office:value&quot;)</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">              &amp;&amp; !qname.equals(&quot;calcext:value-type&quot;)</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">              &amp;&amp; !qname.equals(&quot;office:value-type&quot;)) {</span>
+<span class="nc" id="L473">            cloneElement.setAttributeNS(item.getNamespaceURI(), qname, item.getNodeValue());</span>
+          }
+        }
+      }
+    }
+
+    // aside of the XML the flag of being a component root have to be copied
+<span class="nc bnc" id="L480" title="All 2 branches missed.">    if (this.isComponentRoot) {</span>
+<span class="nc" id="L481">      cloneElement.markAsComponentRoot(true);</span>
+<span class="nc" id="L482">      cloneElement.mComponentSize = this.mComponentSize;</span>
+<span class="nc" id="L483">      cloneElement.mIsIgnoredComponent = this.mIsIgnoredComponent;</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">      if (!this.mIsIgnoredComponent) {</span>
+<span class="nc" id="L485">        Component.createComponent(this.getComponent().getParent(), cloneElement);</span>
+      }
+    }
+
+<span class="nc bnc" id="L489" title="All 2 branches missed.">    if (depth &gt; 0) {</span>
+<span class="nc" id="L490">      Node childNode = getFirstChild();</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">      while (childNode != null) {</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">        if (childNode instanceof OdfElement) {</span>
+<span class="nc" id="L493">          cloneElement.appendChild(((OdfElement) childNode).cloneNode(depth - 1));</span>
+        }
+<span class="nc" id="L495">        childNode = childNode.getNextSibling();</span>
+      }
+    }
+    // ToDo: There should be an easier - more obvious - way than this...
+<span class="nc bnc" id="L499" title="All 2 branches missed.">    if (this.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L500">      cloneElement.ignoredComponent(true);</span>
+    }
+<span class="nc" id="L502">    cloneElement.mComponentSize = this.mComponentSize;</span>
+<span class="nc" id="L503">    return cloneElement;</span>
+  }
+
+  /**
+   * Clones the content of the source element including attributes even xml:id to the target
+   * element. Helpful when changing a &lt;text:h&gt; to a &lt;text:p&gt; and vice versa, when outline attribute
+   * changes.
+   *
+   * @param source the element to copy the content &amp; attributes from.
+   * @param target the element to copy the content &amp; attributes into.
+   * @param deep if a deep copy should happen. If false only the source element attributes will be
+   *     copied, otherwise all descendants.
+   * @return the target element with all new nodes
+   */
+  // ToDo: Test if a parameter by reference isn't working here!
+  public static OdfElement cloneNode(OdfElement source, OdfElement target, boolean deep) {
+<span class="nc" id="L519">    NamedNodeMap attributes = source.getAttributes();</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">    if (attributes != null) {</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">      for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L522">        Node item = attributes.item(i);</span>
+        String qname;
+<span class="nc" id="L524">        String prefix = item.getPrefix();</span>
+<span class="nc bnc" id="L525" title="All 2 branches missed.">        if (prefix == null) {</span>
+<span class="nc" id="L526">          qname = item.getLocalName();</span>
+<span class="nc" id="L527">          target.setAttribute(qname, item.getNodeValue());</span>
+        } else {
+<span class="nc" id="L529">          qname = prefix + &quot;:&quot; + item.getLocalName();</span>
+<span class="nc" id="L530">          target.setAttributeNS(item.getNamespaceURI(), qname, item.getNodeValue());</span>
+        }
+      }
+    }
+
+    // aside of the XML the flag of being a component root have to be copied
+<span class="nc bnc" id="L536" title="All 2 branches missed.">    if (source.isComponentRoot) {</span>
+<span class="nc" id="L537">      target.markAsComponentRoot(true);</span>
+<span class="nc" id="L538">      target.mComponentSize = source.mComponentSize;</span>
+<span class="nc" id="L539">      target.mComponent = source.mComponent;</span>
+    }
+
+<span class="nc bnc" id="L542" title="All 2 branches missed.">    if (deep) {</span>
+<span class="nc" id="L543">      Node childNode = source.getFirstChild();</span>
+      Node newNode;
+<span class="nc bnc" id="L545" title="All 2 branches missed.">      while (childNode != null) {</span>
+<span class="nc bnc" id="L546" title="All 2 branches missed.">        if (childNode instanceof OdfElement) {</span>
+<span class="nc" id="L547">          newNode = ((OdfElement) childNode).cloneNode(true);</span>
+        } else {
+<span class="nc" id="L549">          newNode = childNode.cloneNode(true);</span>
+        }
+<span class="nc" id="L551">        target.appendChild(newNode);</span>
+
+<span class="nc" id="L553">        childNode = childNode.getNextSibling();</span>
+      }
+    }
+    // ToDo: There should be an easier - more obvious - way than this...
+<span class="nc bnc" id="L557" title="All 2 branches missed.">    if (source.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L558">      target.ignoredComponent(true);</span>
+    }
+<span class="nc" id="L560">    target.mComponentSize = source.mComponentSize;</span>
+<span class="nc" id="L561">    return target;</span>
+  }
+
+  @Override
+  public Node appendChild(Node node) {
+    // No Counting necessary as appendChild() will call insertBefore()
+<span class="nc bnc" id="L567" title="All 2 branches missed.">    if (node instanceof OdfElement) {</span>
+<span class="nc" id="L568">      OdfElement e = (OdfElement) node;</span>
+    }
+<span class="nc" id="L570">    return super.appendChild(node);</span>
+  }
+
+  /** Recursive traverse the potential text container and count its content size */
+  private static int descendantsCount(Node parent, int size) {
+<span class="nc bnc" id="L575" title="All 2 branches missed.">    if (!isIgnoredElement((Element) parent)) {</span>
+<span class="nc" id="L576">      NodeList children = parent.getChildNodes();</span>
+      Node child;
+<span class="nc bnc" id="L578" title="All 2 branches missed.">      for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L579">        child = children.item(i);</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">        if (child instanceof Text) {</span>
+<span class="nc" id="L581">          size += ((Text) child).getLength();</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">        } else if (child instanceof OdfElement) {</span>
+<span class="nc" id="L583">          OdfElement element = (OdfElement) child;</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">          if (Component.isTextSelection(element)) {</span>
+<span class="nc" id="L585">            size += descendantsCount(element, size);</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">          } else if (element.isComponentRoot()) {</span>
+<span class="nc" id="L587">            size += element.componentSize();</span>
+          }
+        }
+      }
+    }
+<span class="nc" id="L592">    return size;</span>
+  }
+
+  /** Recursive traverse the text container and count the size of the content */
+  public int componentSize() {
+    ////// SVANTE CLEAN ME
+    //		if(mComponentSize == null){
+    //			if(isComponentRoot()){
+    //				mComponentSize = 1;
+    //			}else{
+    //				mComponentSize = 0;
+    //			}
+    //		}
+<span class="nc" id="L605">    return mComponentSize;</span>
+  }
+
+  /**
+   * indicates if some other object is equal to this one.
+   *
+   * @param obj - the reference object with which to compare.
+   * @return true if this object is the same as the obj argument; false otherwise.
+   */
+  @Override
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L616" title="All 2 branches missed.">    if (this == obj) {</span>
+<span class="nc" id="L617">      return true;</span>
+    }
+
+<span class="nc bnc" id="L620" title="All 4 branches missed.">    if ((obj == null) || !(obj instanceof OdfElement)) {</span>
+<span class="nc" id="L621">      return false;</span>
+    }
+
+<span class="nc" id="L624">    OdfElement compare = (OdfElement) obj;</span>
+
+    // compare node name
+<span class="nc bnc" id="L627" title="All 2 branches missed.">    if (!localName.equals(compare.localName)) {</span>
+<span class="nc" id="L628">      return false;</span>
+    }
+
+<span class="nc bnc" id="L631" title="All 2 branches missed.">    if (!this.namespaceURI.equals(compare.namespaceURI)) {</span>
+<span class="nc" id="L632">      return false;</span>
+    }
+
+    // compare node attributes
+<span class="nc bnc" id="L636" title="All 2 branches missed.">    if (attributes == compare.attributes) {</span>
+<span class="nc" id="L637">      return true;</span>
+    }
+
+<span class="nc bnc" id="L640" title="All 4 branches missed.">    if ((attributes == null) || (compare.attributes == null)) {</span>
+<span class="nc" id="L641">      return false;</span>
+    }
+
+<span class="nc" id="L644">    int attr_count1 = attributes.getLength();</span>
+<span class="nc" id="L645">    int attr_count2 = compare.attributes.getLength();</span>
+
+<span class="nc" id="L647">    List&lt;Node&gt; attr1 = new ArrayList&lt;Node&gt;();</span>
+<span class="nc bnc" id="L648" title="All 2 branches missed.">    for (int i = 0; i &lt; attr_count1; i++) {</span>
+<span class="nc" id="L649">      Node node = attributes.item(i);</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">      if (node.getNodeValue().length() == 0) {</span>
+<span class="nc" id="L651">        continue;</span>
+      }
+<span class="nc" id="L653">      attr1.add(node);</span>
+    }
+
+<span class="nc" id="L656">    List&lt;Node&gt; attr2 = new ArrayList&lt;Node&gt;();</span>
+<span class="nc bnc" id="L657" title="All 2 branches missed.">    for (int i = 0; i &lt; attr_count2; i++) {</span>
+<span class="nc" id="L658">      Node node = compare.attributes.item(i);</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">      if (node.getNodeValue().length() == 0) {</span>
+<span class="nc" id="L660">        continue;</span>
+      }
+<span class="nc" id="L662">      attr2.add(node);</span>
+    }
+
+<span class="nc bnc" id="L665" title="All 2 branches missed.">    if (attr1.size() != attr2.size()) {</span>
+<span class="nc" id="L666">      return false;</span>
+    }
+
+<span class="nc bnc" id="L669" title="All 2 branches missed.">    for (int i = 0; i &lt; attr1.size(); i++) {</span>
+<span class="nc" id="L670">      Node n1 = attr1.get(i);</span>
+<span class="nc bnc" id="L671" title="All 2 branches missed.">      if (n1.getLocalName().equals(&quot;name&quot;)</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">          &amp;&amp; n1.getNamespaceURI().equals(OdfDocumentNamespace.STYLE.getUri())) {</span>
+<span class="nc" id="L673">        continue; // do not compare style names</span>
+      }
+<span class="nc" id="L675">      Node n2 = null;</span>
+<span class="nc" id="L676">      int j = 0;</span>
+<span class="nc bnc" id="L677" title="All 2 branches missed.">      for (j = 0; j &lt; attr2.size(); j++) {</span>
+<span class="nc" id="L678">        n2 = attr2.get(j);</span>
+<span class="nc bnc" id="L679" title="All 2 branches missed.">        if (n1.getLocalName().equals(n2.getLocalName())) {</span>
+<span class="nc" id="L680">          String ns1 = n1.getNamespaceURI();</span>
+<span class="nc" id="L681">          String ns2 = n2.getNamespaceURI();</span>
+<span class="nc bnc" id="L682" title="All 6 branches missed.">          if (ns1 != null &amp;&amp; ns2 != null &amp;&amp; ns1.equals(ns2)) {</span>
+<span class="nc" id="L683">            break;</span>
+          }
+        }
+      }
+<span class="nc bnc" id="L687" title="All 2 branches missed.">      if (j == attr2.size()) {</span>
+<span class="nc" id="L688">        return false;</span>
+      }
+
+<span class="nc bnc" id="L691" title="All 2 branches missed.">      if (!n1.getTextContent().equals(n2.getTextContent())) {</span>
+<span class="nc" id="L692">        return false;</span>
+      }
+    }
+
+    // now compare child elements
+<span class="nc" id="L697">    NodeList childs1 = this.getChildNodes();</span>
+<span class="nc" id="L698">    NodeList childs2 = compare.getChildNodes();</span>
+
+<span class="nc" id="L700">    int child_count1 = childs1.getLength();</span>
+<span class="nc" id="L701">    int child_count2 = childs2.getLength();</span>
+<span class="nc bnc" id="L702" title="All 4 branches missed.">    if ((child_count1 == 0) &amp;&amp; (child_count2 == 0)) {</span>
+<span class="nc" id="L703">      return true;</span>
+    }
+
+<span class="nc" id="L706">    List&lt;Node&gt; nodes1 = new ArrayList&lt;Node&gt;();</span>
+<span class="nc bnc" id="L707" title="All 2 branches missed.">    for (int i = 0; i &lt; child_count1; i++) {</span>
+<span class="nc" id="L708">      Node node = childs1.item(i);</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc bnc" id="L710" title="All 2 branches missed.">        if (node.getNodeValue().trim().length() == 0) {</span>
+<span class="nc" id="L711">          continue; // skip whitespace text nodes</span>
+        }
+      }
+<span class="nc" id="L714">      nodes1.add(node);</span>
+    }
+
+<span class="nc" id="L717">    List&lt;Node&gt; nodes2 = new ArrayList&lt;Node&gt;();</span>
+<span class="nc bnc" id="L718" title="All 2 branches missed.">    for (int i = 0; i &lt; child_count2; i++) {</span>
+<span class="nc" id="L719">      Node node = childs2.item(i);</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc bnc" id="L721" title="All 2 branches missed.">        if (node.getNodeValue().trim().length() == 0) {</span>
+<span class="nc" id="L722">          continue; // skip whitespace text nodes</span>
+        }
+      }
+<span class="nc" id="L725">      nodes2.add(node);</span>
+    }
+
+<span class="nc bnc" id="L728" title="All 2 branches missed.">    if (nodes1.size() != nodes2.size()) {</span>
+<span class="nc" id="L729">      return false;</span>
+    }
+
+<span class="nc bnc" id="L732" title="All 2 branches missed.">    for (int i = 0; i &lt; nodes1.size(); i++) {</span>
+<span class="nc" id="L733">      Node n1 = nodes1.get(i);</span>
+<span class="nc" id="L734">      Node n2 = nodes2.get(i);</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">      if (!n1.equals(n2)) {</span>
+<span class="nc" id="L736">        return false;</span>
+      }
+    }
+<span class="nc" id="L739">    return true;</span>
+  }
+
+  protected void onRemoveNode(Node node) {
+<span class="nc bnc" id="L743" title="All 2 branches missed.">    if (node != null) {</span>
+<span class="nc" id="L744">      Node child = node.getFirstChild();</span>
+<span class="nc bnc" id="L745" title="All 2 branches missed.">      while (child != null) {</span>
+<span class="nc" id="L746">        this.onRemoveNode(child);</span>
+<span class="nc" id="L747">        child = child.getNextSibling();</span>
+      }
+
+<span class="nc bnc" id="L750" title="All 2 branches missed.">      if (OdfElement.class.isInstance(node)) {</span>
+<span class="nc" id="L751">        ((OdfElement) node).onRemoveNode();</span>
+      }
+    }
+<span class="nc" id="L754">  }</span>
+
+  protected void onInsertNode(Node node) {
+<span class="nc" id="L757">    Node child = node.getFirstChild();</span>
+<span class="nc bnc" id="L758" title="All 2 branches missed.">    while (child != null) {</span>
+<span class="nc" id="L759">      this.onInsertNode(child);</span>
+<span class="nc" id="L760">      child = child.getNextSibling();</span>
+    }
+
+<span class="nc bnc" id="L763" title="All 2 branches missed.">    if (OdfElement.class.isInstance(node)) {</span>
+<span class="nc" id="L764">      ((OdfElement) node).onInsertNode();</span>
+    }
+<span class="nc" id="L766">  }</span>
+
+<span class="nc" id="L768">  protected void onRemoveNode() {}</span>
+
+<span class="nc" id="L770">  protected void onInsertNode() {}</span>
+
+  @Override
+  public Node insertBefore(Node newChild, Node refChild) throws DOMException {
+<span class="nc" id="L774">    Node n = null;</span>
+<span class="nc" id="L775">    onInsertNode(newChild);</span>
+<span class="nc" id="L776">    n = super.insertBefore(newChild, refChild);</span>
+<span class="nc" id="L777">    raiseComponentSize(newChild);</span>
+<span class="nc" id="L778">    return n;</span>
+  }
+
+  /* Removes the element from the DOM tree, but keeping its ancestors by moving its children in its place */
+  public static Element removeSingleElement(Element oldElement) throws DOMException {
+<span class="nc" id="L783">    Element parent = (Element) oldElement.getParentNode();</span>
+<span class="nc bnc" id="L784" title="All 2 branches missed.">    if (parent != null) {</span>
+<span class="nc" id="L785">      NodeList children = oldElement.getChildNodes();</span>
+<span class="nc" id="L786">      int childCount = children.getLength();</span>
+<span class="nc" id="L787">      Node lastChild = children.item(childCount - 1);</span>
+<span class="nc" id="L788">      parent.replaceChild(lastChild, oldElement);</span>
+      Node newChild;
+<span class="nc bnc" id="L790" title="All 2 branches missed.">      for (int i = childCount - 2; i &gt;= 0; i--) {</span>
+<span class="nc" id="L791">        newChild = children.item(i);</span>
+<span class="nc" id="L792">        parent.insertBefore(newChild, lastChild);</span>
+<span class="nc" id="L793">        lastChild = newChild;</span>
+      }
+    }
+<span class="nc" id="L796">    return parent;</span>
+  }
+
+  @Override
+  public Node removeChild(Node oldChild) throws DOMException {
+<span class="nc" id="L801">    onRemoveNode(oldChild);</span>
+<span class="nc" id="L802">    reduceComponentSize(oldChild);</span>
+<span class="nc" id="L803">    return super.removeChild(oldChild);</span>
+  }
+
+  /** Component size is being reduced by the size of the child */
+  private void reduceComponentSize(Node child) {
+<span class="nc bnc" id="L808" title="All 2 branches missed.">    if (child instanceof Text) {</span>
+<span class="nc" id="L809">      changeSize(-1 * ((Text) child).getLength());</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">    } else if (child instanceof Element) {</span>
+<span class="nc bnc" id="L811" title="All 2 branches missed.">      if (Component.isTextComponentRoot(child)) {</span>
+<span class="nc" id="L812">        changeSize(-1);</span>
+      } else {
+<span class="nc" id="L814">        changeSize(-1 * descendantsCount(child, 0));</span>
+      }
+    }
+<span class="nc" id="L817">  }</span>
+
+  /**
+   * Returns if the text should be returned or is under a nested paragraph or ignored text element
+   * (e.g. text:note-citation).
+   */
+  private boolean isIgnoredText(OdfElement parent) {
+<span class="nc" id="L824">    boolean isIgnored = true;</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">    while (parent != null) {</span>
+<span class="nc bnc" id="L826" title="All 4 branches missed.">      if (parent.isComponentRoot() || parent.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc bnc" id="L827" title="All 2 branches missed.">        if (parent.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L828">          isIgnored = true;</span>
+        } else {
+<span class="nc" id="L830">          isIgnored = false;</span>
+        }
+<span class="nc" id="L832">        break;</span>
+      }
+<span class="nc" id="L834">      parent = parent.getParentAs(OdfElement.class);</span>
+    }
+<span class="nc" id="L836">    return isIgnored;</span>
+  }
+
+  /**
+   * @return true if the element does represent multiple instances. (only applicable for some
+   *     elements as cell or row).
+   */
+  public boolean isRepeatable() {
+<span class="nc" id="L844">    return Boolean.FALSE;</span>
+  }
+
+  /** @return the repetition the element represents, by default it is 1 */
+  public int getRepetition() {
+<span class="nc" id="L849">    return 1;</span>
+  }
+
+  /** Component size is being reduced by the size of the child */
+  private void raiseComponentSize(Node child) {
+<span class="nc bnc" id="L854" title="All 2 branches missed.">    if (child instanceof Text) {</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">      if (!isIgnoredText((OdfElement) child.getParentNode())) {</span>
+<span class="nc" id="L856">        changeSize(((Text) child).getLength());</span>
+      }
+<span class="nc bnc" id="L858" title="All 2 branches missed.">    } else if (child instanceof Element) {</span>
+<span class="nc bnc" id="L859" title="All 4 branches missed.">      if (child instanceof OdfElement &amp;&amp; ((OdfElement) child).isComponentRoot()) {</span>
+<span class="nc bnc" id="L860" title="All 2 branches missed.">        if (!((OdfElement) child).selfAndDescendantTextIgnoredAsComponent()) {</span>
+          // in theory 1 is the default and repeated factors and space count factors should be
+          // applied
+          // it is something different to size (which returns the content size, instead it is like a
+          // width?)
+
+          // Elements with repetition are: text:s, table:table-cell and table:table-row
+<span class="nc" id="L867">          int repetition = ((OdfElement) child).getRepetition();</span>
+<span class="nc bnc" id="L868" title="All 2 branches missed.">          if (repetition != 1) {</span>
+<span class="nc" id="L869">            changeSize(repetition);</span>
+          } else {
+<span class="nc" id="L871">            changeSize(1);</span>
+          }
+<span class="nc" id="L873">        }</span>
+        //				// SPECIAL HANDLING FOR FRAME/IMAGE COMPONENT
+        //			} else if (child instanceof DrawImageElement) {
+        //				Node precedingImageSibling = null;
+        //				precedingImageSibling = child;
+        //				boolean frameAlreadyCount = false;
+        //				while ((precedingImageSibling = precedingImageSibling.getPreviousSibling()) != null) {
+        //					if (precedingImageSibling instanceof DrawImageElement) {
+        //						frameAlreadyCount = true;
+        //					}
+        //				}
+        //				if (!frameAlreadyCount) {
+        //					Node parent = child.getParentNode();
+        //					if (parent != null) {
+        //						Node grandParent = parent.getParentNode();
+        //						if (grandParent != null) {
+        //							((OdfElement) grandParent).changeSize(1);
+        //						}
+        //					}
+        //				}
+      } else {
+        // ToDo: Improvement: we may limit to elements that may be text delimiter (span) or
+        // inbetween a text container and text delimiter (for ongoing recursion)
+<span class="nc" id="L896">        changeSize(descendantsCount(child, 0));</span>
+      }
+    }
+<span class="nc" id="L899">  }</span>
+
+  /** A change of the element will be raised to the top till a component is found */
+  // ToBeMoved to TEXT CONTINER CHILDREN only!
+  private int changeSize(int sizeDifference) {
+<span class="nc" id="L904">    int size = 0;</span>
+<span class="nc bnc" id="L905" title="All 2 branches missed.">    if (sizeDifference != 0) {</span>
+<span class="nc" id="L906">      OdfElement element = this;</span>
+<span class="nc bnc" id="L907" title="All 4 branches missed.">      if (!element.isComponentRoot() &amp;&amp; !isIgnoredElement(element)) {</span>
+        do {
+<span class="nc" id="L909">          element = element.getParentAs(OdfElement.class);</span>
+<span class="nc bnc" id="L910" title="All 6 branches missed.">        } while (element != null &amp;&amp; !element.isComponentRoot() &amp;&amp; !isIgnoredElement(element));</span>
+      }
+<span class="nc bnc" id="L912" title="All 2 branches missed.">      if (element.isComponentRoot()) {</span>
+<span class="nc" id="L913">        element.mComponentSize = element.componentSize() + sizeDifference;</span>
+<span class="nc" id="L914">        size = element.mComponentSize;</span>
+        //				element.mComponentSize += sizeDifference;
+        //				size = element.mComponentSize;
+
+      }
+    }
+<span class="nc" id="L920">    return size;</span>
+  }
+
+  /** Removes all the content from the element */
+  public void removeContent() {
+    // ToDo: Remove Component List Structure -- The first loop is only temporary
+<span class="nc bnc" id="L926" title="All 2 branches missed.">    for (int i = 0; i &lt; mComponent.size(); i++) {</span>
+      // remove component
+<span class="nc" id="L928">      mComponent.remove(i);</span>
+    }
+<span class="nc" id="L930">    mComponentSize = 0;</span>
+<span class="nc" id="L931">    NodeList children = this.getChildNodes();</span>
+<span class="nc bnc" id="L932" title="All 2 branches missed.">    for (int i = children.getLength() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L933">      Node child = children.item(i);</span>
+<span class="nc bnc" id="L934" title="All 2 branches missed.">      if (child != null) {</span>
+<span class="nc" id="L935">        this.removeChild(child);</span>
+      }
+    }
+<span class="nc" id="L938">  }</span>
+
+  @Override
+  public Node replaceChild(Node newChild, Node oldChild) throws DOMException {
+<span class="nc" id="L942">    raiseComponentSize(newChild);</span>
+<span class="nc" id="L943">    onRemoveNode(oldChild);</span>
+<span class="nc" id="L944">    onInsertNode(newChild);</span>
+    // Currently the replace only reduces
+    // reduceComponentSize(oldChild);
+<span class="nc" id="L947">    return super.replaceChild(newChild, oldChild);</span>
+  }
+
+  /**
+   * Accept an visitor instance to allow the visitor to do some operations. Refer to visitor design
+   * pattern to get a better understanding.
+   *
+   * @param visitor an instance of DefaultElementVisitor
+   */
+  public void accept(ElementVisitor visitor) {
+<span class="nc" id="L957">    visitor.visit(this);</span>
+<span class="nc" id="L958">  }</span>
+
+  /** Returns the component reference */
+  public OdfElement getComponentRoot() {
+<span class="nc" id="L962">    OdfElement element = this;</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">    if (!element.isComponentRoot()) {</span>
+      do {
+<span class="nc" id="L965">        element = element.getParentAs(OdfElement.class);</span>
+<span class="nc bnc" id="L966" title="All 4 branches missed.">      } while (element != null &amp;&amp; !element.isComponentRoot());</span>
+    }
+<span class="nc" id="L968">    return element;</span>
+  }
+
+  public void markAsComponentRoot(boolean isRoot) {
+<span class="nc" id="L972">    isComponentRoot = true;</span>
+<span class="nc" id="L973">    OdfElement parent = (OdfElement) getParentNode();</span>
+    // if the component was already added, addChild the size now
+    //		if(parent != null &amp;&amp; this instanceof DrawFrameElement){
+    //			parent.raiseComponentSize(this);
+    //		}
+<span class="nc" id="L978">  }</span>
+
+  public Component getComponent() {
+<span class="nc" id="L981">    return mComponent;</span>
+  }
+
+  public void setComponent(Component component) {
+<span class="nc" id="L985">    mComponent = component;</span>
+<span class="nc" id="L986">  }</span>
+
+  public boolean isComponentRoot() {
+<span class="nc" id="L989">    return isComponentRoot;</span>
+  }
+
+  /**
+   * @return true if the text should not count as for component path nor the element root itself.
+   *     This might occur for nested paragraphs or ignored text element (e.g. text:note-citation).
+   */
+  public boolean selfAndDescendantTextIgnoredAsComponent() {
+<span class="nc" id="L997">    return mIsIgnoredComponent;</span>
+  }
+
+  /**
+   * @param true if the text should not count as for component path nor the element root itself.
+   *     This might occur for nested paragraphs or ignored text element (e.g. text:note-citation).
+   *     For instance called by a SAX Component parser, * * * * * * * see &lt;code&gt;
+   *     org.odftoolkit.odfdom.component.OdfFileSaxHandler&lt;/code&gt;
+   */
+  public void ignoredComponent(boolean isIngoredComponent) {
+<span class="nc" id="L1007">    mIsIgnoredComponent = isIngoredComponent;</span>
+<span class="nc" id="L1008">  }</span>
+
+  /**
+   * If the string is inserted into a text:p/text:h element and it will be inserted in the start/end
+   * all spaces are replaced by &lt;text:s/&gt; element(s). tabulator and linefeeds are being removed.
+   *
+   * &lt;p&gt;If both the previous text node ends with a space and newString starts with a space, we would
+   * need to encode the single leading space as an element, otherwise it would be stripped. Same
+   * occurs for the next text node and an ending space. For Example: &lt;span&gt; text &lt;/span&gt;&lt;text:s
+   * c=&quot;7&quot;/&gt;&lt;span&gt; text2 &lt;/span&gt; &lt;== SAVE when starting ending a span as well with space element
+   * independent of preceding
+   */
+  protected static void appendUsingWhitespaceHandling(
+      Node precedingNode, OdfElement parent, Node followingNode, String newString) {
+    //		addTextNode(precedingNode, parent, followingNode, newString);
+    // only addChild text, if parent exists
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">    if (parent != null) {</span>
+      //            // if there is only one span in a paragraph/heading
+      //            if(parent instanceof TextParagraphElementBase){
+      //                // add the new content to this span
+      //                NodeList children = parent.getChildNodes();
+      //                if(children.getLength() == 1){
+      //                    Node child = children.item(0);
+      //                    if(child instanceof TextSpanElement){
+      //                        parent = (OdfElement) child;
+      //                    }
+      //                }
+      //            }
+<span class="nc" id="L1036">      int spaceCount = 0;</span>
+      // Note: The delta between startPosition and endPosition marks the text to be written out
+      // startPosition will only be raised to endposition, when characters have to be skipped!
+<span class="nc" id="L1039">      int startPos = 0;</span>
+<span class="nc" id="L1040">      int endPos = 0;</span>
+      // check if first character is a white space
+<span class="nc bnc" id="L1042" title="All 2 branches missed.">      for (int i = 0; i &lt; newString.length(); i++) {</span>
+<span class="nc" id="L1043">        char c = newString.charAt(i);</span>
+<span class="nc bnc" id="L1044" title="All 8 branches missed.">        if (c == '\u0020' // space</span>
+            || c == '\t' // \t (tabulator = 0x09)
+            // \r (carriage return = 0x0D)
+            || c == '\r'
+            // \n (line feed =' 0x0A)
+            || c == '\n') {
+<span class="nc" id="L1050">          spaceCount++;</span>
+
+<span class="nc bnc" id="L1052" title="All 2 branches missed.">          if (spaceCount &gt; 1) {</span>
+            // if there are more than one space a space element have to be inserted, write out the
+            // previous spaces
+<span class="nc bnc" id="L1055" title="All 2 branches missed.">            if (endPos - startPos &gt; 0) {</span>
+<span class="nc" id="L1056">              precedingNode =</span>
+<span class="nc" id="L1057">                  addTextNode(</span>
+<span class="nc" id="L1058">                      precedingNode, parent, followingNode, newString.substring(startPos, endPos));</span>
+              // for the single whitespace not written
+            }
+            // NOT including the additional whitespace character
+<span class="nc" id="L1062">            startPos = endPos;</span>
+          }
+        } else { // else if there was no whitespace character found or at the beginning
+<span class="nc bnc" id="L1065" title="All 6 branches missed.">          if (spaceCount &gt; 1 || i == 1 &amp;&amp; spaceCount == 1) {</span>
+<span class="nc" id="L1066">            TextSElement s = new TextSElement((OdfFileDom) parent.getOwnerDocument());</span>
+            // if there were multiple preceing whitespace, write out a space Element
+<span class="nc bnc" id="L1068" title="All 2 branches missed.">            if (spaceCount &gt; 1) {</span>
+<span class="nc" id="L1069">              s.setTextCAttribute(spaceCount);</span>
+            }
+
+            // write out space element
+<span class="nc" id="L1073">            precedingNode = addElementNode(precedingNode, parent, followingNode, s);</span>
+<span class="nc" id="L1074">            endPos += spaceCount;</span>
+<span class="nc" id="L1075">            startPos = endPos;</span>
+<span class="nc" id="L1076">            spaceCount = 0;</span>
+
+            // reset space count to zero as now a character was found
+<span class="nc bnc" id="L1079" title="All 2 branches missed.">          } else if (spaceCount == 1) {</span>
+<span class="nc" id="L1080">            endPos++;</span>
+<span class="nc" id="L1081">            spaceCount = 0;</span>
+          }
+
+          // write out character
+<span class="nc" id="L1085">          endPos++; // including this character</span>
+        }
+      }
+      // reset space count to zero as now a character was found
+<span class="nc bnc" id="L1089" title="All 2 branches missed.">      if (spaceCount &gt; 1) {</span>
+<span class="nc" id="L1090">        TextSElement s = new TextSElement((OdfFileDom) parent.getOwnerDocument());</span>
+        // if there were multiple preceing whitespace, write out a space Element
+<span class="nc bnc" id="L1092" title="All 2 branches missed.">        if (spaceCount &gt; 1) {</span>
+<span class="nc" id="L1093">          s.setTextCAttribute(spaceCount);</span>
+        }
+        // write out space element
+<span class="nc" id="L1096">        precedingNode = addElementNode(precedingNode, parent, followingNode, s);</span>
+<span class="nc" id="L1097">        endPos += spaceCount;</span>
+<span class="nc" id="L1098">        startPos = endPos;</span>
+<span class="nc" id="L1099">        spaceCount = 0;</span>
+      }
+<span class="nc bnc" id="L1101" title="All 2 branches missed.">      if (endPos - startPos &gt; 0) {</span>
+<span class="nc" id="L1102">        precedingNode =</span>
+<span class="nc" id="L1103">            addTextNode(</span>
+<span class="nc" id="L1104">                precedingNode, parent, followingNode, newString.substring(startPos, endPos));</span>
+      }
+<span class="nc bnc" id="L1106" title="All 2 branches missed.">      if (spaceCount == 1) {</span>
+<span class="nc" id="L1107">        TextSElement s = new TextSElement((OdfFileDom) parent.getOwnerDocument());</span>
+<span class="nc" id="L1108">        addElementNode(precedingNode, parent, followingNode, s);</span>
+      }
+<span class="nc" id="L1110">    } else {</span>
+<span class="nc" id="L1111">      Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1112">          .log(Level.SEVERE, &quot;Node parent should not be NULL!&quot;);</span>
+    }
+<span class="nc" id="L1114">  }</span>
+
+  private static Node addElementNode(
+      Node precedingNode, OdfElement parent, Node followingNode, Element newElement) {
+<span class="nc" id="L1118">    Node newNode = null;</span>
+    // APPEND: if there is no text node to expand and no element that follows
+<span class="nc bnc" id="L1120" title="All 2 branches missed.">    if (followingNode == null) {</span>
+<span class="nc" id="L1121">      newNode = parent.appendChild(newElement);</span>
+<span class="nc bnc" id="L1122" title="All 2 branches missed.">    } else if (followingNode != null) {</span>
+      // insert before the given element
+<span class="nc" id="L1124">      newNode = parent.insertBefore(newElement, followingNode);</span>
+    }
+<span class="nc" id="L1126">    return newNode;</span>
+  }
+
+  private static Node addTextNode(
+      Node precedingNode, OdfElement parent, Node followingNode, String newString) {
+<span class="nc" id="L1131">    Node newNode = null;</span>
+    // APPEND: if there is no text node to expand and no element that follows
+<span class="nc bnc" id="L1133" title="All 10 branches missed.">    if (precedingNode == null &amp;&amp; followingNode == null</span>
+        || precedingNode != null &amp;&amp; precedingNode instanceof Element &amp;&amp; followingNode == null) {
+<span class="nc" id="L1135">      newNode = parent.appendChild(parent.getOwnerDocument().createTextNode(newString));</span>
+    } else {
+      // INSERT:
+<span class="nc bnc" id="L1138" title="All 4 branches missed.">      if (precedingNode != null &amp;&amp; precedingNode instanceof Text) {</span>
+        // insert at the end of the given text
+<span class="nc" id="L1140">        ((Text) precedingNode).appendData(newString);</span>
+<span class="nc" id="L1141">        newNode = precedingNode;</span>
+<span class="nc bnc" id="L1142" title="All 2 branches missed.">      } else if (followingNode != null) {</span>
+        // insert before the given element
+<span class="nc" id="L1144">        newNode =</span>
+<span class="nc" id="L1145">            parent.insertBefore(parent.getOwnerDocument().createTextNode(newString), followingNode);</span>
+      }
+    }
+<span class="nc" id="L1148">    return newNode;</span>
+  }
+
+  private static Node addElementNode(
+      Node precedingNode, OdfElement parent, Node followingNode, OdfElement newElement) {
+<span class="nc" id="L1153">    Node newNode = null;</span>
+    // APPEND: if there is no text node to expand and no element that follows
+<span class="nc bnc" id="L1155" title="All 2 branches missed.">    if (followingNode == null) {</span>
+<span class="nc" id="L1156">      newNode = parent.appendChild(newElement);</span>
+    } else {
+      // INSERT:
+      // insert before the given following-node
+<span class="nc" id="L1160">      newNode = parent.insertBefore(newElement, followingNode);</span>
+    }
+<span class="nc" id="L1162">    return newNode;</span>
+  }
+
+  /**
+   * Splitting the element at the given position into two halves
+   *
+   * @param posStart The logical position of the first character (or other paragraph child
+   *     component) that will be moved to the beginning of the new paragraph. Counting starts with
+   *     0.
+   * @return the new created second text container
+   */
+  public OdfElement split(int posStart) {
+<span class="nc" id="L1174">    OdfElement newSecondElement = this;</span>
+    // split with 0 is allowed. For instance to create new paragraphs!
+<span class="nc bnc" id="L1176" title="All 2 branches missed.">    if (posStart &gt; -1) {</span>
+<span class="nc" id="L1177">      newSecondElement = (OdfElement) this.cloneNode(true);</span>
+<span class="nc" id="L1178">      int size = OdfElement.getContentSize(this);</span>
+
+      // This will become the first paragraph
+      // Only delete if the start node is within the component length
+      // Do NOT do a a
+      // if there is only one character the size is 1 and the textPosStart would be 0
+      // TODO FIXME: Why was the parent DELETEd, when next line was after the condition??!?
+<span class="nc" id="L1185">      Element parent = (Element) this.getParentNode();</span>
+<span class="nc bnc" id="L1186" title="All 2 branches missed.">      if (size &gt; posStart) {</span>
+<span class="nc" id="L1187">        this.delete(posStart, size);</span>
+      }
+<span class="nc" id="L1189">      Node _nextSibling = this.getNextSibling();</span>
+<span class="nc bnc" id="L1190" title="All 2 branches missed.">      if (_nextSibling != null) {</span>
+<span class="nc" id="L1191">        parent.insertBefore(newSecondElement, _nextSibling);</span>
+      } else {
+<span class="nc" id="L1193">        parent.appendChild(newSecondElement);</span>
+      }
+
+      // only delete if the start position is not before the first component
+<span class="nc bnc" id="L1197" title="All 2 branches missed.">      if (posStart != 0) {</span>
+        // minus one, as the textPosStart was already in the first Element
+<span class="nc" id="L1199">        newSecondElement.delete(0, posStart - 1);</span>
+      }
+    }
+    // FIXME: There is a better way than cloning and deleting two halves, but it works for POC
+    // splitNodes(this.getFirstChild(), textPosStart, 0);
+<span class="nc" id="L1204">    return newSecondElement;</span>
+  }
+
+  /** ******************************************************** */
+  /**
+   * Receives node from this text container element.
+   *
+   * @param textPosStart The start delimiter for the child
+   * @return the child node might be text or element
+   */
+  public Node receiveNode(int textPosStart) {
+<span class="nc bnc" id="L1215" title="All 2 branches missed.">    if (textPosStart &lt; 0) {</span>
+<span class="nc" id="L1216">      Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1217">          .warning(</span>
+              &quot;A negative index &quot; + textPosStart + &quot; was given to insert text into the paragraph!&quot;);
+    }
+    // start recrusion
+<span class="nc" id="L1221">    ArrayList&lt;Node&gt; nodeContainer = new ArrayList&lt;Node&gt;(1);</span>
+<span class="nc bnc" id="L1222" title="All 4 branches missed.">    boolean withinTextContainer = this instanceof TextPElement || this instanceof TextHElement;</span>
+<span class="nc" id="L1223">    TextContentTraverser.traverseSiblings(</span>
+<span class="nc" id="L1224">        this.getFirstChild(),</span>
+        0,
+        textPosStart,
+        textPosStart + 1,
+        TextContentTraverser.Algorithm.RECEIVE,
+        nodeContainer,
+<span class="nc" id="L1230">        withinTextContainer);</span>
+
+<span class="nc" id="L1232">    Node receivedNode = null;</span>
+<span class="nc bnc" id="L1233" title="All 2 branches missed.">    if (nodeContainer.size() == 1) {</span>
+<span class="nc" id="L1234">      receivedNode = nodeContainer.get(0);</span>
+    }
+<span class="nc" id="L1236">    return receivedNode;</span>
+  }
+
+  /**
+   * @param textPosStart the first text level component to be marked, start counting with 0
+   * @param textPosEnd the last text level component to be marked, start counting with 0
+   * @param newSelection the element that should embrace the text defined by the positions provided
+   */
+  public void markText(int textPosStart, int textPosEnd, JSONObject formatChanges) {
+<span class="nc bnc" id="L1245" title="All 2 branches missed.">    if (formatChanges != null) {</span>
+<span class="nc bnc" id="L1246" title="All 2 branches missed.">      if (textPosStart &lt; 0) {</span>
+<span class="nc" id="L1247">        Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1248">            .warning(</span>
+                &quot;A negative index &quot;
+                    + textPosStart
+                    + &quot; was given to insert text into the paragraph!&quot;);
+      }
+<span class="nc bnc" id="L1253" title="All 2 branches missed.">      if (textPosEnd &lt; textPosStart) {</span>
+        // might be caused by invalid span around whitespace that is being eleminated by ODF
+        // whitespacehandling
+<span class="nc" id="L1256">        Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1257">            .warning(</span>
+                &quot;The start index &quot;
+                    + textPosStart
+                    + &quot; shall not be higher than the end index &quot;
+                    + textPosEnd
+                    + &quot;!&quot;);
+      }
+      // incrementing textPosEnd to get in sync with string counting
+<span class="nc" id="L1265">      TextContentTraverser.traverseSiblings(</span>
+<span class="nc" id="L1266">          this.getFirstChild(),</span>
+          0,
+          textPosStart,
+          textPosEnd + 1,
+          TextContentTraverser.Algorithm.MARK,
+          formatChanges,
+          new HashMap&lt;OdfName, OdfElement&gt;());
+    }
+<span class="nc" id="L1274">  }</span>
+
+  /** Counts the number of descendant components */
+  public int countDescendantComponents() {
+<span class="nc" id="L1278">    return TextContentTraverser.traverseSiblings(</span>
+<span class="nc" id="L1279">        this.getFirstChild(),</span>
+        0,
+        0,
+        Integer.MAX_VALUE,
+        TextContentTraverser.Algorithm.COUNT,
+<span class="nc" id="L1284">        Integer.MAX_VALUE,</span>
+        Boolean.TRUE);
+  }
+
+  /** Counts the number of child components */
+  public int countChildComponents(Boolean hasTextComponents) {
+<span class="nc" id="L1290">    return TextContentTraverser.traverseSiblings(</span>
+<span class="nc" id="L1291">        this.getFirstChild(),</span>
+        0,
+        0,
+        Integer.MAX_VALUE,
+        TextContentTraverser.Algorithm.COUNT,
+<span class="nc" id="L1296">        Integer.MAX_VALUE,</span>
+        hasTextComponents);
+  }
+
+  // Below recursion works, the new one not yet..
+  //	public void moveChildrenTo(Element newParent) {
+  //		// incrementing textPosEnd to get in sync with string counting
+  //		TextContentTraverser.traverseSiblings(this.getFirstChild(), 0, 0, Integer.MAX_VALUE,
+  // TextContentTraverser.Algorithm.MOVE, newParent);
+  //	}
+  public void moveChildrenTo(Element newParent) {
+<span class="nc" id="L1307">    moveNodes(this.getFirstChild(), newParent);</span>
+<span class="nc" id="L1308">  }</span>
+
+  private void moveNodes(Node node, Element newParent) {
+<span class="nc bnc" id="L1311" title="All 2 branches missed.">    while (node != null) {</span>
+      // IMPORTANT: Get next sibling first, otherwise references get lost when appending to new
+      // parent
+<span class="nc" id="L1314">      Node _nextSibling = node.getNextSibling();</span>
+<span class="nc bnc" id="L1315" title="All 2 branches missed.">      if (node instanceof Element) {</span>
+<span class="nc" id="L1316">        newParent.appendChild(node);</span>
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">      } else if (node instanceof Text) {</span>
+<span class="nc" id="L1318">        moveTextNode((Text) node, newParent);</span>
+      }
+<span class="nc" id="L1320">      node = _nextSibling;</span>
+<span class="nc" id="L1321">    }</span>
+<span class="nc" id="L1322">  }</span>
+
+  private void moveTextNode(Text node, Element newParent) {
+<span class="nc bnc" id="L1325" title="All 2 branches missed.">    if (node != null) {</span>
+<span class="nc" id="L1326">      newParent.appendChild(node);</span>
+    }
+<span class="nc" id="L1328">  }</span>
+
+  /**
+   * Insert text to a certain position. The text will be appended to the previous position text, so
+   * the span of the previous character will be expanded
+   *
+   * @param newString string to be inserted
+   * @param position text index of the new string
+   */
+  public void insert(String newString, int textPosStart) {
+<span class="nc bnc" id="L1338" title="All 4 branches missed.">    if (newString != null &amp;&amp; !newString.isEmpty()) {</span>
+<span class="nc" id="L1339">      insertContent(newString, textPosStart);</span>
+    }
+<span class="nc" id="L1341">  }</span>
+
+  public void insert(Node newNode, int textPosStart) {
+<span class="nc bnc" id="L1344" title="All 2 branches missed.">    if (newNode != null) {</span>
+<span class="nc" id="L1345">      insertContent(newNode, textPosStart);</span>
+    }
+<span class="nc" id="L1347">  }</span>
+
+  /**
+   * Insert text to a certain position. The text will be appended to the previous position text, so
+   * the span of the previous character will be expanded
+   *
+   * @param newString string to be inserted
+   * @param position text index of the new string
+   */
+  private void insertContent(Object content, int textPosStart) { // parameter order?
+<span class="nc bnc" id="L1357" title="All 2 branches missed.">    if (textPosStart &lt; 0) {</span>
+<span class="nc" id="L1358">      Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1359">          .warning(</span>
+              &quot;A negative index &quot; + textPosStart + &quot; was given to insert text into the paragraph!&quot;);
+    }
+<span class="nc" id="L1362">    Node firstChild = this.getFirstChild();</span>
+<span class="nc bnc" id="L1363" title="All 2 branches missed.">    if (firstChild == null) {</span>
+      // if there is no new node, simply exchange multiple whitespaces with &lt;text:s&gt;
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">      if (content instanceof String) {</span>
+<span class="nc" id="L1366">        appendUsingWhitespaceHandling(null, this, null, (String) content);</span>
+<span class="nc bnc" id="L1367" title="All 2 branches missed.">      } else if (content instanceof Element) {</span>
+<span class="nc" id="L1368">        this.appendChild((Element) content);</span>
+      }
+    } else {
+<span class="nc" id="L1371">      List&lt;Object&gt; newData = new ArrayList&lt;Object&gt;(2);</span>
+<span class="nc" id="L1372">      newData.add(content);</span>
+<span class="nc" id="L1373">      int currentPos =</span>
+<span class="nc" id="L1374">          TextContentTraverser.traverseSiblings(</span>
+              firstChild,
+              0,
+              textPosStart,
+              textPosStart,
+              TextContentTraverser.Algorithm.INSERT,
+              newData);
+<span class="nc bnc" id="L1381" title="All 2 branches missed.">      if (newData.size() == 1) {</span>
+        // if there is were element(s), but no components within this element
+<span class="nc bnc" id="L1383" title="All 2 branches missed.">        if (content instanceof String) {</span>
+<span class="nc" id="L1384">          appendUsingWhitespaceHandling(null, this, null, (String) content);</span>
+<span class="nc bnc" id="L1385" title="All 2 branches missed.">        } else if (content instanceof Element) {</span>
+<span class="nc" id="L1386">          this.appendChild((Element) content);</span>
+        }
+      }
+      //				if (currentPos &gt; textPosStart) {
+      //					Logger.getLogger(OdfElement.class.getName()).warning(&quot;The index &quot; + textPosStart + &quot; is
+      // outside the existing text of the paragraph!&quot;);
+      //				}
+    }
+<span class="nc" id="L1394">  }</span>
+
+  /**
+   * Deletes text from this paragraph element.
+   *
+   * @param textPosStart Counting starts with 0, which is the first character of the paragraph.
+   * @param textPosEnd The end delimiter for the deletion. To delete text to the end of the
+   *     paragraph, as represent for the end of the paragraph Integer.MAX_VALUE can be used.
+   */
+  public void delete(int textPosStart, int textPosEnd) {
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">    if (textPosStart &lt; 0) {</span>
+<span class="nc" id="L1405">      Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1406">          .warning(</span>
+              &quot;A negative index &quot; + textPosStart + &quot; was given to insert text into the paragraph!&quot;);
+    }
+<span class="nc bnc" id="L1409" title="All 2 branches missed.">    if (textPosEnd &lt; textPosStart) {</span>
+<span class="nc" id="L1410">      Logger.getLogger(OdfElement.class.getName())</span>
+<span class="nc" id="L1411">          .warning(</span>
+              &quot;The start index &quot;
+                  + textPosStart
+                  + &quot; have to be higher than the end index &quot;
+                  + textPosEnd
+                  + &quot;!&quot;);
+    }
+
+    /**
+     * Deletion implementation: 1) The text position of the first deletion will be searched. 2)
+     * Afterwards all following-sibling, text and nodes will be deleted, until the end text position
+     * is found 3) Split the text take the returned and remove it from parent
+     */
+<span class="nc" id="L1424">    List deleteStatus = new ArrayList(1);</span>
+
+    // start recrusion
+<span class="nc" id="L1427">    TextContentTraverser.traverseSiblings(</span>
+<span class="nc" id="L1428">        this.getFirstChild(),</span>
+        0,
+        textPosStart,
+        textPosEnd + 1,
+        TextContentTraverser.Algorithm.DELETE,
+        deleteStatus);
+<span class="nc" id="L1434">  }</span>
+
+  private static class TextContentTraverser {
+
+    /**
+     * @param node the element node will be checked if it is a text or an element. If an element it
+     *     will be dispatched to check component than executed
+     * @param currentPos the current component position
+     * @param posStart the text position where the span starts
+     * @param posEnd the text position, where the span ends (one higher as the last component number
+     *     to be included)
+     * @param algorithm dependent on this variable a different subroutine is being used after
+     *     traversing the sub-tree, e.g. insert, delete, mark, count..
+     * @param data differs from the type of algorithm, e.g. for insert it contains the data to be
+     *     inserted
+     * @return the current position after the node was processed
+     */
+    private static int traverseSiblings(
+        Node node, int currentPos, int posStart, int posEnd, Algorithm algorithm, Object... data) {
+      // loop to take over components into the span &amp; split them if required, until final position
+      // was reached!
+<span class="nc bnc" id="L1455" title="All 2 branches missed.">      if (algorithm.equals(Algorithm.DELETE)) {</span>
+        // position equal as after the last found even unknown components will be deleted
+<span class="nc bnc" id="L1457" title="All 4 branches missed.">        while (node != null &amp;&amp; currentPos &lt;= posEnd) {</span>
+          // IMPORTANT: get next sibling first, otherwise references get lost by Xerces during
+          // splitting
+<span class="nc" id="L1460">          Node _nextSibling = node.getNextSibling();</span>
+<span class="nc bnc" id="L1461" title="All 2 branches missed.">          if (node instanceof Element) {</span>
+            // ** THE COMMENTED CODE BELOW REMOVED A COMPONENT, WHICH BECAME EMPTY AFTER DELETING
+            // SOME CONTENT.
+            // ** THIS IS NOW CONSIDERED HARMFUL, AS PARAGRAPH/HEADING/TABLE ALWAYS REMAIN
+            //						int countBefore = ((List) data).size();
+<span class="nc" id="L1466">            currentPos =</span>
+<span class="nc" id="L1467">                checkElementNode((Element) node, currentPos, posStart, posEnd, algorithm, data[0]);</span>
+            // OPTIMIZATION: the data is being used as flag to realize, when the element being
+            // checked does not contain any component
+            //						List deleteStatus = (List) data;
+            //						int countAfter = deleteStatus.size();
+            //						if (countBefore &lt; countAfter &amp;&amp; (Boolean) deleteStatus.get(0) &amp;&amp; ((OdfElement)
+            // node).countDescendantComponents() == 0) {
+            //							Element parent = (Element) node.getParentNode();
+            //							if (parent != null) {
+            //								// delete the empty boilerplate
+            //								parent.removeChild(node);
+            //								// reset the status
+            //								deleteStatus.clear();
+            //							}
+            //						}
+<span class="nc bnc" id="L1482" title="All 2 branches missed.">          } else if (node instanceof Text) {</span>
+<span class="nc" id="L1483">            currentPos = algorithm.execute(node, currentPos, posStart, posEnd, data[0]);</span>
+          }
+          // next sibling will be checked
+<span class="nc" id="L1486">          node = _nextSibling;</span>
+<span class="nc" id="L1487">        }</span>
+<span class="nc bnc" id="L1488" title="All 2 branches missed.">      } else if (algorithm.equals(Algorithm.INSERT)) {</span>
+
+        // position equal as it could be inserted before on 0th (first) place
+<span class="nc bnc" id="L1491" title="All 8 branches missed.">        while (node != null &amp;&amp; (currentPos &lt; posEnd || (posEnd == 0 &amp;&amp; currentPos == 0))) {</span>
+          // IMPORTANT: get next sibling first, otherwise references get lost by Xerces during
+          // splitting
+<span class="nc" id="L1494">          Node _nextSibling = node.getNextSibling();</span>
+<span class="nc bnc" id="L1495" title="All 2 branches missed.">          if (node instanceof Element) {</span>
+<span class="nc" id="L1496">            currentPos =</span>
+<span class="nc" id="L1497">                checkElementNode((Element) node, currentPos, posStart, posEnd, algorithm, data[0]);</span>
+<span class="nc bnc" id="L1498" title="All 2 branches missed.">          } else if (node instanceof Text) {</span>
+<span class="nc" id="L1499">            currentPos = algorithm.execute(node, currentPos, posStart, posEnd, data[0]);</span>
+          }
+          // next sibling will be checked
+<span class="nc" id="L1502">          node = _nextSibling;</span>
+<span class="nc" id="L1503">        }</span>
+<span class="nc bnc" id="L1504" title="All 2 branches missed.">      } else if (algorithm.equals(Algorithm.COUNT)) {</span>
+<span class="nc bnc" id="L1505" title="All 8 branches missed.">        while (node != null &amp;&amp; (currentPos &lt; posEnd || (posEnd == 0 &amp;&amp; currentPos == 0))) {</span>
+          // IMPORTANT: get next sibling first, otherwise references get lost by Xerces during
+          // splitting
+<span class="nc" id="L1508">          Node _nextSibling = node.getNextSibling();</span>
+<span class="nc bnc" id="L1509" title="All 2 branches missed.">          if (node instanceof Element) {</span>
+<span class="nc" id="L1510">            currentPos =</span>
+<span class="nc" id="L1511">                checkElementNode(</span>
+                    (Element) node, currentPos, posStart, posEnd, algorithm, data[0], data[1]);
+<span class="nc bnc" id="L1513" title="All 4 branches missed.">          } else if (node instanceof Text &amp;&amp; (Boolean) data[1]) {</span>
+<span class="nc" id="L1514">            currentPos = algorithm.execute(node, currentPos, posStart, posEnd, data[0], data[1]);</span>
+          }
+          // next sibling will be checked
+<span class="nc" id="L1517">          node = _nextSibling;</span>
+<span class="nc" id="L1518">        }</span>
+<span class="nc bnc" id="L1519" title="All 2 branches missed.">      } else if (algorithm.equals(Algorithm.MARK)) {</span>
+<span class="nc bnc" id="L1520" title="All 4 branches missed.">        while (node != null &amp;&amp; currentPos &lt; posEnd) {</span>
+          // IMPORTANT: get next sibling first, otherwise references get lost by Xerces during
+          // splitting
+<span class="nc" id="L1523">          Node _nextSibling = node.getNextSibling();</span>
+<span class="nc" id="L1524">          currentPos = algorithm.execute(node, currentPos, posStart, posEnd, data[0], data[1]);</span>
+<span class="nc" id="L1525">          node = _nextSibling;</span>
+<span class="nc" id="L1526">        }</span>
+      } else {
+<span class="nc" id="L1528">        boolean withinTextContainer = (Boolean) data[1];</span>
+<span class="nc bnc" id="L1529" title="All 4 branches missed.">        while (node != null &amp;&amp; currentPos &lt; posEnd) {</span>
+          // IMPORTANT: get next sibling first, otherwise references get lost by Xerces during
+          // splitting
+<span class="nc" id="L1532">          Node _nextSibling = node.getNextSibling();</span>
+          // ToDo: || algorithm.equals(Algorithm.MOVE)
+<span class="nc bnc" id="L1534" title="All 2 branches missed.">          if (node instanceof Element) {</span>
+            // if not yet marked as text container (text traversering enabled), check if passing a
+            // container
+<span class="nc bnc" id="L1537" title="All 2 branches missed.">            if (withinTextContainer == false) {</span>
+<span class="nc bnc" id="L1538" title="All 4 branches missed.">              if (node instanceof TextPElement || node instanceof TextHElement) {</span>
+<span class="nc" id="L1539">                data[1] = Boolean.TRUE;</span>
+              }
+            }
+<span class="nc" id="L1542">            currentPos =</span>
+<span class="nc" id="L1543">                checkElementNode((Element) node, currentPos, posStart, posEnd, algorithm, data);</span>
+<span class="nc bnc" id="L1544" title="All 4 branches missed.">          } else if (node instanceof Text &amp;&amp; withinTextContainer) {</span>
+<span class="nc" id="L1545">            currentPos = algorithm.execute(node, currentPos, posStart, posEnd, data);</span>
+          }
+          // next sibling will be checked
+<span class="nc" id="L1548">          node = _nextSibling;</span>
+<span class="nc" id="L1549">        }</span>
+      }
+<span class="nc" id="L1551">      return currentPos;</span>
+    }
+
+    /**
+     * @param currentNode the element currentNode will be checked if it is a component. If a
+     *     component it will be executed fully or partly moved into the span
+     * @param currentPos the current component position
+     * @param posStart the text position where the span starts
+     * @param posEnd the text position, where the span ends (one higher as the last component number
+     *     to be included)
+     * @param newSpan the span collecting the marked components
+     * @return
+     */
+    private static int checkElementNode(
+        Element currentNode,
+        int currentPos,
+        int posStart,
+        int posEnd,
+        Algorithm algorithm,
+        Object... data) {
+<span class="nc bnc" id="L1571" title="All 4 branches missed.">      if (currentNode != null &amp;&amp; !OdfElement.isIgnoredElement(currentNode)) {</span>
+<span class="nc bnc" id="L1572" title="All 2 branches missed.">        if (currentNode instanceof OdfElement</span>
+<span class="nc bnc" id="L1573" title="All 4 branches missed.">            &amp;&amp; ((OdfElement) currentNode).isComponentRoot()</span>
+            &amp;&amp; !((OdfElement) currentNode).mIsIgnoredComponent) {
+<span class="nc" id="L1575">          currentPos = algorithm.execute(currentNode, currentPos, posStart, posEnd, data);</span>
+        } else {
+          // if element is no component, neglect the element (e.g. another &lt;text:span&gt;, but analyze
+          // its content
+<span class="nc" id="L1579">          Node firstChild = currentNode.getFirstChild();</span>
+<span class="nc bnc" id="L1580" title="All 2 branches missed.">          if (firstChild != null) {</span>
+<span class="nc" id="L1581">            currentPos =</span>
+<span class="nc" id="L1582">                traverseSiblings(firstChild, currentPos, posStart, posEnd, algorithm, data);</span>
+          }
+        }
+      }
+<span class="nc" id="L1586">      return currentPos;</span>
+    }
+
+    /**
+     * @param content the content to be formatted. Will be moved from its former parent into the
+     *     span/anchor.
+     * @param _nextSibling the span will be added in front of the sibling or appended to the parent
+     *     if the sibling is NULL
+     * @param formatChanges the format changes to be applied to the content will be moved to
+     */
+    private static void formatContent(
+        Node content,
+        Node _nextSibling,
+        JSONObject formatChanges,
+        Map&lt;OdfName, OdfElement&gt; formatElementHolder) {
+<span class="nc" id="L1601">      OdfFileDom xmlDoc = (OdfFileDom) content.getOwnerDocument();</span>
+      // 2DO: What if I have an anchor AND an span? we have to add it one by one first anchor
+<span class="nc" id="L1603">      JSONObject charFormatChanges = formatChanges.optJSONObject(&quot;character&quot;);</span>
+      // if a reference should be added for the given content
+<span class="nc" id="L1605">      TextAElement newAElement = null;</span>
+      // add an anchor with hyperlink if necessary
+<span class="nc bnc" id="L1607" title="All 2 branches missed.">      if (charFormatChanges != null</span>
+<span class="nc bnc" id="L1608" title="All 2 branches missed.">          &amp;&amp; charFormatChanges.has(&quot;url&quot;)</span>
+<span class="nc bnc" id="L1609" title="All 2 branches missed.">          &amp;&amp; !charFormatChanges.get(&quot;url&quot;).equals(JSONObject.NULL)) {</span>
+<span class="nc" id="L1610">        newAElement =</span>
+<span class="nc" id="L1611">            getAnchorElement(</span>
+<span class="nc" id="L1612">                (Node) content, xmlDoc, charFormatChanges.optString(&quot;url&quot;), formatElementHolder);</span>
+        // if an anchor was reused, do not add it
+<span class="nc bnc" id="L1614" title="All 2 branches missed.">        if (!newAElement.equals(content)) {</span>
+<span class="nc" id="L1615">          addNewParent(content, _nextSibling, newAElement);</span>
+        }
+<span class="nc" id="L1617">        _nextSibling = null;</span>
+      }
+
+<span class="nc bnc" id="L1620" title="All 2 branches missed.">      if (newAElement != null</span>
+          // NOTE: Calc Issue workaround: No span within anchors possible in OpenOffice CALC (no
+          // text will be shown)
+<span class="nc bnc" id="L1623" title="All 2 branches missed.">          &amp;&amp; (xmlDoc.getDocument() instanceof OdfSpreadsheetDocument</span>
+              // NOTE: Annotation workaround: No span within anchors possible in Annotations (no
+              // text will be shown)
+<span class="nc bnc" id="L1626" title="All 2 branches missed.">              || isOfficeAnnotationChild(newAElement))) {</span>
+<span class="nc" id="L1627">        NodeList innerSpans =</span>
+<span class="nc" id="L1628">            newAElement.getElementsByTagNameNS(OdfDocumentNamespace.TEXT.getUri(), &quot;span&quot;);</span>
+<span class="nc" id="L1629">        int spanCount = innerSpans.getLength();</span>
+<span class="nc bnc" id="L1630" title="All 2 branches missed.">        for (int i = spanCount - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L1631">          TextSpanElement innerSpan = (TextSpanElement) innerSpans.item(i);</span>
+<span class="nc" id="L1632">          OdfElement.removeSingleElement(innerSpan);</span>
+        }
+<span class="nc" id="L1634">      } else {</span>
+        // the changes might be only deletion OR only addition OR a mix of both
+<span class="nc" id="L1636">        TextSpanElement newSpanElement = getSpanElement(xmlDoc, formatChanges, formatElementHolder);</span>
+        // if a new span exist
+<span class="nc bnc" id="L1638" title="All 2 branches missed.">        if (newSpanElement != null) {</span>
+<span class="nc bnc" id="L1639" title="All 2 branches missed.">          if (!newSpanElement.hasAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;style-name&quot;)) {</span>
+<span class="nc" id="L1640">            newSpanElement = null;</span>
+          } else {
+<span class="nc" id="L1642">            addNewParent(content, _nextSibling, newSpanElement);</span>
+          }
+        }
+<span class="nc bnc" id="L1645" title="All 2 branches missed.">        formatDescendants(</span>
+            content,
+            newSpanElement,
+<span class="nc bnc" id="L1648" title="All 2 branches missed.">            charFormatChanges != null &amp;&amp; charFormatChanges.has(&quot;url&quot;),</span>
+            xmlDoc,
+            formatChanges,
+            formatElementHolder);
+      }
+<span class="nc" id="L1653">    }</span>
+
+    // Annotation workaround: No span within anchors possible in Annotations (no text will be shown)
+    private static boolean isOfficeAnnotationChild(NodeImpl element) {
+<span class="nc" id="L1657">      return isOfficeAnnotationChild(element, 4);</span>
+    }
+
+    private static boolean isOfficeAnnotationChild(NodeImpl element, int rec) {
+<span class="nc bnc" id="L1661" title="All 2 branches missed.">      if (null != element) {</span>
+<span class="nc bnc" id="L1662" title="All 2 branches missed.">        if (element instanceof OfficeAnnotationElement) {</span>
+<span class="nc" id="L1663">          return true;</span>
+        } else {
+<span class="nc bnc" id="L1665" title="All 4 branches missed.">          if (rec &gt; 0 &amp;&amp; element instanceof OdfElement) {</span>
+<span class="nc" id="L1666">            return isOfficeAnnotationChild(((OdfElement) element).ownerNode, rec - 1);</span>
+          } else {
+<span class="nc" id="L1668">            return false;</span>
+          }
+        }
+      } else {
+<span class="nc" id="L1672">        return false;</span>
+      }
+    }
+
+    private static void formatDescendants(
+        Node content,
+        TextSpanElement newSpan,
+        boolean removeAnchors,
+        OdfFileDom ownerDoc,
+        JSONObject formatChanges,
+        Map&lt;OdfName, OdfElement&gt; formatElementHolder) {
+<span class="nc bnc" id="L1683" title="All 2 branches missed.">      if (content instanceof TextSpanElement) {</span>
+<span class="nc" id="L1684">        mergeSpans(</span>
+            (TextSpanElement) content, newSpan, ownerDoc, formatChanges, formatElementHolder);
+      }
+<span class="nc bnc" id="L1687" title="All 4 branches missed.">      while (content instanceof TextAElement &amp;&amp; removeAnchors) {</span>
+<span class="nc" id="L1688">        content = removeSingleNode(content, content.getNextSibling());</span>
+<span class="nc bnc" id="L1689" title="All 2 branches missed.">        if (content instanceof TextSpanElement) {</span>
+<span class="nc" id="L1690">          mergeSpans(</span>
+              (TextSpanElement) content, newSpan, ownerDoc, formatChanges, formatElementHolder);
+        }
+      }
+
+<span class="nc bnc" id="L1695" title="All 2 branches missed.">      if (content.hasChildNodes()) {</span>
+<span class="nc" id="L1696">        NodeList children = content.getChildNodes();</span>
+<span class="nc bnc" id="L1697" title="All 2 branches missed.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L1698">          Node child = children.item(i);</span>
+<span class="nc bnc" id="L1699" title="All 2 branches missed.">          if (child instanceof Element) {</span>
+<span class="nc" id="L1700">            formatDescendants(</span>
+                child, newSpan, removeAnchors, ownerDoc, formatChanges, formatElementHolder);
+          }
+        }
+      }
+<span class="nc" id="L1705">    }</span>
+
+    private static TextSpanElement mergeSpans(
+        TextSpanElement content,
+        TextSpanElement newSpan,
+        OdfFileDom ownerDoc,
+        JSONObject formatChanges,
+        Map&lt;OdfName, OdfElement&gt; formatElementHolder) {
+<span class="nc bnc" id="L1713" title="All 4 branches missed.">      if (newSpan != null &amp;&amp; content != newSpan) {</span>
+<span class="nc" id="L1714">        String originalStyleName = newSpan.getStyleName();</span>
+<span class="nc" id="L1715">        content = (TextSpanElement) OdfStyle.mergeSelectionWithSameRange(newSpan, content);</span>
+<span class="nc" id="L1716">        String mergedStyleName = newSpan.getStyleName();</span>
+        // if the style name was altered from the new span being added
+<span class="nc bnc" id="L1718" title="All 2 branches missed.">        if (!originalStyleName.equals(mergedStyleName)) {</span>
+          // create a new one
+<span class="nc" id="L1720">          TextSpanElement originSpan = new TextSpanElement(ownerDoc);</span>
+          // add the original style-name
+<span class="nc" id="L1722">          originSpan.setAttributeNS(</span>
+<span class="nc" id="L1723">              OdfDocumentNamespace.TEXT.getUri(), &quot;text:style-name&quot;, originalStyleName);</span>
+          // add restore it back to the container, for the following containers, so they won't be
+          // influenced by the merge
+<span class="nc" id="L1726">          formatElementHolder.put(TextSpanElement.ELEMENT_NAME, originSpan);</span>
+        }
+      }
+<span class="nc" id="L1729">      JsonOperationConsumer.addStyle(formatChanges, content, ownerDoc);</span>
+<span class="nc" id="L1730">      return content;</span>
+    }
+
+    private static void addNewParent(Node existingChild, Node _nextSibling, OdfElement newParent) {
+<span class="nc" id="L1734">      Node parent = existingChild.getParentNode();</span>
+<span class="nc" id="L1735">      parent.removeChild(existingChild);</span>
+<span class="nc" id="L1736">      newParent.appendChild(existingChild);</span>
+<span class="nc bnc" id="L1737" title="All 2 branches missed.">      if (_nextSibling != null) {</span>
+<span class="nc" id="L1738">        parent.insertBefore(newParent, _nextSibling);</span>
+      } else {
+<span class="nc" id="L1740">        parent.appendChild(newParent);</span>
+      }
+<span class="nc" id="L1742">    }</span>
+
+    /** Removes a single node and moves its children in its position */
+    private static Node removeSingleNode(Node oldNode, Node _nextSibling) {
+<span class="nc" id="L1746">      Node parent = oldNode.getParentNode();</span>
+<span class="nc" id="L1747">      Node _firstChild = null;</span>
+<span class="nc bnc" id="L1748" title="All 2 branches missed.">      if (oldNode.hasChildNodes()) {</span>
+<span class="nc" id="L1749">        NodeList children = oldNode.getChildNodes();</span>
+<span class="nc bnc" id="L1750" title="All 2 branches missed.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L1751">          Node child = children.item(i);</span>
+<span class="nc bnc" id="L1752" title="All 2 branches missed.">          if (i == 0) {</span>
+<span class="nc" id="L1753">            _firstChild = child;</span>
+          }
+<span class="nc bnc" id="L1755" title="All 2 branches missed.">          if (_nextSibling != null) {</span>
+<span class="nc" id="L1756">            parent.insertBefore(child, _nextSibling);</span>
+          } else {
+<span class="nc" id="L1758">            parent.appendChild(child);</span>
+          }
+        }
+      }
+<span class="nc" id="L1762">      parent.removeChild(oldNode);</span>
+<span class="nc" id="L1763">      return _firstChild;</span>
+    }
+
+    /*  */
+<span class="nc" id="L1767">    static enum Algorithm {</span>
+
+      /** */
+<span class="nc" id="L1770">      INSERT(1),</span>
+      /** */
+<span class="nc" id="L1772">      DELETE(2),</span>
+      /** */
+<span class="nc" id="L1774">      MARK(3),</span>
+      /** */
+<span class="nc" id="L1776">      RECEIVE(4),</span>
+      /** */
+<span class="nc" id="L1778">      MOVE(5),</span>
+      /** */
+<span class="nc" id="L1780">      COUNT(6);</span>
+      private int mId;
+
+<span class="nc" id="L1783">      Algorithm(int id) {</span>
+<span class="nc" id="L1784">        mId = id;</span>
+<span class="nc" id="L1785">      }</span>
+
+      int execute(Node currentNode, int currentPos, int posStart, int posEnd, Object... content) {
+<span class="nc bnc" id="L1788" title="All 7 branches missed.">        switch (mId) {</span>
+          case 1:
+<span class="nc" id="L1790">            currentPos = insert(currentNode, currentPos, posStart, posEnd, (List) content[0]);</span>
+<span class="nc" id="L1791">            break;</span>
+          case 2:
+<span class="nc" id="L1793">            currentPos = delete(currentNode, currentPos, posStart, posEnd, (List) content[0]);</span>
+<span class="nc" id="L1794">            break;</span>
+          case 3:
+<span class="nc" id="L1796">            currentPos =</span>
+<span class="nc" id="L1797">                mark(</span>
+                    currentNode,
+                    currentPos,
+                    posStart,
+                    posEnd,
+                    (JSONObject) content[0],
+                    (Map&lt;OdfName, OdfElement&gt;) content[1]);
+<span class="nc" id="L1804">            break;</span>
+          case 4:
+<span class="nc" id="L1806">            currentPos = receive(currentNode, currentPos, posStart, posEnd, (ArrayList) content[0]);</span>
+<span class="nc" id="L1807">            break;</span>
+          case 5:
+<span class="nc" id="L1809">            moveChildrenTo(currentNode, currentPos, posStart, posEnd, (Element) content[0]);</span>
+<span class="nc" id="L1810">            break;</span>
+          case 6:
+<span class="nc" id="L1812">            currentPos = count(currentNode, currentPos, (Boolean) content[1]);</span>
+            break;
+        }
+<span class="nc" id="L1815">        return currentPos;</span>
+      }
+
+      /**
+       * This function takes a node and moves it fully or partly into the given &lt;text:span/&gt;, if the
+       * node components (e.g. character) are within the given posStart and posEnd.
+       *
+       * @param currentNode The current child node to
+       * @param currentPos the current component position to be checked. starting with 0
+       * @param posStart the start position of the span.
+       * @param posEnd the end position of the span as string position. NOTE: One higher than the
+       *     originally given component position. Therefore always one higher than posStart.
+       * @param newNode
+       * @return the position of the next component to be checked
+       */
+      int mark(
+          Node currentNode,
+          int currentPos,
+          int posStart,
+          int posEnd,
+          JSONObject formatChanges,
+          Map&lt;OdfName, OdfElement&gt; formatElementHolder) {
+<span class="nc bnc" id="L1837" title="All 2 branches missed.">        if (currentNode != null) {</span>
+          Integer nextSplitPos;
+          // if the start is equal to the first position avoid the first split
+<span class="nc bnc" id="L1840" title="All 2 branches missed.">          if (currentPos &gt;= posStart) {</span>
+            // we are about to gather content in our span
+<span class="nc" id="L1842">            nextSplitPos = posEnd;</span>
+          } else {
+            // we have not reached the area to mark
+<span class="nc" id="L1845">            nextSplitPos = posStart;</span>
+          }
+
+          // ** GET NODE SIZE
+<span class="nc" id="L1849">          Integer contentLength = getNodeWidth(currentNode);</span>
+
+          // addChild the full currentNode ==&gt; if the end of the span is equal to the end of the
+          // currentNode
+<span class="nc" id="L1853">          boolean isTotalSelection =</span>
+<span class="nc bnc" id="L1854" title="All 4 branches missed.">              (currentPos + contentLength == nextSplitPos) &amp;&amp; nextSplitPos == posEnd;</span>
+          // addChild the middle part of the currentNode ==&gt; if the currentNode already starts
+          // within the span, but the end is not within the span
+<span class="nc bnc" id="L1857" title="All 4 branches missed.">          boolean isFirstPart = (currentPos &gt;= posStart &amp;&amp; currentPos + contentLength &lt; posEnd);</span>
+          // split the currentNode ==&gt; if the next split position is within the currentNode
+<span class="nc bnc" id="L1859" title="All 2 branches missed.">          boolean needsSplit = currentPos + contentLength &gt; nextSplitPos;</span>
+
+          // MOVE PARTS INTO THE SELECTION ELEMENT
+<span class="nc bnc" id="L1862" title="All 4 branches missed.">          if (isTotalSelection || isFirstPart) {</span>
+<span class="nc" id="L1863">            Node _nextSibling = currentNode.getNextSibling();</span>
+<span class="nc" id="L1864">            formatContent(currentNode, _nextSibling, formatChanges, formatElementHolder);</span>
+<span class="nc" id="L1865">            currentPos += contentLength;</span>
+
+            // SPLIT THE NODE
+<span class="nc bnc" id="L1868" title="All 2 branches missed.">          } else if (needsSplit) {</span>
+<span class="nc" id="L1869">            int secondPartLength = 1;</span>
+<span class="nc" id="L1870">            Node secondPart = null;</span>
+<span class="nc bnc" id="L1871" title="All 2 branches missed.">            if (currentNode instanceof Text) {</span>
+              // splitCursor is the first character of second part (counting starts with 0)
+<span class="nc" id="L1873">              secondPart = ((Text) currentNode).splitText(nextSplitPos - currentPos);</span>
+<span class="nc" id="L1874">              secondPartLength = ((Text) secondPart).getLength();</span>
+            } else {
+              // handle component split...
+<span class="nc" id="L1877">              secondPart = ((OdfElement) currentNode).split(nextSplitPos - currentPos);</span>
+<span class="nc" id="L1878">              secondPartLength = OdfElement.getNodeWidth(secondPart);</span>
+            }
+<span class="nc bnc" id="L1880" title="All 2 branches missed.">            boolean reachedStartPosition = nextSplitPos != posEnd;</span>
+<span class="nc bnc" id="L1881" title="All 2 branches missed.">            if (reachedStartPosition) {</span>
+              // if the second split is still in the same currentNode..
+              // if the end of the cut is equal to the end of the span
+
+<span class="nc bnc" id="L1885" title="All 2 branches missed.">              if (currentPos + (contentLength - secondPartLength) == posEnd) {</span>
+                // after the split the secondPart is the full fomrat
+<span class="nc" id="L1887">                formatContent(</span>
+<span class="nc" id="L1888">                    secondPart, secondPart.getNextSibling(), formatChanges, formatElementHolder);</span>
+<span class="nc" id="L1889">                currentPos += contentLength;</span>
+              } else {
+                // position changed based on the first cut part
+<span class="nc" id="L1892">                currentPos = currentPos + (contentLength - secondPartLength);</span>
+<span class="nc" id="L1893">                currentPos =</span>
+<span class="nc" id="L1894">                    mark(</span>
+                        secondPart,
+                        currentPos,
+                        posStart,
+                        posEnd,
+                        formatChanges,
+                        formatElementHolder);
+              }
+            } else {
+<span class="nc" id="L1903">              formatContent(currentNode, secondPart, formatChanges, formatElementHolder);</span>
+<span class="nc" id="L1904">              currentPos += contentLength - secondPartLength;</span>
+            }
+            // SKIP THE NODE AS SELECTION NOT STARTED
+<span class="nc" id="L1907">          } else {</span>
+<span class="nc" id="L1908">            currentPos += contentLength;</span>
+          }
+        }
+<span class="nc" id="L1911">        return currentPos;</span>
+      }
+
+      int insert(Node currentNode, int currentPos, int posStart, int posEnd, List content) {
+<span class="nc bnc" id="L1915" title="All 2 branches missed.">        if (currentNode != null) {</span>
+          // // ** GET NODE SIZE
+          // Integer contentLength = getNodeWidth(currentNode);
+          // ** GET NODE SIZE
+<span class="nc" id="L1919">          Integer contentLength = 1; // component default is 1</span>
+<span class="nc bnc" id="L1920" title="All 2 branches missed.">          if (currentNode instanceof Text) {</span>
+<span class="nc" id="L1921">            contentLength = ((Text) currentNode).getLength();</span>
+          } else {
+            // get size from component
+<span class="nc" id="L1924">            contentLength = ((OdfElement) currentNode).getRepetition();</span>
+          }
+          // ** There is content to be inserted..
+<span class="nc bnc" id="L1927" title="All 2 branches missed.">          if (currentPos</span>
+              == posStart) { // if we are already at the right place, insert content before the
+            // currentNode
+<span class="nc" id="L1930">            Node parent = currentNode.getParentNode();</span>
+<span class="nc" id="L1931">            Object newData = content.get(0);</span>
+<span class="nc bnc" id="L1932" title="All 2 branches missed.">            if (newData instanceof String) {</span>
+<span class="nc" id="L1933">              OdfElement.appendUsingWhitespaceHandling(</span>
+                  null, (OdfElement) parent, currentNode, (String) newData);
+<span class="nc bnc" id="L1935" title="All 2 branches missed.">            } else if (content.get(0) instanceof Element) {</span>
+<span class="nc" id="L1936">              OdfElement.addElementNode(</span>
+<span class="nc" id="L1937">                  null, (OdfElement) parent, currentNode, (Element) content.get(0));</span>
+            }
+            // Mark that the content has been added
+<span class="nc" id="L1940">            content.add(Boolean.TRUE);</span>
+<span class="nc" id="L1941">            currentPos += contentLength;</span>
+<span class="nc bnc" id="L1942" title="All 2 branches missed.">          } else if (currentPos + contentLength &gt;= posStart) {</span>
+            // if the complete text node is selected, append behind..
+<span class="nc bnc" id="L1944" title="All 2 branches missed.">            if (currentPos + contentLength == posStart) {</span>
+<span class="nc" id="L1945">              Object newData = content.get(0);</span>
+<span class="nc bnc" id="L1946" title="All 2 branches missed.">              if (newData instanceof String) {</span>
+<span class="nc" id="L1947">                OdfElement.appendUsingWhitespaceHandling(</span>
+                    currentNode,
+<span class="nc" id="L1949">                    (OdfElement) currentNode.getParentNode(),</span>
+<span class="nc" id="L1950">                    currentNode.getNextSibling(),</span>
+                    (String) newData);
+<span class="nc bnc" id="L1952" title="All 2 branches missed.">              } else if (newData instanceof Element) {</span>
+<span class="nc" id="L1953">                OdfElement.addElementNode(</span>
+                    currentNode,
+<span class="nc" id="L1955">                    (OdfElement) currentNode.getParentNode(),</span>
+<span class="nc" id="L1956">                    currentNode.getNextSibling(),</span>
+                    (Element) newData);
+              }
+              // Mark that the content has been added
+<span class="nc" id="L1960">              content.add(Boolean.TRUE);</span>
+<span class="nc" id="L1961">              currentPos = posStart;</span>
+<span class="nc" id="L1962">            } else { // else if only a part of the text node is selected</span>
+<span class="nc" id="L1963">              Node secondPart = null;</span>
+<span class="nc bnc" id="L1964" title="All 2 branches missed.">              if (currentNode instanceof Text) {</span>
+                // splitCursor is the first character of second part (counting starts with 0)
+<span class="nc" id="L1966">                secondPart = ((Text) currentNode).splitText(posStart - currentPos);</span>
+<span class="nc" id="L1967">                Object newData = content.get(0);</span>
+<span class="nc bnc" id="L1968" title="All 2 branches missed.">                if (newData instanceof String) {</span>
+<span class="nc" id="L1969">                  OdfElement.appendUsingWhitespaceHandling(</span>
+                      currentNode,
+<span class="nc" id="L1971">                      (OdfElement) currentNode.getParentNode(),</span>
+                      secondPart,
+                      (String) newData);
+<span class="nc bnc" id="L1974" title="All 2 branches missed.">                } else if (content instanceof Element) {</span>
+<span class="nc" id="L1975">                  OdfElement.addElementNode(</span>
+                      currentNode,
+<span class="nc" id="L1977">                      (OdfElement) currentNode.getParentNode(),</span>
+                      secondPart,
+                      (Element) content);
+                }
+                // Mark that the content has been added
+<span class="nc" id="L1982">                content.add(Boolean.TRUE);</span>
+<span class="nc" id="L1983">              } else {</span>
+                // handle component split...
+<span class="nc" id="L1985">                secondPart = ((OdfElement) currentNode).split(posStart - currentPos);</span>
+<span class="nc" id="L1986">                Node parent = currentNode.getParentNode();</span>
+<span class="nc" id="L1987">                Object newData = content.get(0);</span>
+<span class="nc bnc" id="L1988" title="All 2 branches missed.">                if (newData instanceof String) {</span>
+<span class="nc" id="L1989">                  OdfElement.appendUsingWhitespaceHandling(</span>
+                      currentNode, (OdfElement) parent, secondPart, (String) newData);
+<span class="nc bnc" id="L1991" title="All 2 branches missed.">                } else if (content instanceof Element) {</span>
+<span class="nc" id="L1992">                  OdfElement.addElementNode(</span>
+                      currentNode, (OdfElement) parent, secondPart, (Element) content);
+                }
+                // Mark that the content has been added
+<span class="nc" id="L1996">                content.add(Boolean.TRUE);</span>
+              }
+<span class="nc" id="L1998">              currentPos += contentLength;</span>
+<span class="nc" id="L1999">            }</span>
+            // ** SKIP THE NODE AS SELECTION NOT STARTED
+          } else {
+<span class="nc" id="L2002">            currentPos += contentLength;</span>
+          }
+        }
+<span class="nc" id="L2005">        return currentPos;</span>
+      }
+
+      // Within the text node, either the first or the last part have to be deleted (best
+      // selectable)
+      int delete(Node currentNode, int currentPos, int posStart, int posEnd, List deleteStatus) {
+
+<span class="nc bnc" id="L2012" title="All 2 branches missed.">        if (currentNode != null) {</span>
+          Integer nextSplitPos;
+          // if the start is equal to the first position avoid the first split
+<span class="nc bnc" id="L2015" title="All 2 branches missed.">          if (currentPos &gt;= posStart) {</span>
+            // we are about to gather content in our span
+<span class="nc" id="L2017">            nextSplitPos = posEnd;</span>
+          } else {
+            // we have not reached the area to mark
+<span class="nc" id="L2020">            nextSplitPos = posStart;</span>
+          }
+          // ** GET NODE SIZE
+<span class="nc" id="L2023">          Integer contentLength = getNodeWidth(currentNode);</span>
+
+          // addChild the middle part of the currentNode ==&gt; if the currentNode already starts
+          // within the span, but the end is not within the span
+<span class="nc bnc" id="L2027" title="All 2 branches missed.">          boolean inExecutionMode =</span>
+              currentPos &gt;= posStart
+<span class="nc bnc" id="L2029" title="All 2 branches missed.">                  &amp;&amp; contentLength + currentPos &gt; posStart</span>
+<span class="nc bnc" id="L2030" title="All 2 branches missed.">                  &amp;&amp; currentPos + contentLength &lt;= posEnd;</span>
+          // split the currentNode ==&gt; if the next split position is within the currentNode
+          // We need to search to the next found component, as all unknown components will be
+          // deleted after the known
+<span class="nc" id="L2034">          boolean needsSplit =</span>
+<span class="nc bnc" id="L2035" title="All 4 branches missed.">              currentPos + contentLength &gt; nextSplitPos &amp;&amp; nextSplitPos - currentPos != 0;</span>
+
+          // APPLY ACTION TO PARTS (here delete them)
+<span class="nc bnc" id="L2038" title="All 2 branches missed.">          if (inExecutionMode) {</span>
+<span class="nc" id="L2039">            OdfElement parent = (OdfElement) currentNode.getParentNode();</span>
+<span class="nc" id="L2040">            parent.removeChild(currentNode);</span>
+<span class="nc" id="L2041">            deleteStatus.add(0, Boolean.TRUE);</span>
+
+<span class="nc" id="L2043">            int childCount = parent.countDescendantComponents();</span>
+            // remove empty boilerplate
+<span class="nc bnc" id="L2045" title="All 4 branches missed.">            while (!parent.isComponentRoot() &amp;&amp; childCount == 0) {</span>
+<span class="nc" id="L2046">              OdfElement grandParent = (OdfElement) parent.getParentNode();</span>
+<span class="nc bnc" id="L2047" title="All 2 branches missed.">              if (grandParent instanceof OfficeBodyElement) {</span>
+<span class="nc" id="L2048">                break;</span>
+              }
+<span class="nc" id="L2050">              String styleName =</span>
+<span class="nc" id="L2051">                  parent.getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;style-name&quot;);</span>
+              // if we are about to remove the last text span of a paragraph..
+<span class="nc bnc" id="L2053" title="All 6 branches missed.">              if ((parent instanceof TextSpanElement</span>
+                  &amp;&amp; (grandParent instanceof TextParagraphElementBase)
+                  &amp;&amp; childCount == 0
+<span class="nc bnc" id="L2056" title="All 4 branches missed.">                  &amp;&amp; grandParent.getChildNodes().getLength() == 1</span>
+                  &amp;&amp; styleName != null)) {
+<span class="nc" id="L2058">                copyTextProperties(styleName, grandParent);</span>
+              }
+<span class="nc" id="L2060">              grandParent.removeChild(parent);</span>
+<span class="nc" id="L2061">              parent = grandParent;</span>
+<span class="nc" id="L2062">              childCount = parent.countDescendantComponents();</span>
+<span class="nc" id="L2063">            }</span>
+<span class="nc" id="L2064">            currentPos += contentLength;</span>
+
+            // SPLIT THE NODE
+<span class="nc bnc" id="L2067" title="All 2 branches missed.">          } else if (needsSplit) {</span>
+<span class="nc" id="L2068">            int secondPartLength = 1;</span>
+<span class="nc" id="L2069">            Node secondPart = null;</span>
+<span class="nc bnc" id="L2070" title="All 2 branches missed.">            if (currentNode instanceof Text) {</span>
+              // splitCursor is the first character of second part (counting starts with 0)
+<span class="nc" id="L2072">              secondPart = ((Text) currentNode).splitText(nextSplitPos - currentPos);</span>
+<span class="nc" id="L2073">              secondPartLength = ((Text) secondPart).getLength();</span>
+            } else {
+              // handle span split...
+<span class="nc" id="L2076">              secondPart = ((OdfElement) currentNode).split(nextSplitPos - currentPos);</span>
+<span class="nc" id="L2077">              secondPartLength = OdfElement.getNodeWidth(secondPart);</span>
+            }
+<span class="nc bnc" id="L2079" title="All 2 branches missed.">            boolean reachedStartPosition = nextSplitPos != posEnd;</span>
+<span class="nc bnc" id="L2080" title="All 2 branches missed.">            if (reachedStartPosition) {</span>
+              // if the second split is still in the same currentNode..
+              // if the end of the cut is equal to the end of the span
+<span class="nc bnc" id="L2083" title="All 2 branches missed.">              if (currentPos + (contentLength - secondPartLength) == posEnd) {</span>
+<span class="nc" id="L2084">                OdfElement parent = (OdfElement) currentNode.getParentNode();</span>
+<span class="nc" id="L2085">                parent.removeChild(secondPart);</span>
+<span class="nc" id="L2086">                deleteStatus.add(0, Boolean.TRUE);</span>
+                // remove empty boilderplate
+<span class="nc bnc" id="L2088" title="All 4 branches missed.">                while (!parent.isComponentRoot() &amp;&amp; parent.countDescendantComponents() == 0) {</span>
+<span class="nc" id="L2089">                  OdfElement grandParent = (OdfElement) parent.getParentNode();</span>
+<span class="nc bnc" id="L2090" title="All 2 branches missed.">                  if (grandParent instanceof OfficeBodyElement) {</span>
+<span class="nc" id="L2091">                    break;</span>
+                  }
+<span class="nc" id="L2093">                  grandParent.removeChild(parent);</span>
+<span class="nc" id="L2094">                  parent = grandParent;</span>
+<span class="nc" id="L2095">                }</span>
+<span class="nc" id="L2096">                currentPos += contentLength;</span>
+<span class="nc" id="L2097">              } else {</span>
+                // position changed based on the first cut part
+<span class="nc" id="L2099">                currentPos = currentPos + (contentLength - secondPartLength);</span>
+<span class="nc" id="L2100">                currentPos = delete(secondPart, currentPos, posStart, posEnd, deleteStatus);</span>
+              }
+            } else {
+<span class="nc" id="L2103">              OdfElement parent = (OdfElement) currentNode.getParentNode();</span>
+<span class="nc" id="L2104">              parent.removeChild(currentNode);</span>
+<span class="nc" id="L2105">              deleteStatus.add(0, Boolean.TRUE);</span>
+              // remove empty boilderplate
+<span class="nc bnc" id="L2107" title="All 4 branches missed.">              while (!parent.isComponentRoot() &amp;&amp; parent.countDescendantComponents() == 0) {</span>
+<span class="nc" id="L2108">                OdfElement grandParent = (OdfElement) parent.getParentNode();</span>
+<span class="nc bnc" id="L2109" title="All 2 branches missed.">                if (grandParent instanceof OfficeBodyElement) {</span>
+<span class="nc" id="L2110">                  break;</span>
+                }
+<span class="nc" id="L2112">                grandParent.removeChild(parent);</span>
+<span class="nc" id="L2113">                parent = grandParent;</span>
+<span class="nc" id="L2114">              }</span>
+<span class="nc" id="L2115">              currentPos += contentLength - secondPartLength;</span>
+            }
+            // SKIP THE NODE AS SELECTION NOT STARTED
+<span class="nc" id="L2118">          } else {</span>
+<span class="nc" id="L2119">            currentPos += contentLength;</span>
+          }
+        }
+<span class="nc" id="L2122">        return currentPos;</span>
+
+        //				Integer contentLength = node.getLength();
+        //				// see if targetposition (either start or end) is within this text node
+        //				if (currentPos + contentLength &gt;= currentTargetPos) {
+        //					// If the delete pos is this complete text node and it is already past startPos,
+        // delete node
+        //					if (currentPos + contentLength == currentTargetPos &amp;&amp; textPosEnd == currentTargetPos)
+        // {
+        //						node.getParentNode().removeChild(node);
+        //					} else { // if delete position is within the text node
+        //						Integer splitPosition = null;
+        //						splitPosition = currentTargetPos - currentPos;
+        //						Text secondPart = node.splitText(splitPosition);
+        //						//if position within text was the startNode, only delete second part
+        //						if (currentTargetPos == textPosStart) {
+        //							// if the end position is in the the same text node as the start position
+        //							if (currentPos + contentLength &gt;= textPosEnd) {
+        //								// split the string once more
+        //								secondPart.splitText(textPosEnd - splitPosition - currentPos);
+        //							}
+        //							node.getParentNode().removeChild(secondPart);
+        //						} else {//if we had been in the delete mode, only delete first part
+        //							// node has become the firstNode after split
+        //							node.getParentNode().removeChild(node);
+        //						}
+        //					}
+        //				} else {
+        //					// if we are in the deletion mode
+        //					if (currentTargetPos == textPosEnd) {
+        //						// delete the complete node
+        //						node.getParentNode().removeChild(node);
+        //					}
+        //				}
+        //				return currentPos += contentLength;
+      }
+
+      /** Copies the text properties from the given style name to the style of the target element */
+      private void copyTextProperties(String sourceStyleName, OdfElement targetElement) {
+        // we move the text style properties from the span to the paragraph--
+<span class="nc" id="L2162">        OdfOfficeAutomaticStyles autoStyles = null;</span>
+        // the automatic styles are in a spreadsheet always in the content.xml, only when a table is
+        // in a header/footer it would be in the styles.xml (latter we do not support)
+<span class="nc bnc" id="L2165" title="All 2 branches missed.">        if (targetElement.ownerDocument instanceof OdfContentDom) {</span>
+<span class="nc" id="L2166">          autoStyles = ((OdfContentDom) targetElement.ownerDocument).getAutomaticStyles();</span>
+        } else { // if the span is in a header/footer the element is in the styles.xml (part of the
+          // master page style)
+<span class="nc" id="L2169">          autoStyles = ((OdfStylesDom) targetElement.ownerDocument).getAutomaticStyles();</span>
+        }
+<span class="nc" id="L2171">        OdfStyle spanStyle = autoStyles.getStyle(sourceStyleName, OdfStyleFamily.Text);</span>
+<span class="nc bnc" id="L2172" title="All 2 branches missed.">        if (spanStyle != null) {</span>
+<span class="nc" id="L2173">          OdfStylePropertiesBase textProps =</span>
+<span class="nc" id="L2174">              spanStyle.getPropertiesElement(OdfStylePropertiesSet.TextProperties);</span>
+<span class="nc bnc" id="L2175" title="All 2 branches missed.">          if (textProps != null</span>
+<span class="nc bnc" id="L2176" title="All 2 branches missed.">              &amp;&amp; textProps.attributes != null</span>
+<span class="nc bnc" id="L2177" title="All 2 branches missed.">              &amp;&amp; textProps.attributes.getLength() &gt; 0) {</span>
+<span class="nc" id="L2178">            StyleStyleElement paraStyle =</span>
+<span class="nc" id="L2179">                ((TextParagraphElementBase) targetElement).getOrCreateUnqiueAutomaticStyle();</span>
+<span class="nc" id="L2180">            OdfStylePropertiesBase paraTextProps =</span>
+<span class="nc" id="L2181">                paraStyle.getPropertiesElement(OdfStylePropertiesSet.TextProperties);</span>
+<span class="nc bnc" id="L2182" title="All 2 branches missed.">            if (paraTextProps == null) {</span>
+<span class="nc" id="L2183">              paraTextProps =</span>
+<span class="nc" id="L2184">                  ((OdfFileDom) targetElement.ownerDocument)</span>
+<span class="nc" id="L2185">                      .newOdfElement(StyleTextPropertiesElement.class);</span>
+<span class="nc" id="L2186">              paraStyle.appendChild(paraTextProps);</span>
+            }
+<span class="nc bnc" id="L2188" title="All 2 branches missed.">            for (int i = 0; i &lt; textProps.attributes.getLength(); i++) {</span>
+<span class="nc" id="L2189">              Attr attr = (Attr) textProps.attributes.item(i);</span>
+<span class="nc" id="L2190">              String ns = attr.getNamespaceURI();</span>
+<span class="nc" id="L2191">              String prefix = attr.getPrefix();</span>
+<span class="nc" id="L2192">              String localName = attr.getLocalName();</span>
+<span class="nc" id="L2193">              paraTextProps.setAttributeNS(ns, prefix + ':' + localName, attr.getValue());</span>
+            }
+          }
+        }
+<span class="nc" id="L2197">      }</span>
+
+      private int receive(
+          Node currentNode, int currentPos, int posStart, int posEnd, ArrayList newNodeContainer) {
+<span class="nc bnc" id="L2201" title="All 2 branches missed.">        if (currentNode != null) {</span>
+
+          // ** GET NODE SIZE
+<span class="nc" id="L2204">          Integer contentLength = 1; // component default is 1</span>
+<span class="nc bnc" id="L2205" title="All 2 branches missed.">          if (currentNode instanceof Text) {</span>
+<span class="nc" id="L2206">            contentLength = ((Text) currentNode).getLength();</span>
+          } else {
+            // get size from component
+<span class="nc" id="L2209">            contentLength = ((OdfElement) currentNode).getRepetition();</span>
+          }
+
+          // if the current node is selected
+<span class="nc bnc" id="L2213" title="All 6 branches missed.">          if (currentPos == posStart &amp;&amp; (contentLength == 1 || currentNode instanceof Text)) {</span>
+<span class="nc" id="L2214">            newNodeContainer.add(currentNode);</span>
+<span class="nc" id="L2215">            currentPos = posEnd;</span>
+<span class="nc bnc" id="L2216" title="All 2 branches missed.">          } else if (currentPos + contentLength</span>
+              &gt; posStart) { // else if only a part of the text node is selected
+<span class="nc" id="L2218">            Node secondPart = null;</span>
+<span class="nc bnc" id="L2219" title="All 2 branches missed.">            if (currentNode instanceof Text) {</span>
+              // splitCursor is the first character of second part (counting starts with 0)
+<span class="nc" id="L2221">              secondPart = ((Text) currentNode).splitText(posStart - currentPos);</span>
+<span class="nc" id="L2222">              newNodeContainer.add(secondPart);</span>
+            } else {
+              // handle component split...
+<span class="nc" id="L2225">              Node thirdPart = null;</span>
+<span class="nc" id="L2226">              Node parent = ((OdfElement) currentNode).getParentNode();</span>
+<span class="nc" id="L2227">              secondPart = ((OdfElement) currentNode).split(posStart - currentPos);</span>
+<span class="nc bnc" id="L2228" title="All 2 branches missed.">              if (((OdfElement) secondPart).getRepetition() &gt; 1) {</span>
+<span class="nc" id="L2229">                thirdPart = ((OdfElement) secondPart).split(1);</span>
+              }
+<span class="nc" id="L2231">              newNodeContainer.add(secondPart);</span>
+            }
+<span class="nc" id="L2233">            currentPos = posEnd;</span>
+            // ** SKIP THE NODE AS SELECTION NOT STARTED
+<span class="nc" id="L2235">          } else {</span>
+<span class="nc" id="L2236">            currentPos += contentLength;</span>
+          }
+        }
+<span class="nc" id="L2239">        return currentPos;</span>
+      }
+
+      private void moveChildrenTo(
+          Node currentNode, int currentPos, int posStart, int posEnd, Element newParent) {
+<span class="nc bnc" id="L2244" title="All 2 branches missed.">        if (currentNode != null) {</span>
+<span class="nc" id="L2245">          newParent.appendChild(currentNode);</span>
+        }
+<span class="nc" id="L2247">      }</span>
+
+      /**
+       * @return in opposite of all other algorithms the currentPos is being used to count the
+       *     number of components
+       */
+      private int count(Node currentNode, int currentPos, Boolean isTextCounting) {
+<span class="nc bnc" id="L2254" title="All 2 branches missed.">        if (currentNode != null) {</span>
+
+          // ** GET NODE SIZE
+<span class="nc" id="L2257">          Integer contentLength = 1; // component default is 1</span>
+<span class="nc bnc" id="L2258" title="All 2 branches missed.">          if (!(currentNode instanceof Text)) {</span>
+            // get size from component
+<span class="nc" id="L2260">            contentLength = ((OdfElement) currentNode).getRepetition();</span>
+<span class="nc bnc" id="L2261" title="All 4 branches missed.">          } else if (isTextCounting == null || isTextCounting) {</span>
+<span class="nc bnc" id="L2262" title="All 2 branches missed.">            if (((Text) currentNode).toString().trim().length() &gt; 0) {</span>
+<span class="nc" id="L2263">              contentLength = ((Text) currentNode).getLength();</span>
+            }
+          }
+<span class="nc" id="L2266">          currentPos += contentLength;</span>
+        }
+<span class="nc" id="L2268">        return currentPos;</span>
+      }
+    }
+  }
+
+  /**
+   * Returns if the text should be returned or is under a nested paragraph or ignored text element
+   * (e.g. text:note-citation).
+   */
+  private static boolean isIgnoredText(Text text) {
+<span class="nc" id="L2278">    boolean isIgnored = true;</span>
+<span class="nc" id="L2279">    Node parentNode = text.getParentNode();</span>
+<span class="nc bnc" id="L2280" title="All 2 branches missed.">    if (parentNode instanceof OdfElement) {</span>
+<span class="nc" id="L2281">      isIgnored = isIgnoredElement((OdfElement) parentNode);</span>
+    }
+<span class="nc" id="L2283">    return isIgnored;</span>
+  }
+
+  private static boolean isIgnoredElement(OdfElement element) {
+<span class="nc" id="L2287">    boolean isIgnored = true;</span>
+<span class="nc bnc" id="L2288" title="All 2 branches missed.">    if (!element.mIsIgnoredComponent) {</span>
+<span class="nc bnc" id="L2289" title="All 2 branches missed.">      while (element != null) {</span>
+<span class="nc bnc" id="L2290" title="All 4 branches missed.">        if (element.isComponentRoot() &amp;&amp; !element.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L2291">          isIgnored = false;</span>
+<span class="nc" id="L2292">          break;</span>
+        } else {
+<span class="nc bnc" id="L2294" title="All 2 branches missed.">          if (element.selfAndDescendantTextIgnoredAsComponent()) {</span>
+<span class="nc" id="L2295">            isIgnored = true;</span>
+<span class="nc" id="L2296">            break;</span>
+          } else {
+<span class="nc" id="L2298">            Node parent = element.getParentAs(OdfElement.class);</span>
+<span class="nc bnc" id="L2299" title="All 2 branches missed.">            if (parent instanceof OdfElement) {</span>
+<span class="nc" id="L2300">              isIgnored = isIgnoredElement((OdfElement) parent);</span>
+            }
+            break;
+          }
+        }
+      }
+    }
+<span class="nc" id="L2307">    return isIgnored;</span>
+  }
+
+  private static int getContentSize(Node currentNode) {
+<span class="nc" id="L2311">    int contentLength = 0; // by default there is no length</span>
+
+<span class="nc" id="L2313">    Node nextChild = currentNode.getFirstChild();</span>
+<span class="nc bnc" id="L2314" title="All 2 branches missed.">    while (nextChild != null) {</span>
+<span class="nc" id="L2315">      contentLength += getNodeWidth(nextChild);</span>
+<span class="nc" id="L2316">      nextChild = nextChild.getNextSibling();</span>
+    }
+<span class="nc" id="L2318">    return contentLength;</span>
+  }
+
+  //	public void addReference(String url, int startPos, int endPos){
+  //		if (url != null &amp;&amp; !url.isEmpty() &amp;&amp; !url.equals(&quot;null&quot;)) {
+  //			OdfFileDom xmlDoc = (OdfFileDom) this.getOwnerDocument();
+  //
+  //			// 2DO: can I reuse an anchor?
+  //			TextAElement anchor = new TextAElement(xmlDoc);
+  //			anchor.setXlinkHrefAttribute(url);
+  //			anchor.setXlinkTypeAttribute(&quot;simple&quot;);
+  //
+  //			// 2DO: ONLY remove all text:a descendants from the selection, there is a function parameter
+  // missing?!
+  //			NodeList anchors = this.getElementsByTagNameNS(OdfDocumentNamespace.TEXT.getUri(), &quot;a&quot;);
+  //			int anchorCount = anchors.getLength();
+  //			for (int i = anchorCount - 1; i &gt;= 0; i--) {
+  //				TextAElement a = (TextAElement) anchors.item(i);
+  //				OdfElement.removeSingleElement(a);
+  //			}
+  //			Element parent = (Element) this.getParentNode();
+  //			if (parent != null) {
+  //				this = (TextSpanElement) parent.replaceChild(anchor, this);
+  //				anchor.appendChild(this);
+  //			} else {
+  //				((OdfElement) this.getParentNode()).markText(startPos, endPos, anchor, attrs);
+  //			}
+  //
+  //			// NOTE: Calc Issue workaround: No span within anchors possible in OpenOffice CALC (no text
+  // will be shown)
+  //			if (xmlDoc.getDocument() instanceof OdfSpreadsheetDocument) {
+  //				NodeList innerSpans = anchor.getElementsByTagNameNS(OdfDocumentNamespace.TEXT.getUri(),
+  // &quot;span&quot;);
+  //				int spanCount = innerSpans.getLength();
+  //				for (int i = spanCount - 1; i &gt;= 0; i--) {
+  //					TextSpanElement innerSpan = (TextSpanElement) innerSpans.item(i);
+  //					OdfElement.removeSingleElement(innerSpan);
+  //				}
+  //			}
+  //		}
+  //		// if any hyperlink should be removed!
+  //		if (url == null) {
+  //			// remove all text:a descendants
+  //			NodeList anchors = this.getElementsByTagNameNS(OdfDocumentNamespace.TEXT.getUri(), &quot;a&quot;);
+  //			int anchorCount = anchors.getLength();
+  //			for (int i = anchorCount - 1; i &gt;= 0; i--) {
+  //				TextAElement a = (TextAElement) anchors.item(i);
+  //				OdfElement.removeSingleElement(a);
+  //			}
+  //		}
+  //	}
+  /**
+   * @returns the &lt;text:a&gt; element to apply the new format. If created it will be stored within the
+   *     spanContainer
+   */
+  private static TextAElement getAnchorElement(
+      Node content, OdfFileDom ownerDoc, String url, Map&lt;OdfName, OdfElement&gt; formatElementHolder) {
+<span class="nc" id="L2375">    TextAElement newAnchor = null;</span>
+<span class="nc bnc" id="L2376" title="All 2 branches missed.">    if (formatElementHolder != null) {</span>
+<span class="nc bnc" id="L2377" title="All 2 branches missed.">      if (formatElementHolder.containsKey(TextAElement.ELEMENT_NAME)) {</span>
+<span class="nc" id="L2378">        newAnchor = (TextAElement) formatElementHolder.get(TextAElement.ELEMENT_NAME);</span>
+      } else {
+<span class="nc bnc" id="L2380" title="All 2 branches missed.">        if (content instanceof TextAElement) {</span>
+<span class="nc" id="L2381">          newAnchor = (TextAElement) content;</span>
+<span class="nc" id="L2382">          newAnchor.setXlinkHrefAttribute(url);</span>
+        } else {
+<span class="nc" id="L2384">          newAnchor = createAnchorElement(ownerDoc, url);</span>
+        }
+
+        // we keep the anchor for following siblings
+<span class="nc" id="L2388">        formatElementHolder.put(TextAElement.ELEMENT_NAME, newAnchor);</span>
+      }
+    }
+<span class="nc" id="L2391">    return newAnchor;</span>
+  }
+
+  /** @returns a new Anchor element with the changes as new format */
+  // ToDo: Should be moved as static creation function to the span element class!!
+  private static TextAElement createAnchorElement(OdfFileDom ownerDoc, String url) {
+<span class="nc" id="L2397">    TextAElement containerElement = new TextAElement(ownerDoc);</span>
+<span class="nc" id="L2398">    containerElement.setXlinkHrefAttribute(url);</span>
+<span class="nc" id="L2399">    return containerElement;</span>
+  }
+
+  /**
+   * @returns the span element to apply the new format. If created it will be stored within the
+   *     spanContainer
+   */
+  private static TextSpanElement getSpanElement(
+      OdfFileDom ownerDoc, JSONObject formatChanges, Map&lt;OdfName, OdfElement&gt; formatElementHolder) {
+<span class="nc" id="L2408">    TextSpanElement newNode = null;</span>
+<span class="nc bnc" id="L2409" title="All 2 branches missed.">    if (formatElementHolder != null) {</span>
+<span class="nc bnc" id="L2410" title="All 2 branches missed.">      if (formatElementHolder.containsKey(TextSpanElement.ELEMENT_NAME)) {</span>
+<span class="nc" id="L2411">        newNode = (TextSpanElement) formatElementHolder.get(TextSpanElement.ELEMENT_NAME);</span>
+      } else {
+<span class="nc" id="L2413">        newNode = createSpanElement(ownerDoc, formatChanges);</span>
+        // we keep the span for following siblings
+<span class="nc" id="L2415">        formatElementHolder.put(TextSpanElement.ELEMENT_NAME, newNode);</span>
+      }
+    }
+<span class="nc" id="L2418">    return newNode;</span>
+  }
+
+  /** @returns a new span element with the changes as new format */
+  // ToDo: Should be moved as static creation function to the span element class!!
+  private static TextSpanElement createSpanElement(OdfFileDom ownerDoc, JSONObject formatChanges) {
+<span class="nc" id="L2424">    TextSpanElement spanElement = null;</span>
+<span class="nc" id="L2425">    spanElement = new TextSpanElement(ownerDoc);</span>
+<span class="nc" id="L2426">    JsonOperationConsumer.addStyle(formatChanges, spanElement, ownerDoc);</span>
+<span class="nc" id="L2427">    return spanElement;</span>
+  }
+
+  private static int getNodeWidth(Node currentNode) {
+    // ** GET NODE SIZE
+<span class="nc" id="L2432">    int contentLength = 0; // by default there is no length</span>
+    // if a text
+<span class="nc bnc" id="L2434" title="All 2 branches missed.">    if (currentNode instanceof Text) {</span>
+<span class="nc bnc" id="L2435" title="All 2 branches missed.">      if (!isIgnoredText((Text) currentNode)) {</span>
+<span class="nc" id="L2436">        contentLength = ((Text) currentNode).getLength();</span>
+      }
+      // if a component element and NOT ignored
+<span class="nc bnc" id="L2439" title="All 2 branches missed.">    } else if (currentNode instanceof OdfElement) {</span>
+<span class="nc bnc" id="L2440" title="All 4 branches missed.">      if (Component.isComponentRoot((OdfElement) currentNode)</span>
+          || currentNode instanceof TextSElement) {
+<span class="nc bnc" id="L2442" title="All 2 branches missed.">        if (isIgnoredElement((OdfElement) currentNode)) {</span>
+<span class="nc" id="L2443">          contentLength = 0;</span>
+        } else {
+          // get size from component
+<span class="nc" id="L2446">          contentLength = ((OdfElement) currentNode).getRepetition();</span>
+        }
+      } else {
+<span class="nc" id="L2449">        Node nextChild = ((OdfElement) currentNode).firstChild;</span>
+<span class="nc bnc" id="L2450" title="All 2 branches missed.">        while (nextChild != null) {</span>
+<span class="nc" id="L2451">          contentLength += getNodeWidth(nextChild);</span>
+<span class="nc" id="L2452">          nextChild = nextChild.getNextSibling();</span>
+        }
+      }
+    }
+<span class="nc" id="L2456">    return contentLength;</span>
+  }
+
+  /** Copy attributes from one element to another, existing attributes will be overwritten */
+  public static void copyAttributes(OdfElement from, OdfElement to) {
+<span class="nc" id="L2461">    NamedNodeMap attributes = from.getAttributes();</span>
+<span class="nc bnc" id="L2462" title="All 2 branches missed.">    for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="nc" id="L2463">      Attr node = (Attr) attributes.item(i);</span>
+<span class="nc" id="L2464">      to.setAttributeNS(node.getNamespaceURI(), node.getNodeName(), node.getValue());</span>
+    }
+<span class="nc" id="L2466">  }</span>
+
+  /** @return the first child element of a given parent */
+  public Element getChildElement(String uri, String localName) {
+<span class="nc" id="L2470">    return getChildElement(uri, localName, 0);</span>
+  }
+
+  /** @return the child element of a given parent from a given position (starting with 0) */
+  public Element getChildElement(String uri, String localName, int position) {
+<span class="nc" id="L2475">    NodeList childList = this.getElementsByTagNameNS(uri, localName);</span>
+<span class="nc" id="L2476">    return (Element) childList.item(position);</span>
+  }
+
+  public static boolean isIgnoredElement(Element element) {
+<span class="nc" id="L2480">    return isIgnoredElement(element.getNamespaceURI(), element.getLocalName());</span>
+  }
+
+  /**
+   * ToDo: Move away to parser, as it is application logic not ODF relevant! Elements that blocks
+   * the creation of operations due to implementation issues
+   */
+  public static boolean isIgnoredElement(String uri, String localName) {
+<span class="nc" id="L2488">    boolean isIgnored = false;</span>
+<span class="nc bnc" id="L2489" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TextNoteElement.ELEMENT_NAME.getUri())) {</span>
+      // text:note
+<span class="nc bnc" id="L2491" title="All 2 branches missed.">      if (localName.equals(TextNoteElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L2492">        isIgnored = true;</span>
+      }
+    }
+<span class="nc bnc" id="L2495" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TextTrackedChangesElement.ELEMENT_NAME.getUri())) {</span>
+      // text:tracked-changes
+<span class="nc bnc" id="L2497" title="All 2 branches missed.">      if (localName.equals(TextTrackedChangesElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L2498">        isIgnored = true;</span>
+      }
+    }
+<span class="nc bnc" id="L2501" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TableShapesElement.ELEMENT_NAME.getUri())) {</span>
+      // table:shapes
+<span class="nc bnc" id="L2503" title="All 2 branches missed.">      if (localName.equals(TableShapesElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L2504">        isIgnored = true;</span>
+      }
+      // table:covered-table-cell
+<span class="nc bnc" id="L2507" title="All 2 branches missed.">      if (localName.equals(TableCoveredTableCellElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L2508">        isIgnored = true;</span>
+      }
+    }
+<span class="nc bnc" id="L2511" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(TableContentValidationsElement.ELEMENT_NAME.getUri())) {</span>
+      // table:content-validations
+<span class="nc bnc" id="L2513" title="All 2 branches missed.">      if (localName.equals(TableContentValidationsElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L2514">        isIgnored = true;</span>
+      }
+    }
+<span class="nc bnc" id="L2517" title="All 4 branches missed.">    if (uri != null &amp;&amp; uri.equals(StyleHandoutMasterElement.ELEMENT_NAME.getUri())) {</span>
+      // style:handout-master
+<span class="nc bnc" id="L2519" title="All 2 branches missed.">      if (localName.equals(StyleHandoutMasterElement.ELEMENT_NAME.getLocalName())) {</span>
+<span class="nc" id="L2520">        isIgnored = true;</span>
+      }
+    }
+<span class="nc" id="L2523">    return isIgnored;</span>
+  }
+
+  /** @returns the next element sibling of the given node or null if none exists */
+  public static OdfElement getNextSiblingElement(Node node) {
+<span class="nc" id="L2528">    OdfElement nextElement = null;</span>
+<span class="nc" id="L2529">    Node _nextSibling = node.getNextSibling();</span>
+<span class="nc bnc" id="L2530" title="All 2 branches missed.">    if (_nextSibling instanceof OdfElement) {</span>
+<span class="nc" id="L2531">      nextElement = (OdfElement) _nextSibling;</span>
+<span class="nc bnc" id="L2532" title="All 2 branches missed.">    } else if (_nextSibling instanceof Text) {</span>
+<span class="nc" id="L2533">      nextElement = getNextSiblingElement(_nextSibling);</span>
+    }
+<span class="nc" id="L2535">    return nextElement;</span>
+  }
+
+  /** @returns the next element sibling of the given node or null if none exists */
+  public static OdfElement getPreviousSiblingElement(Node node) {
+<span class="nc" id="L2540">    OdfElement previousElement = null;</span>
+<span class="nc" id="L2541">    Node _previousElement = node.getPreviousSibling();</span>
+<span class="nc bnc" id="L2542" title="All 2 branches missed.">    if (_previousElement instanceof OdfElement) {</span>
+<span class="nc" id="L2543">      previousElement = (OdfElement) _previousElement;</span>
+<span class="nc bnc" id="L2544" title="All 2 branches missed.">    } else if (_previousElement instanceof Text) {</span>
+<span class="nc" id="L2545">      previousElement = getPreviousSiblingElement(_previousElement);</span>
+    }
+<span class="nc" id="L2547">    return previousElement;</span>
+  }
+
+  /** @returns the first element child of the this or null if none exists */
+  public OdfElement getFirstChildElement() {
+<span class="nc" id="L2552">    OdfElement firstElementChild = null;</span>
+<span class="nc" id="L2553">    NodeList nodeList = this.getChildNodes();</span>
+<span class="nc" id="L2554">    Node node = nodeList.item(0);</span>
+<span class="nc bnc" id="L2555" title="All 2 branches missed.">    if (node != null) {</span>
+<span class="nc bnc" id="L2556" title="All 2 branches missed.">      if (node instanceof OdfElement) {</span>
+<span class="nc" id="L2557">        firstElementChild = (OdfElement) node;</span>
+      } else {
+<span class="nc" id="L2559">        firstElementChild = getNextSiblingElement(node);</span>
+      }
+    }
+<span class="nc" id="L2562">    return firstElementChild;</span>
+  }
+
+  /** @returns the last element child of the this or null if none exists */
+  public OdfElement getLastChildElement() {
+<span class="nc" id="L2567">    OdfElement lastElementChild = null;</span>
+<span class="nc" id="L2568">    NodeList nodeList = this.getChildNodes();</span>
+<span class="nc" id="L2569">    Node node = nodeList.item(0);</span>
+<span class="nc bnc" id="L2570" title="All 2 branches missed.">    for (int i = nodeList.getLength(); i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L2571" title="All 2 branches missed.">      if (node instanceof OdfElement) {</span>
+<span class="nc" id="L2572">        lastElementChild = (OdfElement) node;</span>
+<span class="nc" id="L2573">        break;</span>
+      }
+    }
+<span class="nc" id="L2576">    return lastElementChild;</span>
+  }
+
+  public int countPrecedingSiblingElements() {
+<span class="nc" id="L2580">    int i = 0;</span>
+<span class="nc" id="L2581">    Node node = this.getPreviousSibling();</span>
+<span class="nc bnc" id="L2582" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc" id="L2583">      node = node.getPreviousSibling();</span>
+<span class="nc bnc" id="L2584" title="All 2 branches missed.">      if (node instanceof Element) {</span>
+<span class="nc" id="L2585">        i++;</span>
+      }
+    }
+<span class="nc" id="L2588">    return i;</span>
+  }
+
+  // ToDo: Move this to a intermediate class, e.g. ComponentRootElement
+  /** @return the component size of a heading, which is always 1 */
+  public void setRepetition(int repetition) {
+    // does not work for all classes
+<span class="nc" id="L2595">  }</span>
+
+  /**
+   * @return the concatenated text contained by itself and all descendants (subtree). Does not take
+   *     into account indented XML, as ODF whitespace handling require to neglect preceeding text
+   *     content
+   */
+  public String getTextContent() {
+<span class="nc" id="L2603">    StringBuilder buffer = new StringBuilder();</span>
+<span class="nc" id="L2604">    NodeList nodeList = this.getChildNodes();</span>
+    int i;
+<span class="nc bnc" id="L2606" title="All 2 branches missed.">    for (i = 0; i &lt; nodeList.getLength(); i++) {</span>
+      Node node;
+<span class="nc" id="L2608">      node = nodeList.item(i);</span>
+<span class="nc bnc" id="L2609" title="All 2 branches missed.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc" id="L2610">        buffer.append(node.getNodeValue());</span>
+<span class="nc bnc" id="L2611" title="All 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="nc bnc" id="L2612" title="All 2 branches missed.">        if (node instanceof TextSpanElement) {</span>
+<span class="nc" id="L2613">          buffer.append(((TextSpanElement) node).getTextContent());</span>
+<span class="nc bnc" id="L2614" title="All 2 branches missed.">        } else if (node.getNodeName().equals(&quot;text:s&quot;)) {</span>
+<span class="nc" id="L2615">          Integer count = ((TextSElement) node).getTextCAttribute();</span>
+<span class="nc bnc" id="L2616" title="All 4 branches missed.">          for (int j = 0; j &lt; (count != null ? count : 1); j++) buffer.append(' ');</span>
+<span class="nc bnc" id="L2617" title="All 2 branches missed.">        } else if (node.getNodeName().equals(&quot;text:tab&quot;)) buffer.append('\t');</span>
+<span class="nc bnc" id="L2618" title="All 2 branches missed.">        else if (node.getNodeName().equals(&quot;text:line-break&quot;)) {</span>
+<span class="nc" id="L2619">          String lineseperator = System.getProperty(&quot;line.separator&quot;);</span>
+<span class="nc" id="L2620">          buffer.append(lineseperator);</span>
+<span class="nc bnc" id="L2621" title="All 2 branches missed.">        } else if (node.getNodeName().equals(&quot;text:a&quot;))</span>
+<span class="nc" id="L2622">          buffer.append(((TextAElement) node).getTextContent());</span>
+      }
+    }
+<span class="nc" id="L2625">    return buffer.toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

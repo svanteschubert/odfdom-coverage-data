@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStyleProperty.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom.style.props</a> &gt; <span class="el_source">OdfStyleProperty.java</span></div><h1>OdfStyleProperty.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom.style.props;
+
+import java.util.Iterator;
+import java.util.TreeSet;
+import org.odftoolkit.odfdom.pkg.OdfName;
+
+/**
+ * Class to represent a odf style attribut. Each instance has a name and belongs to an ODF
+ * style-properties element.
+ */
+public class OdfStyleProperty implements Comparable&lt;OdfStyleProperty&gt; {
+
+  private OdfStylePropertiesSet m_propSet;
+  private OdfName m_name;
+
+<span class="nc" id="L39">  private OdfStyleProperty(OdfStylePropertiesSet propSet, OdfName name) {</span>
+<span class="nc" id="L40">    m_propSet = propSet;</span>
+<span class="nc" id="L41">    m_name = name;</span>
+<span class="nc" id="L42">  }</span>
+
+<span class="nc" id="L44">  private static TreeSet&lt;OdfStyleProperty&gt; m_styleProperties = new TreeSet&lt;OdfStyleProperty&gt;();</span>
+
+  /**
+   * Looks if an OdfStyleProperty is already listed in the static sytleProperties set, otherwise
+   * creates a new one.
+   *
+   * @param propSet an OdfStylePropertiesSet member
+   * @param name
+   * @return new created or existing OdfStylePorperty
+   */
+  public static OdfStyleProperty get(OdfStylePropertiesSet propSet, OdfName name) {
+<span class="nc" id="L55">    OdfStyleProperty temp = new OdfStyleProperty(propSet, name);</span>
+    // Replacement for (JDK1.6)
+    // OdfStyleProperty result = m_styleProperties.floor(temp);
+
+<span class="nc" id="L59">    Iterator&lt;OdfStyleProperty&gt; iter = m_styleProperties.iterator();</span>
+<span class="nc" id="L60">    OdfStyleProperty result = null;</span>
+
+    // check if key exists
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    if (!m_styleProperties.contains(temp)) {</span>
+<span class="nc" id="L64">      m_styleProperties.add(temp);</span>
+<span class="nc" id="L65">      return temp;</span>
+    }
+<span class="nc bnc" id="L67" title="All 2 branches missed.">    while (iter.hasNext()) {</span>
+<span class="nc" id="L68">      result = iter.next();</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">      if (result.equals(temp)) {</span>
+<span class="nc" id="L70">        return result;</span>
+      }
+    }
+
+<span class="nc" id="L74">    m_styleProperties.add(temp);</span>
+<span class="nc" id="L75">    return temp;</span>
+  }
+
+  /** @return an OdfStylePropertiesSet member */
+  public OdfStylePropertiesSet getPropertySet() {
+<span class="nc" id="L80">    return m_propSet;</span>
+  }
+
+  /** @return name of OdfStyleProperty instance */
+  public OdfName getName() {
+<span class="nc" id="L85">    return m_name;</span>
+  }
+
+  /** @inheritDoc */
+  @Override
+  public String toString() {
+<span class="nc" id="L91">    return m_name.getQName();</span>
+  }
+
+  public OdfStyleProperty copy() {
+<span class="nc" id="L95">    OdfStyleProperty clone = new OdfStyleProperty(m_propSet, m_name);</span>
+<span class="nc" id="L96">    return clone;</span>
+  }
+
+  /** @inheritDoc */
+  @Override
+  public int hashCode() {
+<span class="nc" id="L102">    int hash = 3;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">    hash = 83 * hash + (this.m_propSet != null ? this.m_propSet.hashCode() : 0);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">    hash = 83 * hash + (this.m_name != null ? this.m_name.hashCode() : 0);</span>
+<span class="nc" id="L105">    return hash;</span>
+  }
+
+  /** @inheritDoc */
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    if (o instanceof OdfStyleProperty) {</span>
+<span class="nc" id="L112">      OdfStyleProperty sp = (OdfStyleProperty) o;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">      return compareTo(sp) == 0;</span>
+    }
+<span class="nc" id="L115">    return false;</span>
+  }
+
+  public int compareTo(OdfStyleProperty o) {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">    if (!(o instanceof OdfStyleProperty)) {</span>
+<span class="nc" id="L120">      return -1;</span>
+    }
+<span class="nc" id="L122">    OdfStyleProperty prop = o;</span>
+<span class="nc" id="L123">    int c = 0;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">    if ((c = m_propSet.compareTo(prop.m_propSet)) != 0) {</span>
+<span class="nc" id="L125">      return c;</span>
+    }
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    if ((c = m_name.compareTo(prop.m_name)) != 0) {</span>
+<span class="nc" id="L128">      return c;</span>
+    }
+    // all is equal...
+<span class="nc" id="L131">    return 0;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

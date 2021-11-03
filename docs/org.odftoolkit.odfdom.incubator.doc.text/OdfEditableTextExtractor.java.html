@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfEditableTextExtractor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfEditableTextExtractor.java</span></div><h1>OdfEditableTextExtractor.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.doc.table.OdfTable;
+import org.odftoolkit.odfdom.doc.table.OdfTableRow;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfMetaDom;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.element.draw.DrawObjectElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeMetaElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMasterPageElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.text.TextAElement;
+import org.odftoolkit.odfdom.dom.element.text.TextTrackedChangesElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.w3c.dom.NodeList;
+
+/**
+ * It's a sub class of OdfTextExtractor. It provides a method to return all the text that the user
+ * can typically edit in a document, including text in cotent.xml, header and footer in styles.xml,
+ * meta data in meta.xml.
+ *
+ * &lt;p&gt;This function can be used by search engine, and text analytic operations.
+ */
+public class OdfEditableTextExtractor extends OdfTextExtractor {
+
+<span class="nc" id="L48">  OdfDocument mDocument = null;</span>
+<span class="nc" id="L49">  OdfElement mElement = null;</span>
+<span class="nc" id="L50">  boolean mIsDocumentExtractor = false;</span>
+
+  /**
+   * Constructor with an ODF document as a parameter
+   *
+   * @param doc the ODF document whose editable text would be extracted.
+   */
+<span class="nc" id="L57">  private OdfEditableTextExtractor(OdfDocument doc) {</span>
+<span class="nc" id="L58">    mTextBuilder = new StringBuilder();</span>
+<span class="nc" id="L59">    mDocument = doc;</span>
+<span class="nc" id="L60">    mIsDocumentExtractor = true;</span>
+<span class="nc" id="L61">  }</span>
+
+  /**
+   * Constructor with an ODF element as parameter
+   *
+   * @param element the ODF element whose editable text would be extracted.
+   */
+<span class="nc" id="L68">  private OdfEditableTextExtractor(OdfElement element) {</span>
+<span class="nc" id="L69">    mTextBuilder = new StringBuilder();</span>
+<span class="nc" id="L70">    mElement = element;</span>
+<span class="nc" id="L71">    mIsDocumentExtractor = false;</span>
+<span class="nc" id="L72">  }</span>
+
+  /**
+   * An instance of OdfEditableTextExtractor will be created to extract the editable text content of
+   * an ODF element.
+   *
+   * @param doc the ODF document whose text will be extracted.
+   * @return An instance of OdfEditableTextExtractor
+   */
+  public static OdfEditableTextExtractor newOdfEditableTextExtractor(OdfDocument doc) {
+<span class="nc" id="L82">    return new OdfEditableTextExtractor(doc);</span>
+  }
+
+  /**
+   * An instance of OdfEditableTextExtractor will be created to extract the editable text content of
+   * an ODF element.
+   *
+   * @param element the ODF element whose text will be extracted.
+   * @return An instance of OdfEditableTextExtractor
+   */
+  public static OdfEditableTextExtractor newOdfEditableTextExtractor(OdfElement element) {
+<span class="nc" id="L93">    return new OdfEditableTextExtractor(element);</span>
+  }
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.draw.DrawObjectElement)
+   */
+  @Override
+  public void visit(DrawObjectElement element) {
+<span class="nc" id="L101">    String embedDocPath = element.getXlinkHrefAttribute();</span>
+<span class="nc" id="L102">    OdfDocument embedDoc =</span>
+<span class="nc" id="L103">        ((OdfDocument) (((OdfContentDom) element.getOwnerDocument()).getDocument()))</span>
+<span class="nc" id="L104">            .loadSubDocument(embedDocPath);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    if (embedDoc != null) {</span>
+      try {
+<span class="nc" id="L107">        mTextBuilder.append(</span>
+<span class="nc" id="L108">            OdfEditableTextExtractor.newOdfEditableTextExtractor(embedDoc).getText());</span>
+<span class="nc" id="L109">      } catch (Exception e) {</span>
+<span class="nc" id="L110">        Logger.getLogger(OdfEditableTextExtractor.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L111">      }</span>
+    }
+<span class="nc" id="L113">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextTrackedChangesElement)
+   */
+  @Override
+  public void visit(TextTrackedChangesElement ele) {
+<span class="nc" id="L120">    return;</span>
+  }
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextAElement)
+   */
+  @Override
+  public void visit(TextAElement ele) {
+<span class="nc" id="L128">    String link = ele.getXlinkHrefAttribute();</span>
+<span class="nc" id="L129">    mTextBuilder.append(link);</span>
+<span class="nc" id="L130">    appendElementText(ele);</span>
+<span class="nc" id="L131">  }</span>
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.dom.DefaultElementVisitor#visit(org.odftoolkit.odfdom.dom.element.text.TextTabElement)
+   */
+  @Override
+  public void visit(TableTableElement ele) {
+<span class="nc" id="L138">    OdfTable table = OdfTable.getInstance(ele);</span>
+<span class="nc" id="L139">    List&lt;OdfTableRow&gt; rowlist = table.getRowList();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">    for (int i = 0; i &lt; rowlist.size(); i++) {</span>
+<span class="nc" id="L141">      OdfTableRow row = rowlist.get(i);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">      for (int j = 0; j &lt; row.getCellCount(); j++) {</span>
+<span class="nc" id="L143">        mTextBuilder.append(row.getCellByIndex(j).getDisplayText()).append(TabChar);</span>
+      }
+<span class="nc" id="L145">      mTextBuilder.append(NewLineChar);</span>
+    }
+<span class="nc" id="L147">  }</span>
+
+  /**
+   * Return the editable text content as a string
+   *
+   * @return the editable text content as a string
+   */
+  @Override
+  public String getText() {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">    if (mIsDocumentExtractor) {</span>
+<span class="nc" id="L157">      return getDocumentText();</span>
+    } else {
+<span class="nc" id="L159">      visit(mElement);</span>
+<span class="nc" id="L160">      return mTextBuilder.toString();</span>
+    }
+  }
+
+  private String getDocumentText() {
+<span class="nc" id="L165">    StringBuilder builder = new StringBuilder();</span>
+    try {
+      // Extract text from content.xml
+<span class="nc" id="L168">      OdfEditableTextExtractor contentDomExtractor =</span>
+<span class="nc" id="L169">          newOdfEditableTextExtractor(mDocument.getContentRoot());</span>
+<span class="nc" id="L170">      builder.append(contentDomExtractor.getText());</span>
+
+      // Extract text from style.xml
+<span class="nc" id="L173">      OdfStylesDom styleDom = mDocument.getStylesDom();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">      if (styleDom != null) {</span>
+<span class="nc" id="L175">        StyleMasterPageElement masterpage = null;</span>
+<span class="nc" id="L176">        NodeList list = styleDom.getElementsByTagName(&quot;style:master-page&quot;);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (list.getLength() &gt; 0) {</span>
+<span class="nc" id="L178">          masterpage = (StyleMasterPageElement) list.item(0);</span>
+        }
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (masterpage != null) {</span>
+<span class="nc" id="L181">          builder.append(newOdfEditableTextExtractor(masterpage).getText());</span>
+        }
+      }
+
+      // Extract text from meta.xml
+<span class="nc" id="L186">      OdfMetaDom metaDom = mDocument.getMetaDom();</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">      if (metaDom != null) {</span>
+<span class="nc" id="L188">        OdfElement root = metaDom.getRootElement();</span>
+<span class="nc" id="L189">        OfficeMetaElement officemeta = OdfElement.findFirstChildNode(OfficeMetaElement.class, root);</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (officemeta != null) {</span>
+<span class="nc" id="L191">          builder.append(newOdfEditableTextExtractor(officemeta).getText());</span>
+        }
+      }
+
+<span class="nc" id="L195">      return builder.toString();</span>
+<span class="nc" id="L196">    } catch (Exception e) {</span>
+<span class="nc" id="L197">      Logger.getLogger(OdfEditableTextExtractor.class.getName()).severe(e.getMessage());</span>
+<span class="nc" id="L198">      return builder.toString();</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextNavigation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.search</a> &gt; <span class="el_source">TextNavigation.java</span></div><h1>TextNavigation.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.search;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.odftoolkit.odfdom.doc.OdfTextDocument;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeMasterStyles;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfWhitespaceProcessor;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * A derived Navigation class used for navigate the text content it is used to search the document
+ * and find the matched text and would return TextSelection instance
+ */
+public class TextNavigation extends Navigation {
+
+  private static final String mMatchedElementName = &quot;text:p,text:h&quot;;
+  private final Pattern mPattern;
+  private final OdfTextDocument mTextDocument;
+  private TextSelection mCurrentSelectedItem;
+  private String mCurrentText;
+  private int mCurrentIndex;
+  private boolean mbFinishFindInHeaderFooter;
+
+  /**
+   * Construct TextNavigation with matched condition and navigation scope
+   *
+   * @param pattern the matched pattern String
+   * @param doc the navigation scope
+   */
+  public TextNavigation(String pattern, OdfTextDocument doc) {
+<span class="nc" id="L54">    this(Pattern.compile(pattern), doc);</span>
+<span class="nc" id="L55">  }</span>
+
+  /**
+   * Construct TextNavigation with matched condition and navigation scope
+   *
+   * @param pattern the Pattern object to search with
+   * @param doc the navigation scope
+   */
+<span class="nc" id="L63">  public TextNavigation(Pattern pattern, OdfTextDocument doc) {</span>
+<span class="nc" id="L64">    this.mPattern = pattern;</span>
+<span class="nc" id="L65">    mTextDocument = doc;</span>
+<span class="nc" id="L66">    mCurrentSelectedItem = null;</span>
+<span class="nc" id="L67">    mbFinishFindInHeaderFooter = false;</span>
+<span class="nc" id="L68">  }</span>
+
+  // the matched text might exist in header/footer
+  private TextSelection findInHeaderFooter(TextSelection selected) {
+<span class="nc" id="L72">    OdfFileDom styledom = null;</span>
+<span class="nc" id="L73">    OdfOfficeMasterStyles masterpage = null;</span>
+<span class="nc" id="L74">    OdfElement element = null;</span>
+
+<span class="nc bnc" id="L76" title="All 2 branches missed.">    if (selected != null) {</span>
+<span class="nc" id="L77">      int nextIndex = setCurrentTextAndGetIndex(selected);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">      if (nextIndex != -1) {</span>
+<span class="nc" id="L79">        TextSelection item =</span>
+<span class="nc" id="L80">            new TextSelection(mCurrentText, selected.getContainerElement(), nextIndex);</span>
+<span class="nc" id="L81">        return item;</span>
+      }
+    }
+    try {
+<span class="nc" id="L85">      styledom = mTextDocument.getStylesDom();</span>
+<span class="nc" id="L86">      NodeList list = styledom.getElementsByTagName(&quot;office:master-styles&quot;);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">      if (styledom == null) {</span>
+<span class="nc" id="L88">        return null;</span>
+      }
+<span class="nc bnc" id="L90" title="All 2 branches missed.">      if (list.getLength() &gt; 0) {</span>
+<span class="nc" id="L91">        masterpage = (OdfOfficeMasterStyles) list.item(0);</span>
+      } else {
+<span class="nc" id="L93">        return null;</span>
+      }
+
+<span class="nc bnc" id="L96" title="All 2 branches missed.">      if (selected == null) {</span>
+<span class="nc" id="L97">        element = (OdfElement) getNextMatchElementInTree(masterpage, masterpage);</span>
+      } else {
+<span class="nc" id="L99">        element =</span>
+<span class="nc" id="L100">            (OdfElement) getNextMatchElementInTree(selected.getContainerElement(), masterpage);</span>
+      }
+
+<span class="nc bnc" id="L103" title="All 2 branches missed.">      if (element != null) {</span>
+<span class="nc" id="L104">        TextSelection item = new TextSelection(mCurrentText, element, mCurrentIndex);</span>
+<span class="nc" id="L105">        return item;</span>
+      } else {
+<span class="nc" id="L107">        return null;</span>
+      }
+
+<span class="nc" id="L110">    } catch (Exception ex) {</span>
+<span class="nc" id="L111">      Logger.getLogger(TextNavigation.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);</span>
+    }
+<span class="nc" id="L113">    return null;</span>
+  }
+
+  // found the next selection start from the 'selected' TextSelection
+  private TextSelection findnext(TextSelection selected) {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">    if (!mbFinishFindInHeaderFooter) {</span>
+<span class="nc" id="L119">      TextSelection styleselected = findInHeaderFooter(selected);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">      if (styleselected != null) {</span>
+<span class="nc" id="L121">        return styleselected;</span>
+      }
+<span class="nc" id="L123">      selected = null;</span>
+<span class="nc" id="L124">      mbFinishFindInHeaderFooter = true;</span>
+    }
+
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    if (selected == null) {</span>
+<span class="nc" id="L128">      OdfElement element = null;</span>
+      try {
+<span class="nc" id="L130">        element = (OdfElement) getNextMatchElement((Node) mTextDocument.getContentRoot());</span>
+<span class="nc" id="L131">      } catch (Exception ex) {</span>
+<span class="nc" id="L132">        Logger.getLogger(TextNavigation.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);</span>
+<span class="nc" id="L133">      }</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">      if (element != null) {</span>
+<span class="nc" id="L135">        return new TextSelection(mCurrentText, element, mCurrentIndex);</span>
+      } else {
+<span class="nc" id="L137">        return null;</span>
+      }
+    }
+
+<span class="nc" id="L141">    OdfElement containerElement = selected.getContainerElement();</span>
+<span class="nc" id="L142">    int nextIndex = setCurrentTextAndGetIndex(selected);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">    if (nextIndex != -1) {</span>
+<span class="nc" id="L144">      TextSelection item = new TextSelection(mCurrentText, containerElement, nextIndex);</span>
+<span class="nc" id="L145">      return item;</span>
+    } else {
+<span class="nc" id="L147">      OdfElement element = (OdfElement) getNextMatchElement(containerElement);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">      if (element != null) {</span>
+<span class="nc" id="L149">        TextSelection item = new TextSelection(mCurrentText, element, mCurrentIndex);</span>
+<span class="nc" id="L150">        return item;</span>
+      } else {
+<span class="nc" id="L152">        return null;</span>
+      }
+    }
+  }
+
+  private int setCurrentTextAndGetIndex(TextSelection selected) {
+<span class="nc" id="L158">    int index = selected.getIndex();</span>
+<span class="nc" id="L159">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="nc" id="L160">    String content = textProcessor.getText(selected.getContainerElement());</span>
+
+<span class="nc" id="L162">    int nextIndex = -1;</span>
+<span class="nc" id="L163">    Matcher matcher = mPattern.matcher(content);</span>
+    // start from the end index of the selected item
+<span class="nc bnc" id="L165" title="All 2 branches missed.">    if (matcher.find(index + selected.getText().length())) {</span>
+      // here just consider \n\r\t occupy one char
+<span class="nc" id="L167">      nextIndex = matcher.start();</span>
+<span class="nc" id="L168">      int eIndex = matcher.end();</span>
+<span class="nc" id="L169">      mCurrentText = content.substring(nextIndex, eIndex);</span>
+    }
+<span class="nc" id="L171">    return nextIndex;</span>
+  }
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.incubator.search.Navigation#getCurrentItem()
+   */
+  @Override
+  public Selection getCurrentItem() {
+<span class="nc" id="L179">    Selection.SelectionManager.registerItem(mCurrentSelectedItem);</span>
+<span class="nc" id="L180">    return mCurrentSelectedItem;</span>
+  }
+
+  /* (non-Javadoc)
+   * @see org.odftoolkit.odfdom.incubator.search.Navigation#hasNext()
+   */
+  @Override
+  public boolean hasNext() {
+<span class="nc" id="L188">    mCurrentSelectedItem = findnext(mCurrentSelectedItem);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">    return (mCurrentSelectedItem != null);</span>
+  }
+
+  /**
+   * check if the text content of element match the specified pattern string
+   *
+   * @param element navigate this element
+   * @return true if the text content of this element match this pattern; false if not match
+   */
+  @Override
+  public boolean match(Node element) {
+<span class="nc bnc" id="L200" title="All 2 branches missed.">    if (element instanceof OdfElement) {</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">      if (mMatchedElementName.contains(element.getNodeName())) {</span>
+<span class="nc" id="L202">        OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="nc" id="L203">        String content = textProcessor.getText(element);</span>
+
+<span class="nc" id="L205">        Matcher matcher = mPattern.matcher(content);</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (matcher.find()) {</span>
+          // here just consider \n\r\t occupy one char
+<span class="nc" id="L208">          mCurrentIndex = matcher.start();</span>
+<span class="nc" id="L209">          int eIndex = matcher.end();</span>
+<span class="nc" id="L210">          mCurrentText = content.substring(mCurrentIndex, eIndex);</span>
+<span class="nc" id="L211">          return true;</span>
+        }
+      }
+    }
+<span class="nc" id="L215">    return false;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

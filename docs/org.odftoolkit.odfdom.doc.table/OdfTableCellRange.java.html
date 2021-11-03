@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTableCellRange.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc.table</a> &gt; <span class="el_source">OdfTableCellRange.java</span></div><h1>OdfTableCellRange.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc.table;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.doc.OdfSpreadsheetDocument;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.attribute.office.OfficeValueTypeAttribute;
+import org.odftoolkit.odfdom.dom.element.table.TableCoveredTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableNamedExpressionsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableNamedRangeElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfXMLFactory;
+
+/**
+ * OdfTableCellRange represent a rang of cells that are adjacent with each other
+ *
+ * &lt;p&gt;OdfTableCellRange provides methods to get/set/modify the properties of cell range.
+ */
+public class OdfTableCellRange {
+
+  private int mnStartRow;
+  private int mnStartColumn;
+  private int mnEndRow;
+  private int mnEndColumn;
+  private String msCellRangeName;
+  private OdfTable maOwnerTable;
+  private boolean mbSpreadsheet;
+
+  /**
+   * Construct the instance of OdfTableCellRange.
+   *
+   * @param table is the container table of this cell range.
+   * @param startColumn is the column index of the first cell in this cell range.
+   * @param startRow is the row index of the first cell in this cell range.
+   * @param endColumn is the column index of the last cell in this cell range.
+   * @param endRow is the row index of the last cell in this cell range.
+   */
+<span class="nc" id="L63">  OdfTableCellRange(OdfTable table, int startColumn, int startRow, int endColumn, int endRow) {</span>
+<span class="nc" id="L64">    maOwnerTable = table;</span>
+
+<span class="nc" id="L66">    OdfDocument doc =</span>
+<span class="nc" id="L67">        (OdfDocument) ((OdfFileDom) maOwnerTable.getOdfElement().getOwnerDocument()).getDocument();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    if (doc instanceof OdfSpreadsheetDocument) {</span>
+<span class="nc" id="L69">      mbSpreadsheet = true;</span>
+    }
+
+    // the first cell is the covered cell, then the cell range should be enlarged
+    // so that it can contains the complete cell
+    // get the cell cover info
+<span class="nc" id="L75">    mnStartColumn = startColumn;</span>
+<span class="nc" id="L76">    mnStartRow = startRow;</span>
+<span class="nc" id="L77">    mnEndColumn = endColumn;</span>
+<span class="nc" id="L78">    mnEndRow = endRow;</span>
+<span class="nc" id="L79">    List&lt;CellCoverInfo&gt; coverList =</span>
+<span class="nc" id="L80">        maOwnerTable.getCellCoverInfos(</span>
+<span class="nc" id="L81">            0, 0, maOwnerTable.getColumnCount() - 1, maOwnerTable.getRowCount() - 1);</span>
+    OdfTableCell cell; // = maOwnerTable.getOwnerCellByPosition(coverList, nStartColumn, nStartRow);
+<span class="nc bnc" id="L83" title="All 2 branches missed.">    for (int i = startColumn; i &lt;= endColumn; i++) {</span>
+<span class="nc" id="L84">      cell = maOwnerTable.getOwnerCellByPosition(coverList, i, startRow);</span>
+<span class="nc" id="L85">      int rowIndex = cell.getRowIndex();</span>
+<span class="nc" id="L86">      int colIndex = cell.getColumnIndex();</span>
+<span class="nc" id="L87">      mnStartColumn = Math.min(mnStartColumn, colIndex);</span>
+<span class="nc" id="L88">      mnStartRow = Math.min(mnStartRow, rowIndex);</span>
+<span class="nc" id="L89">      mnEndColumn = Math.max(mnEndColumn, colIndex + cell.getColumnSpannedNumber() - 1);</span>
+<span class="nc" id="L90">      mnEndRow = Math.max(mnEndRow, rowIndex + cell.getRowSpannedNumber() - 1);</span>
+    }
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    for (int i = startColumn; i &lt;= endColumn; i++) {</span>
+<span class="nc" id="L94">      cell = maOwnerTable.getOwnerCellByPosition(coverList, i, endRow);</span>
+<span class="nc" id="L95">      int rowIndex = cell.getRowIndex();</span>
+<span class="nc" id="L96">      int colIndex = cell.getColumnIndex();</span>
+<span class="nc" id="L97">      mnStartColumn = Math.min(mnStartColumn, colIndex);</span>
+<span class="nc" id="L98">      mnStartRow = Math.min(mnStartRow, rowIndex);</span>
+<span class="nc" id="L99">      mnEndColumn = Math.max(mnEndColumn, colIndex + cell.getColumnSpannedNumber() - 1);</span>
+<span class="nc" id="L100">      mnEndRow = Math.max(mnEndRow, rowIndex + cell.getRowSpannedNumber() - 1);</span>
+    }
+
+<span class="nc bnc" id="L103" title="All 2 branches missed.">    for (int i = startRow + 1; i &lt; endRow; i++) {</span>
+<span class="nc" id="L104">      cell = maOwnerTable.getOwnerCellByPosition(coverList, startColumn, i);</span>
+<span class="nc" id="L105">      int rowIndex = cell.getRowIndex();</span>
+<span class="nc" id="L106">      int colIndex = cell.getColumnIndex();</span>
+<span class="nc" id="L107">      mnStartColumn = Math.min(mnStartColumn, colIndex);</span>
+<span class="nc" id="L108">      mnStartRow = Math.min(mnStartRow, rowIndex);</span>
+<span class="nc" id="L109">      mnEndColumn = Math.max(mnEndColumn, colIndex + cell.getColumnSpannedNumber() - 1);</span>
+<span class="nc" id="L110">      mnEndRow = Math.max(mnEndRow, rowIndex + cell.getRowSpannedNumber() - 1);</span>
+    }
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">    for (int i = startRow + 1; i &lt; endRow; i++) {</span>
+<span class="nc" id="L114">      cell = maOwnerTable.getOwnerCellByPosition(coverList, endColumn, i);</span>
+<span class="nc" id="L115">      int rowIndex = cell.getRowIndex();</span>
+<span class="nc" id="L116">      int colIndex = cell.getColumnIndex();</span>
+<span class="nc" id="L117">      mnStartColumn = Math.min(mnStartColumn, colIndex);</span>
+<span class="nc" id="L118">      mnStartRow = Math.min(mnStartRow, rowIndex);</span>
+<span class="nc" id="L119">      mnEndColumn = Math.max(mnEndColumn, colIndex + cell.getColumnSpannedNumber() - 1);</span>
+<span class="nc" id="L120">      mnEndRow = Math.max(mnEndRow, rowIndex + cell.getRowSpannedNumber() - 1);</span>
+    }
+<span class="nc" id="L122">  }</span>
+
+  /** construct the empty cellRange */
+<span class="nc" id="L125">  OdfTableCellRange() {}</span>
+
+  /** Merge the current cell range to one cell */
+  public void merge() {
+<span class="nc" id="L129">    OdfTableCell firstCell = maOwnerTable.getCellByPosition(mnStartColumn, mnStartRow);</span>
+
+    // note: after merge, the cell row/column count might  be changed
+<span class="nc" id="L132">    int rowCount = maOwnerTable.getRowCount();</span>
+<span class="nc" id="L133">    int colCount = maOwnerTable.getColumnCount();</span>
+    // if the cell range is the whole table, then merge it to a big cell
+    // as to the spreadsheet document, it should still keep the original cell count,
+    // rather than merge to a big cell.
+<span class="nc bnc" id="L137" title="All 6 branches missed.">    if (rowCount == (mnEndRow - mnStartRow + 1)</span>
+        &amp;&amp; colCount == (mnEndColumn - mnStartColumn + 1)
+        &amp;&amp; !mbSpreadsheet) {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">      if (firstCell.getOdfElement() instanceof TableTableCellElement) {</span>
+<span class="nc" id="L141">        TableTableCellElement firstCellElement =</span>
+<span class="nc" id="L142">            (TableTableCellElement) (firstCell.getOdfElement());</span>
+<span class="nc" id="L143">        firstCellElement.removeAttributeNS(</span>
+<span class="nc" id="L144">            OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-spanned&quot;);</span>
+<span class="nc" id="L145">        firstCellElement.removeAttributeNS(</span>
+<span class="nc" id="L146">            OdfDocumentNamespace.TABLE.getUri(), &quot;number-rows-spanned&quot;);</span>
+<span class="nc" id="L147">        firstCellElement.setOfficeValueTypeAttribute(</span>
+<span class="nc" id="L148">            OfficeValueTypeAttribute.Value.STRING.toString());</span>
+      }
+      // just copy the text of the other cells to this first cell
+<span class="nc bnc" id="L151" title="All 2 branches missed.">      for (int i = mnStartRow; i &lt; mnEndRow + 1; i++) {</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (int j = mnStartColumn; j &lt; mnEndColumn + 1; j++) {</span>
+<span class="nc" id="L153">          OdfTableCell cellBase = maOwnerTable.getCellByPosition(j, i);</span>
+<span class="nc bnc" id="L154" title="All 4 branches missed.">          if (j != mnStartColumn || i != mnStartRow) {</span>
+            // copy the content of this cell to the first cell
+<span class="nc" id="L156">            firstCell.appendContentFrom(cellBase);</span>
+          }
+        }
+      }
+<span class="nc" id="L160">      maOwnerTable.removeRowsByIndex(1, maOwnerTable.getRowCount() - 1);</span>
+<span class="nc" id="L161">      maOwnerTable.removeColumnsByIndex(1, maOwnerTable.getColumnCount() - 1);</span>
+<span class="nc" id="L162">      OdfTableColumn firstColumn = maOwnerTable.getColumnByIndex(0);</span>
+<span class="nc" id="L163">      firstColumn.setWidth(maOwnerTable.getWidth());</span>
+<span class="nc" id="L164">      mnEndRow = mnStartRow;</span>
+<span class="nc" id="L165">      mnEndColumn = mnStartColumn;</span>
+<span class="nc" id="L166">      return;</span>
+    } // if the cell range covered all the table row, and the merged column &gt; 1
+    // the merged column can be removed
+<span class="nc bnc" id="L169" title="All 6 branches missed.">    else if (rowCount == (mnEndRow - mnStartRow + 1)</span>
+        &amp;&amp; colCount &gt; (mnEndColumn - mnStartColumn + 1)
+        &amp;&amp; (mnEndColumn - mnStartColumn) &gt; 0) {
+      // the first cell, set the span attribute
+<span class="nc bnc" id="L173" title="All 2 branches missed.">      if (firstCell.getOdfElement() instanceof TableTableCellElement) {</span>
+<span class="nc" id="L174">        TableTableCellElement firstCellElement =</span>
+<span class="nc" id="L175">            (TableTableCellElement) (firstCell.getOdfElement());</span>
+<span class="nc" id="L176">        firstCellElement.removeAttributeNS(</span>
+<span class="nc" id="L177">            OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-spanned&quot;);</span>
+<span class="nc" id="L178">        firstCellElement.setTableNumberRowsSpannedAttribute(</span>
+<span class="nc" id="L179">            Integer.valueOf(mnEndRow - mnStartRow + 1));</span>
+<span class="nc" id="L180">        firstCellElement.setOfficeValueTypeAttribute(</span>
+<span class="nc" id="L181">            OfficeValueTypeAttribute.Value.STRING.toString());</span>
+      }
+      // the other cell, copy the content to first cell
+      // if it is also in the first column of the cell range, set to the covered cell
+      // other cell not in the first column will be removed when remove the column
+<span class="nc bnc" id="L186" title="All 2 branches missed.">      for (int i = mnStartRow; i &lt; mnEndRow + 1; i++) {</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        for (int j = mnStartColumn; j &lt; mnEndColumn + 1; j++) {</span>
+<span class="nc" id="L188">          OdfTableCell cellBase = maOwnerTable.getCellByPosition(j, i);</span>
+<span class="nc bnc" id="L189" title="All 4 branches missed.">          if (j != mnStartColumn || i != mnStartRow) {</span>
+            // append content to first cell
+<span class="nc" id="L191">            firstCell.appendContentFrom(cellBase);</span>
+            // change the cell in the first column of cell range to covered cell
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            if ((j == mnStartColumn)</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                &amp;&amp; (cellBase.getOdfElement() instanceof TableTableCellElement)) {</span>
+              // change the normal cell to be the covered cell
+<span class="nc" id="L196">              TableTableCellElement firstColumnCell =</span>
+<span class="nc" id="L197">                  (TableTableCellElement) cellBase.getOdfElement();</span>
+<span class="nc" id="L198">              TableCoveredTableCellElement coveredCell =</span>
+                  (TableCoveredTableCellElement)
+<span class="nc" id="L200">                      OdfXMLFactory.newOdfElement(</span>
+<span class="nc" id="L201">                          (OdfFileDom) firstColumnCell.getOwnerDocument(),</span>
+<span class="nc" id="L202">                          OdfName.newName(OdfDocumentNamespace.TABLE, &quot;covered-table-cell&quot;));</span>
+<span class="nc" id="L203">              OdfTableRow parentRow = cellBase.getTableRow();</span>
+<span class="nc" id="L204">              parentRow.getOdfElement().insertBefore(coveredCell, firstColumnCell);</span>
+<span class="nc" id="L205">              parentRow.getOdfElement().removeChild(firstColumnCell);</span>
+            }
+          }
+        }
+      }
+<span class="nc" id="L210">      List&lt;Long&gt; widthList = getCellRangeWidthList();</span>
+<span class="nc" id="L211">      long nCellRangeWidth =</span>
+<span class="nc" id="L212">          widthList.get(widthList.size() - 1).longValue() - widthList.get(0).longValue();</span>
+<span class="nc" id="L213">      maOwnerTable.removeColumnsByIndex(mnStartColumn + 1, mnEndColumn - mnStartColumn);</span>
+<span class="nc" id="L214">      OdfTableColumn firstColumn = maOwnerTable.getColumnByIndex(mnStartColumn);</span>
+<span class="nc" id="L215">      firstColumn.setWidth(nCellRangeWidth);</span>
+<span class="nc" id="L216">      mnEndColumn = mnStartColumn;</span>
+<span class="nc" id="L217">      return;</span>
+    } // if the cell range covered all the table column, the merged row can be removed
+<span class="nc bnc" id="L219" title="All 6 branches missed.">    else if (rowCount &gt; (mnEndRow - mnStartRow + 1)</span>
+        &amp;&amp; colCount == (mnEndColumn - mnStartColumn + 1)
+        &amp;&amp; (mnEndRow - mnStartRow) &gt; 0) {
+      // the first cell, set the span attribute
+<span class="nc bnc" id="L223" title="All 2 branches missed.">      if (firstCell.getOdfElement() instanceof TableTableCellElement) {</span>
+<span class="nc" id="L224">        TableTableCellElement firstCellElement =</span>
+<span class="nc" id="L225">            (TableTableCellElement) (firstCell.getOdfElement());</span>
+<span class="nc" id="L226">        firstCellElement.removeAttributeNS(</span>
+<span class="nc" id="L227">            OdfDocumentNamespace.TABLE.getUri(), &quot;number-rows-spanned&quot;);</span>
+<span class="nc" id="L228">        firstCellElement.setTableNumberColumnsSpannedAttribute(</span>
+<span class="nc" id="L229">            Integer.valueOf(mnEndColumn - mnStartColumn + 1));</span>
+<span class="nc" id="L230">        firstCellElement.setOfficeValueTypeAttribute(</span>
+<span class="nc" id="L231">            OfficeValueTypeAttribute.Value.STRING.toString());</span>
+      }
+      // the other cell, copy the content to first cell
+      // if it is also in the first row of the cell range, set to the covered cell
+      // other cell not in the first row will be removed when remove the row
+<span class="nc bnc" id="L236" title="All 2 branches missed.">      for (int i = mnStartRow; i &lt; mnEndRow + 1; i++) {</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">        for (int j = mnStartColumn; j &lt; mnEndColumn + 1; j++) {</span>
+<span class="nc" id="L238">          OdfTableCell cellBase = maOwnerTable.getCellByPosition(j, i);</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">          if (j != mnStartColumn || i != mnStartRow) {</span>
+            // append content to first cell
+<span class="nc" id="L241">            firstCell.appendContentFrom(cellBase);</span>
+            // change the cell in the first row of cell range to covered cell
+<span class="nc bnc" id="L243" title="All 4 branches missed.">            if ((i == mnStartRow) &amp;&amp; (cellBase.getOdfElement() instanceof TableTableCellElement)) {</span>
+              // change the normal cell to be the covered cell
+<span class="nc" id="L245">              TableTableCellElement firstRowCell = (TableTableCellElement) cellBase.getOdfElement();</span>
+<span class="nc" id="L246">              TableCoveredTableCellElement coveredCell =</span>
+                  (TableCoveredTableCellElement)
+<span class="nc" id="L248">                      OdfXMLFactory.newOdfElement(</span>
+<span class="nc" id="L249">                          (OdfFileDom) firstRowCell.getOwnerDocument(),</span>
+<span class="nc" id="L250">                          OdfName.newName(OdfDocumentNamespace.TABLE, &quot;covered-table-cell&quot;));</span>
+<span class="nc" id="L251">              OdfTableRow parentRow = cellBase.getTableRow();</span>
+<span class="nc" id="L252">              parentRow.getOdfElement().insertBefore(coveredCell, firstRowCell);</span>
+<span class="nc" id="L253">              parentRow.getOdfElement().removeChild(firstRowCell);</span>
+            }
+          }
+        }
+      }
+<span class="nc" id="L258">      maOwnerTable.removeRowsByIndex(mnStartRow + 1, mnEndRow - mnStartRow);</span>
+<span class="nc" id="L259">      mnEndRow = mnStartRow;</span>
+<span class="nc" id="L260">      return;</span>
+    } // don't remove any row/column
+    else {
+      // first keep the column and row count in this cell range
+      // the first cell, set the span attribute
+<span class="nc bnc" id="L265" title="All 2 branches missed.">      if (firstCell.getOdfElement() instanceof TableTableCellElement) {</span>
+<span class="nc" id="L266">        TableTableCellElement firstCellElement =</span>
+<span class="nc" id="L267">            (TableTableCellElement) (firstCell.getOdfElement());</span>
+<span class="nc" id="L268">        firstCellElement.setTableNumberColumnsSpannedAttribute(</span>
+<span class="nc" id="L269">            Integer.valueOf(mnEndColumn - mnStartColumn + 1));</span>
+<span class="nc" id="L270">        firstCellElement.setTableNumberRowsSpannedAttribute(</span>
+<span class="nc" id="L271">            Integer.valueOf(mnEndRow - mnStartRow + 1));</span>
+<span class="nc" id="L272">        firstCellElement.setOfficeValueTypeAttribute(</span>
+<span class="nc" id="L273">            OfficeValueTypeAttribute.Value.STRING.toString());</span>
+      }
+      // the other cell, set to the covered cell
+<span class="nc bnc" id="L276" title="All 2 branches missed.">      for (int i = mnStartRow; i &lt; mnEndRow + 1; i++) {</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        for (int j = mnStartColumn; j &lt; mnEndColumn + 1; j++) {</span>
+<span class="nc" id="L278">          OdfTableCell cellBase = maOwnerTable.getCellByPosition(j, i);</span>
+<span class="nc bnc" id="L279" title="All 4 branches missed.">          if (j != mnStartColumn || i != mnStartRow) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            if (cellBase.getOdfElement() instanceof TableTableCellElement) {</span>
+              // change the normal cell to be the covered cell
+<span class="nc" id="L282">              TableTableCellElement cell = (TableTableCellElement) cellBase.getOdfElement();</span>
+<span class="nc" id="L283">              TableCoveredTableCellElement coveredCell =</span>
+                  (TableCoveredTableCellElement)
+<span class="nc" id="L285">                      OdfXMLFactory.newOdfElement(</span>
+<span class="nc" id="L286">                          (OdfFileDom) cell.getOwnerDocument(),</span>
+<span class="nc" id="L287">                          OdfName.newName(OdfDocumentNamespace.TABLE, &quot;covered-table-cell&quot;));</span>
+
+<span class="nc" id="L289">              OdfTableRow parentRow = cellBase.getTableRow();</span>
+<span class="nc" id="L290">              parentRow.getOdfElement().insertBefore(coveredCell, cell);</span>
+              // copy the content of this cell to the first cell
+<span class="nc" id="L292">              firstCell.appendContentFrom(cellBase);</span>
+<span class="nc" id="L293">              cellBase.removeContent();</span>
+              // set the table column repeated attribute
+<span class="nc" id="L295">              int repeatedNum = cell.getTableNumberColumnsRepeatedAttribute().intValue();</span>
+<span class="nc" id="L296">              int num = (mnEndColumn - j + 1) - repeatedNum;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">              if (num &gt;= 0) {</span>
+<span class="nc" id="L298">                coveredCell.setTableNumberColumnsRepeatedAttribute(Integer.valueOf(repeatedNum));</span>
+<span class="nc" id="L299">                parentRow.getOdfElement().removeChild(cell);</span>
+              } else {
+<span class="nc" id="L301">                coveredCell.setTableNumberColumnsRepeatedAttribute(</span>
+                    new Integer(mnEndColumn - j + 1));
+<span class="nc" id="L303">                cell.setTableNumberColumnsRepeatedAttribute(Integer.valueOf(-num));</span>
+              }
+
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            } else if (cellBase.getOdfElement() instanceof TableCoveredTableCellElement) {</span>
+              try {
+                // copy the content of this cell to the first cell
+<span class="nc" id="L309">                firstCell.appendContentFrom(cellBase);</span>
+<span class="nc" id="L310">                cellBase.removeContent();</span>
+<span class="nc" id="L311">              } catch (Exception e) {</span>
+<span class="nc" id="L312">                Logger.getLogger(OdfTableCellRange.class.getName())</span>
+<span class="nc" id="L313">                    .log(Level.SEVERE, e.getMessage(), e);</span>
+<span class="nc" id="L314">              }</span>
+            }
+          }
+        }
+      }
+    }
+<span class="nc" id="L320">  }</span>
+
+  // vector store the x coordinate of each column which reference to the left start point of owner
+  // table
+  // the returned value is all measured with &quot;mm&quot; unit
+  private List&lt;Long&gt; getCellRangeWidthList() {
+<span class="nc" id="L326">    List&lt;Long&gt; list = new ArrayList&lt;Long&gt;();</span>
+<span class="nc" id="L327">    Long length = Long.valueOf(0);</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">    for (int i = 0; i &lt; maOwnerTable.getColumnCount() - 1; i++) {</span>
+<span class="nc" id="L329">      OdfTableColumn col = maOwnerTable.getColumnByIndex(i);</span>
+<span class="nc" id="L330">      int repeateNum = col.getColumnsRepeatedNumber();</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">      if (repeateNum == 1) {</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (isColumnInCellRange(i)) {</span>
+<span class="nc" id="L333">          list.add(length);</span>
+        }
+<span class="nc" id="L335">        length = Long.valueOf(length.longValue() + col.getWidth());</span>
+      } else {
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        for (int j = 0; j &lt; repeateNum; j++) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">          if (isColumnInCellRange(i + j)) {</span>
+<span class="nc" id="L339">            list.add(length);</span>
+<span class="nc" id="L340">            length = Long.valueOf(length.longValue() + col.getWidth());</span>
+          }
+        }
+<span class="nc" id="L343">        i += repeateNum - 1;</span>
+      }
+    }
+    // x coordinate of last column right point
+<span class="nc" id="L347">    list.add(length);</span>
+<span class="nc" id="L348">    return list;</span>
+  }
+
+  // vector store the x coordinate of each will split column start point
+  List&lt;Long&gt; getVeticalSplitCellRangeWidthList(int splitNum) {
+    // get each cell in the cell range(the cell here means the real cell, not the covered cell)
+<span class="nc" id="L354">    List&lt;CellCoverInfo&gt; coverList =</span>
+<span class="nc" id="L355">        maOwnerTable.getCellCoverInfos(mnStartColumn, mnStartRow, mnEndColumn, mnEndRow);</span>
+    // then get the real(uncovered) cell x coordinate
+<span class="nc" id="L357">    List&lt;Long&gt; tmpList = new ArrayList&lt;Long&gt;();</span>
+<span class="nc" id="L358">    List&lt;Long&gt; widthList = getCellRangeWidthList();</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">    for (int i = mnStartColumn; i &lt; mnEndColumn + 1; i++) {</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">      for (int j = mnStartRow; j &lt; mnEndRow + 1; j++) {</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (maOwnerTable.isCoveredCellInOwnerTable(coverList, i, j)) {</span>
+<span class="nc" id="L362">          continue;</span>
+        } else {
+          // the real cell, record the x coordinate of the left point
+<span class="nc" id="L365">          Long width = widthList.get(i - mnStartColumn);</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">          if (!tmpList.contains(width)) {</span>
+<span class="nc" id="L367">            tmpList.add(width);</span>
+          }
+        }
+      }
+    }
+
+    // last, reorder the tmpVector and split it to splitNum between each item
+<span class="nc" id="L374">    Long[] widthArray = (Long[]) tmpList.toArray();</span>
+<span class="nc" id="L375">    Arrays.sort(widthArray);</span>
+<span class="nc" id="L376">    List&lt;Long&gt; rtnValues = new ArrayList&lt;Long&gt;();</span>
+    Long colWidth;
+    long unitWidth;
+<span class="nc" id="L379">    rtnValues.add(widthArray[0]);</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">    for (int i = 1; i &lt; widthArray.length; i++) {</span>
+<span class="nc" id="L381">      colWidth = Long.valueOf(widthArray[i].longValue() - widthArray[i - 1].longValue());</span>
+<span class="nc" id="L382">      unitWidth = colWidth.longValue() / splitNum;</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">      for (int j = 1; j &lt; splitNum; j++) {</span>
+<span class="nc" id="L384">        long eachWidth = unitWidth * j + widthArray[i - 1].longValue();</span>
+<span class="nc" id="L385">        rtnValues.add(Long.valueOf(eachWidth));</span>
+      }
+<span class="nc" id="L387">      rtnValues.add(widthArray[i]);</span>
+    }
+<span class="nc" id="L389">    return rtnValues;</span>
+  }
+
+  /**
+   * Get the name of the named cell range.
+   *
+   * @return the name of the cell range
+   */
+  public String getCellRangeName() {
+<span class="nc" id="L398">    return msCellRangeName;</span>
+  }
+
+  /**
+   * Set the name of the current cell range.
+   *
+   * @param cellRangeName the name that need to set
+   */
+  public void setCellRangeName(String cellRangeName) {
+    try {
+<span class="nc" id="L408">      OdfElement contentRoot = maOwnerTable.mDocument.getContentRoot();</span>
+      // create name range element
+<span class="nc" id="L410">      OdfFileDom contentDom = ((OdfFileDom) maOwnerTable.getOdfElement().getOwnerDocument());</span>
+<span class="nc" id="L411">      TableNamedExpressionsElement nameExpress =</span>
+          (TableNamedExpressionsElement)
+<span class="nc" id="L413">              OdfXMLFactory.newOdfElement(</span>
+<span class="nc" id="L414">                  contentDom, OdfName.newName(OdfDocumentNamespace.TABLE, &quot;named-expressions&quot;));</span>
+<span class="nc" id="L415">      String startCellRange =</span>
+          &quot;$&quot;
+<span class="nc" id="L417">              + maOwnerTable.getTableName()</span>
+              + &quot;.&quot;
+<span class="nc" id="L419">              + maOwnerTable.getAbsoluteCellAddress(mnStartColumn, mnStartRow);</span>
+<span class="nc" id="L420">      String endCellRange =</span>
+          &quot;$&quot;
+<span class="nc" id="L422">              + maOwnerTable.getTableName()</span>
+              + &quot;.&quot;
+<span class="nc" id="L424">              + maOwnerTable.getAbsoluteCellAddress(mnEndColumn, mnEndRow);</span>
+<span class="nc" id="L425">      TableNamedRangeElement nameRange =</span>
+          (TableNamedRangeElement)
+<span class="nc" id="L427">              nameExpress.newTableNamedRangeElement(</span>
+                  startCellRange + &quot;:&quot; + endCellRange, cellRangeName);
+<span class="nc" id="L429">      nameRange.setTableBaseCellAddressAttribute(endCellRange);</span>
+<span class="nc" id="L430">      contentRoot.appendChild(nameExpress);</span>
+<span class="nc" id="L431">      msCellRangeName = cellRangeName;</span>
+<span class="nc" id="L432">    } catch (Exception ex) {</span>
+<span class="nc" id="L433">      Logger.getLogger(OdfTableCellRange.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L434">    }</span>
+<span class="nc" id="L435">  }</span>
+
+  /**
+   * Get the &lt;code&gt;OdfTable&lt;/code&gt; instance who contains this cell range.
+   *
+   * @return the table that contains the cell range.
+   */
+  public OdfTable getTable() {
+<span class="nc" id="L443">    return maOwnerTable;</span>
+  }
+
+  /**
+   * Get the number of rows in this cell range.
+   *
+   * @return rows number in the cell range
+   */
+  public int getRowNumber() {
+<span class="nc" id="L452">    return (mnEndRow - mnStartRow + 1);</span>
+  }
+
+  /**
+   * Get the number of columns in this cell range.
+   *
+   * @return columns number in the cell range
+   */
+  public int getColumnNumber() {
+<span class="nc" id="L461">    return (mnEndColumn - mnStartColumn + 1);</span>
+  }
+
+  /**
+   * Returns a single cell that is positioned at specified column and row.
+   *
+   * @param clmIndex the column index of the cell inside the range.
+   * @param rowIndex the row index of the cell inside the range.
+   * @return the cell at the specified position relative to the start position of the cell range
+   * @throws IndexOutOfBoundsException if the column/row index is bigger than the column/row count
+   */
+  public OdfTableCell getCellByPosition(int clmIndex, int rowIndex)
+      throws IndexOutOfBoundsException {
+<span class="nc" id="L474">    return maOwnerTable.getCellByPosition(mnStartColumn + clmIndex, mnStartRow + rowIndex);</span>
+  }
+
+  /**
+   * Check if the given column in is this cell range.
+   *
+   * @param colIndex the given column index
+   * @return true if the given column index is in the current cell range
+   */
+  private boolean isColumnInCellRange(int colIndex) {
+<span class="nc bnc" id="L484" title="All 4 branches missed.">    if (colIndex &lt; mnStartColumn || colIndex &gt; mnEndColumn) {</span>
+<span class="nc" id="L485">      return false;</span>
+    } else {
+<span class="nc" id="L487">      return true;</span>
+    }
+  }
+
+  /**
+   * Returns a single cell that is positioned at specified cell address.
+   *
+   * @param address the cell address of the cell inside the range.
+   * @return the cell at the specified cell address relative to the start position of the cell range
+   */
+  public OdfTableCell getCellByPosition(String address) {
+    // if the address also contain the table name,  but the table is not the maOwnerTable
+    // what should do? get the table then getcellByPosition?
+<span class="nc" id="L500">    return getCellByPosition(</span>
+<span class="nc" id="L501">        maOwnerTable.getColIndexFromCellAddress(address),</span>
+<span class="nc" id="L502">        maOwnerTable.getRowIndexFromCellAddress(address));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Selection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.search</a> &gt; <span class="el_source">Selection.java</span></div><h1>Selection.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.search;
+
+import java.util.Hashtable;
+import java.util.Vector;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+
+/**
+ * Abstract class Selection describe one of the matched results The selection can be recognized by
+ * the container mElement, the start mIndex of the text content of this mElement and the text
+ * content.
+ */
+<span class="nc" id="L30">public abstract class Selection {</span>
+
+  private OdfElement mElement;
+  private int mIndex;
+
+  /**
+   * get the container mElement of this selection
+   *
+   * @return the container mElement
+   */
+  public OdfElement getElement() {
+<span class="nc" id="L41">    return mElement;</span>
+  }
+
+  /**
+   * get the start mIndex of the text content of the container mElement this is only meaningful for
+   * TextSelection. other type Selection will return 0.
+   *
+   * @return the start mIndex of the container mElement
+   */
+  public int getIndex() {
+<span class="nc" id="L51">    return mIndex;</span>
+  }
+
+  /**
+   * cut the current selection
+   *
+   * @throws InvalidNavigationException
+   */
+  public abstract void cut() throws InvalidNavigationException;
+
+  /**
+   * paste the current selection at front of the specified position selection
+   *
+   * @param positionitem the position selection
+   * @throws InvalidNavigationException
+   */
+  public abstract void pasteAtFrontOf(Selection positionitem) throws InvalidNavigationException;
+
+  /**
+   * paste the current selection at end of the specified position selection
+   *
+   * @param positionitem the position selection
+   * @throws InvalidNavigationException
+   */
+  public abstract void pasteAtEndOf(Selection positionitem) throws InvalidNavigationException;
+
+  /**
+   * when a selected item has been delete, the selections after this deleted selection should be
+   * refresh because these selections mIndex will be changed
+   *
+   * @param deleteditem the deleted selection
+   */
+  protected abstract void refreshAfterFrontalDelete(Selection deleteditem);
+
+  /**
+   * when a selected item has been inserted, the selection after the inserted item should be refresh
+   * because these selections mIndex will be changed
+   *
+   * @param inserteditem the inserted selection
+   */
+  protected abstract void refreshAfterFrontalInsert(Selection inserteditem);
+
+  /**
+   * A quick method to update the mIndex of this selection
+   *
+   * @param offset the offset that the mIndex should be added
+   */
+  protected abstract void refresh(int offset);
+
+  /**
+   * SelectionManager can manage all the selections that are returned to end users. This
+   * SelectionManager contains a repository of all selections, and will refresh the status/mIndex of
+   * selections after certain operation.
+   */
+  static class SelectionManager {
+
+<span class="nc" id="L107">    private static Hashtable&lt;OdfElement, Vector&lt;Selection&gt;&gt; repository =</span>
+        new Hashtable&lt;OdfElement, Vector&lt;Selection&gt;&gt;();
+
+    /**
+     * Register the selection item
+     *
+     * @param item the selection item
+     */
+    public static void registerItem(Selection item) {
+<span class="nc" id="L116">      OdfElement element = item.getElement();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">      if (repository.containsKey(element)) {</span>
+<span class="nc" id="L118">        Vector&lt;Selection&gt; selections = repository.get(element);</span>
+<span class="nc" id="L119">        int i = 0;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        while (i &lt; selections.size()) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">          if (selections.get(i).getIndex() &gt; item.getIndex()) {</span>
+<span class="nc" id="L122">            selections.insertElementAt(item, i);</span>
+<span class="nc" id="L123">            break;</span>
+          }
+<span class="nc" id="L125">          i++;</span>
+        }
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (i == selections.size()) {</span>
+<span class="nc" id="L128">          selections.add(item);</span>
+        }
+<span class="nc" id="L130">      } else {</span>
+<span class="nc" id="L131">        Vector&lt;Selection&gt; al = new Vector&lt;Selection&gt;();</span>
+<span class="nc" id="L132">        al.add(item);</span>
+<span class="nc" id="L133">        repository.put(element, al);</span>
+      }
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * Refresh the selections in repository after a item is cut.
+     *
+     * @param cutItem the cut item
+     */
+    public static synchronized void refreshAfterCut(Selection cutItem) {
+      // travase the whole sub tree
+<span class="nc" id="L144">      OdfElement element = cutItem.getElement();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">      if (repository.containsKey(element)) {</span>
+<span class="nc" id="L146">        Vector&lt;Selection&gt; selections = repository.get(element);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        for (int i = 0; i &lt; selections.size(); i++) {</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">          if (selections.get(i).getIndex() &gt; cutItem.getIndex()) {</span>
+<span class="nc" id="L149">            selections.get(i).refreshAfterFrontalDelete(cutItem);</span>
+          }
+        }
+      }
+<span class="nc" id="L153">    }</span>
+
+    /**
+     * Refresh the selections in repository after a pastedAtFrontOf operation is called.
+     *
+     * @param item the pasted item
+     * @param positionItem the position item
+     */
+    public static synchronized void refreshAfterPasteAtFrontOf(
+        Selection item, Selection positionItem) {
+      // travase the whole sub tree
+<span class="nc" id="L164">      OdfElement element = positionItem.getElement();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">      if (repository.containsKey(element)) {</span>
+<span class="nc" id="L166">        Vector&lt;Selection&gt; selections = repository.get(element);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        for (int i = 0; i &lt; selections.size(); i++) {</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">          if (selections.get(i).getIndex() &gt;= positionItem.getIndex()) {</span>
+<span class="nc" id="L169">            selections.get(i).refreshAfterFrontalInsert(item);</span>
+          }
+        }
+      }
+<span class="nc" id="L173">    }</span>
+
+    /**
+     * Refresh the selections in repository after a pastedAtEndOf operation is called.
+     *
+     * @param item the pasted item
+     * @param positionItem the position item
+     */
+    public static synchronized void refreshAfterPasteAtEndOf(
+        Selection item, Selection positionItem) {
+<span class="nc" id="L183">      OdfElement element = positionItem.getElement();</span>
+      int positionIndex;
+
+<span class="nc bnc" id="L186" title="All 2 branches missed.">      if (positionItem instanceof TextSelection) {</span>
+<span class="nc" id="L187">        positionIndex = positionItem.getIndex() + ((TextSelection) positionItem).getText().length();</span>
+      } else {
+<span class="nc" id="L189">        positionIndex = positionItem.getIndex();</span>
+      }
+
+<span class="nc bnc" id="L192" title="All 2 branches missed.">      if (repository.containsKey(element)) {</span>
+<span class="nc" id="L193">        Vector&lt;Selection&gt; selections = repository.get(element);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        for (int i = 0; i &lt; selections.size(); i++) {</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">          if (selections.get(i).getIndex() &gt;= positionIndex) {</span>
+<span class="nc" id="L196">            selections.get(i).refreshAfterFrontalInsert(item);</span>
+          }
+        }
+      }
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Remove the selection from repository.
+     *
+     * @param item selection item
+     */
+    public static void unregisterItem(Selection item) {
+<span class="nc" id="L208">      OdfElement element = item.getElement();</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">      if (repository.containsKey(element)) {</span>
+<span class="nc" id="L210">        Vector&lt;Selection&gt; selections = repository.get(element);</span>
+<span class="nc" id="L211">        selections.remove(item);</span>
+      }
+<span class="nc" id="L213">    }</span>
+
+    /**
+     * A direct method to update all the selections contained in a mElement after a certain
+     * position.
+     *
+     * @param containerElement the container mElement
+     * @param offset the offset
+     * @param positionIndex the mIndex of a certain position
+     */
+    public static synchronized void refresh(
+        OdfElement containerElement, int offset, int positionIndex) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">      if (repository.containsKey(containerElement)) {</span>
+<span class="nc" id="L226">        Vector&lt;Selection&gt; selections = repository.get(containerElement);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        for (int i = 0; i &lt; selections.size(); i++) {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">          if (selections.get(i).getIndex() &gt;= positionIndex) {</span>
+<span class="nc" id="L229">            selections.get(i).refresh(offset);</span>
+          }
+        }
+      }
+<span class="nc" id="L233">    }</span>
+
+    private SelectionManager() {}
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
