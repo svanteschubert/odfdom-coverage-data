@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextStyleNavigation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.search</a> &gt; <span class="el_source">TextStyleNavigation.java</span></div><h1>TextStyleNavigation.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.search;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.doc.OdfTextDocument;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfDefaultStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextHeading;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * A derived Navigation class used for navigate the mText content it is used to search the document
+ * and find the matched style properties and would return TextSelection instance
+ */
+public class TextStyleNavigation extends Navigation {
+
+  private OdfTextDocument mTextDocument;
+  private TextSelection mCurrentSelectedItem;
+  private int mCurrentIndex;
+  private Map&lt;OdfStyleProperty, String&gt; mProps;
+  private String mText;
+  private Node mPhNode;
+  private int mIndex;
+  private Node mNode;
+
+  /**
+   * Construct TextStyleNavigation with style properties condition and navigation scope
+   *
+   * @param props the matched style properties conditions
+   * @param doc the navigation search scope
+   */
+<span class="fc" id="L63">  public TextStyleNavigation(Map&lt;OdfStyleProperty, String&gt; props, OdfTextDocument doc) {</span>
+<span class="fc" id="L64">    mTextDocument = doc;</span>
+<span class="fc" id="L65">    mCurrentSelectedItem = null;</span>
+<span class="fc" id="L66">    this.mProps = props;</span>
+<span class="fc" id="L67">  }</span>
+
+  /*
+   * Find next TextSelection which match specified style
+   */
+  private TextSelection findnext(TextSelection selected) {
+<span class="fc" id="L73">    OdfElement element = null;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">    if (selected == null) {</span>
+
+      try {
+<span class="fc" id="L77">        mNode = getNextMatchElement((Node) mTextDocument.getContentRoot());</span>
+<span class="nc" id="L78">      } catch (Exception ex) {</span>
+<span class="nc" id="L79">        Logger.getLogger(TextStyleNavigation.class.getName())</span>
+<span class="nc" id="L80">            .log(Level.SEVERE, ex.getMessage(), ex);</span>
+<span class="pc" id="L81">      }</span>
+    } else {
+      try {
+<span class="fc" id="L84">        mNode = getNextMatchElement(mNode);</span>
+<span class="nc" id="L85">      } catch (Exception ex) {</span>
+<span class="nc" id="L86">        Logger.getLogger(TextStyleNavigation.class.getName())</span>
+<span class="nc" id="L87">            .log(Level.SEVERE, ex.getMessage(), ex);</span>
+<span class="fc" id="L88">      }</span>
+    }
+<span class="fc bfc" id="L90" title="All 2 branches covered.">    if (mNode != null) {</span>
+<span class="fc" id="L91">      element = (OdfElement) getPHElement(mNode);</span>
+<span class="fc" id="L92">      TextSelection item = new TextSelection(mText, element, mCurrentIndex);</span>
+<span class="fc" id="L93">      return item;</span>
+    }
+<span class="fc" id="L95">    return null;</span>
+  }
+
+  private Node getPHElement(Node node) {
+
+    // get paragraph or heading element
+<span class="fc bfc" id="L101" title="All 2 branches covered.">    if (node instanceof OdfTextParagraph) {</span>
+<span class="fc" id="L102">      mPhNode = node;</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">    } else if (node instanceof OdfTextHeading) {</span>
+<span class="nc" id="L104">      mPhNode = node;</span>
+    } else {
+<span class="fc" id="L106">      getPHElement(node.getParentNode());</span>
+    }
+<span class="fc" id="L108">    return mPhNode;</span>
+  }
+
+  /* (non-Javadoc)
+   * get current TextSelection
+   * @see org.odftoolkit.odfdom.incubator.search.Navigation#getCurrentItem()
+   */
+  @Override
+  public Selection getCurrentItem() {
+<span class="fc" id="L117">    Selection.SelectionManager.registerItem(mCurrentSelectedItem);</span>
+<span class="fc" id="L118">    return mCurrentSelectedItem;</span>
+  }
+
+  /* (non-Javadoc)
+   * check if has next TextSelection with satisfied style
+   * @see org.odftoolkit.odfdom.incubator.search.Navigation#hasNext()
+   */
+  @Override
+  public boolean hasNext() {
+<span class="fc" id="L127">    mCurrentSelectedItem = findnext(mCurrentSelectedItem);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">    return (mCurrentSelectedItem != null);</span>
+  }
+
+  /**
+   * check if the element has the specified style properties
+   *
+   * @param element navigate this element
+   * @return true if this element has the specified style properties false if not match
+   */
+  @Override
+  public boolean match(Node element) {
+<span class="fc" id="L139">    boolean match = false;</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">    if (element.getNodeType() == Node.TEXT_NODE &amp;&amp; !element.getNodeValue().trim().equals(&quot;&quot;)) {</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">      if (element.getParentNode() instanceof OdfStylableElement) {</span>
+<span class="fc" id="L142">        OdfStylableElement parStyleElement = (OdfStylableElement) element.getParentNode();</span>
+
+<span class="fc" id="L144">        String parStyleName = getStyleName(parStyleElement);</span>
+
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (getMatchStyleNames().contains(parStyleName)) {</span>
+<span class="fc" id="L147">          match = true;</span>
+<span class="fc" id="L148">          mText = element.getNodeValue();</span>
+<span class="fc" id="L149">          NodeList nodes = getPHElement(element.getParentNode()).getChildNodes();</span>
+<span class="fc" id="L150">          mIndex = 0;</span>
+<span class="fc" id="L151">          getIndex(nodes, element);</span>
+        }
+      }
+    }
+<span class="fc" id="L155">    return match;</span>
+  }
+
+  private void getIndex(NodeList nodes, Node element) {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">    for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L160">      Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">      if (node == element) {</span>
+<span class="fc" id="L162">        mCurrentIndex = mIndex;</span>
+<span class="fc" id="L163">        break;</span>
+      } else {
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L166">          mIndex = mIndex + node.getNodeValue().length();</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">          if (node.getLocalName().equals(&quot;s&quot;)) // mText:s</span>
+          {
+            try {
+<span class="fc" id="L171">              mIndex =</span>
+                  mIndex
+<span class="nc" id="L173">                      + Integer.parseInt(</span>
+<span class="fc" id="L174">                          ((Element) node).getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;c&quot;));</span>
+<span class="fc" id="L175">            } catch (Exception e) {</span>
+<span class="fc" id="L176">              mIndex++;</span>
+<span class="pc" id="L177">            }</span>
+
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">          } else if (node.getLocalName().equals(&quot;line-break&quot;)) {</span>
+<span class="nc" id="L180">            mIndex++;</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">          } else if (node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L182">            mIndex++;</span>
+          } else {
+<span class="fc" id="L184">            getIndex(node.getChildNodes(), element);</span>
+          }
+        }
+      }
+    }
+<span class="fc" id="L189">  }</span>
+
+  private String getStyleName(OdfStylableElement element) {
+<span class="fc" id="L192">    String stylename = element.getStyleName();</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">    if (stylename == null) {</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">      if (element.getParentNode() instanceof OdfStylableElement) {</span>
+<span class="nc" id="L195">        getStyleName((OdfStylableElement) element.getParentNode());</span>
+      } else {
+<span class="nc" id="L197">        stylename = &quot;defaultstyle&quot;;</span>
+      }
+    }
+<span class="fc" id="L200">    return stylename;</span>
+  }
+
+  private Set&lt;String&gt; getMatchStyleNames() {
+<span class="fc" id="L204">    Set&lt;String&gt; styleNames = new HashSet&lt;String&gt;();</span>
+    String sname;
+<span class="fc" id="L206">    HashMap&lt;String, OdfDefaultStyle&gt; defaultStyles = new HashMap&lt;String, OdfDefaultStyle&gt;();</span>
+    try {
+
+<span class="fc" id="L209">      NodeList defStyleList =</span>
+<span class="fc" id="L210">          mTextDocument.getDocumentStyles().getElementsByTagName(&quot;style:default-style&quot;);</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">      for (int i = 0; i &lt; defStyleList.getLength(); i++) {</span>
+<span class="fc" id="L212">        OdfDefaultStyle defStyle = (OdfDefaultStyle) defStyleList.item(i);</span>
+<span class="fc" id="L213">        defaultStyles.put(defStyle.getFamilyName(), defStyle);</span>
+      }
+
+<span class="fc" id="L216">      NodeList styleList = mTextDocument.getDocumentStyles().getElementsByTagName(&quot;style:style&quot;);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">      for (int i = 0; i &lt; styleList.getLength(); i++) {</span>
+<span class="fc" id="L218">        OdfStyle sStyle = (OdfStyle) styleList.item(i);</span>
+        // get default properties and style properties
+<span class="fc" id="L220">        Map&lt;OdfStyleProperty, String&gt; map = sStyle.getStylePropertiesDeep();</span>
+        // check if properties include all search properties and value equal
+<span class="fc" id="L222">        Iterator&lt;OdfStyleProperty&gt; pIter = mProps.keySet().iterator();</span>
+<span class="fc" id="L223">        boolean isStyle = false;</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        while (pIter.hasNext()) {</span>
+<span class="fc" id="L225">          isStyle = false;</span>
+<span class="fc" id="L226">          OdfStyleProperty p = pIter.next();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">          if (map.containsKey(p)) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">            if (map.get(p).equals(mProps.get(p))) {</span>
+<span class="fc" id="L229">              isStyle = true;</span>
+            } else {
+              break;
+            }
+          } else {
+            break;
+          }
+<span class="fc" id="L236">        }</span>
+        // put all match style names
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (isStyle) {</span>
+<span class="fc" id="L239">          sname = sStyle.getStyleNameAttribute();</span>
+          // if(sname.contains(&quot;default&quot;))sname=&quot;defaultstyle&quot;;
+<span class="fc" id="L241">          styleNames.add(sname);</span>
+        }
+      }
+      // get all automatic styles
+<span class="fc" id="L245">      Iterator&lt;OdfStyle&gt; cStyles =</span>
+<span class="fc" id="L246">          mTextDocument.getContentDom().getAutomaticStyles().getAllStyles().iterator();</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">      while (cStyles.hasNext()) {</span>
+<span class="fc" id="L248">        OdfStyle cStyle = cStyles.next();</span>
+        // get default properties and style properties
+<span class="fc" id="L250">        Map&lt;OdfStyleProperty, String&gt; map = cStyle.getStylePropertiesDeep();</span>
+
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (cStyle.getParentStyle() == null) {</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">          if (cStyle.getFamilyName().equals(&quot;text&quot;)) {</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">            if (defaultStyles.containsKey(&quot;text&quot;)) {</span>
+<span class="nc" id="L255">              getTextDefaultProperties(&quot;text&quot;, defaultStyles, map);</span>
+            } else {
+<span class="fc" id="L257">              getTextDefaultProperties(&quot;paragraph&quot;, defaultStyles, map);</span>
+            }
+          }
+        }
+
+        // check if the search properties is in properties
+<span class="fc" id="L263">        Iterator&lt;OdfStyleProperty&gt; pIter = mProps.keySet().iterator();</span>
+<span class="fc" id="L264">        boolean isStyle = false;</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        while (pIter.hasNext()) {</span>
+<span class="fc" id="L266">          isStyle = false;</span>
+<span class="fc" id="L267">          OdfStyleProperty p = pIter.next();</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">          if (map.containsKey(p)) {</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            if (map.get(p).equals(mProps.get(p))) {</span>
+<span class="fc" id="L270">              isStyle = true;</span>
+            } else {
+              break;
+            }
+          } else {
+            break;
+          }
+<span class="fc" id="L277">        }</span>
+        // put all match style names
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        if (isStyle) {</span>
+<span class="fc" id="L280">          styleNames.add(cStyle.getStyleNameAttribute());</span>
+        }
+<span class="fc" id="L282">      }</span>
+
+<span class="nc" id="L284">    } catch (Exception e1) {</span>
+<span class="nc" id="L285">      Logger.getLogger(TextStyleNavigation.class.getName()).log(Level.SEVERE, e1.getMessage(), e1);</span>
+<span class="fc" id="L286">    }</span>
+<span class="fc" id="L287">    return styleNames;</span>
+  }
+
+  private void getTextDefaultProperties(
+      String familyName,
+      HashMap&lt;String, OdfDefaultStyle&gt; defaultStyles,
+      Map&lt;OdfStyleProperty, String&gt; map) {
+<span class="fc" id="L294">    OdfDefaultStyle defStyle = defaultStyles.get(familyName);</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">    if (defStyle != null) {</span>
+<span class="fc" id="L296">      OdfStyleFamily family = defStyle.getFamily();</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">      if (family != null) {</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        for (OdfStyleProperty property : family.getProperties()) {</span>
+<span class="fc bfc" id="L299" title="All 4 branches covered.">          if (!map.containsKey(property) &amp;&amp; defStyle.hasProperty(property)) {</span>
+<span class="fc" id="L300">            map.put(property, defStyle.getProperty(property));</span>
+          }
+<span class="fc" id="L302">        }</span>
+      }
+    }
+<span class="fc" id="L305">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

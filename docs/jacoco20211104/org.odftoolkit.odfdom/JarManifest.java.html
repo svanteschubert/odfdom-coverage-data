@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JarManifest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom</a> &gt; <span class="el_source">JarManifest.java</span></div><h1>JarManifest.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.changes.CollabTextDocument;
+import org.odftoolkit.odfdom.changes.JsonOperationNormalizer;
+
+/**
+ * Provides metadata about the ODFDOM library as build date, version number. Its main() method is
+ * the start method of the library, enabling the access of versioning methods from command line:
+ * &quot;java -jar odfdom-java-&lt;VERSION_INFO&gt;-jar-with-dependencies.jar&quot;.
+ */
+public class JarManifest {
+
+  private static final String CURRENT_CLASS_RESOURCE_PATH =
+      &quot;org/odftoolkit/odfdom/JarManifest.class&quot;;
+  private static final String INNER_JAR_MANIFEST_PATH = &quot;META-INF/MANIFEST.MF&quot;;
+  private static String ODFDOM_NAME;
+  private static String ODFDOM_VERSION;
+  private static String ODFDOM_WEBSITE;
+  private static String ODFDOM_BUILD_DATE;
+  private static String ODFDOM_SUPPORTED_ODF_VERSION;
+
+  static {
+    try {
+<span class="fc" id="L59">      Manifest manifest = new Manifest(getManifestAsStream());</span>
+<span class="fc" id="L60">      Attributes attr = manifest.getEntries().get(&quot;ODFDOM&quot;);</span>
+<span class="fc" id="L61">      ODFDOM_NAME = attr.getValue(&quot;ODFDOM-Name&quot;);</span>
+<span class="fc" id="L62">      ODFDOM_VERSION = attr.getValue(&quot;ODFDOM-Version&quot;);</span>
+<span class="fc" id="L63">      ODFDOM_WEBSITE = attr.getValue(&quot;ODFDOM-Website&quot;);</span>
+<span class="fc" id="L64">      ODFDOM_BUILD_DATE = attr.getValue(&quot;ODFDOM-Built-Date&quot;);</span>
+<span class="fc" id="L65">      ODFDOM_SUPPORTED_ODF_VERSION = attr.getValue(&quot;ODFDOM-Supported-Odf-Version&quot;);</span>
+<span class="nc" id="L66">    } catch (Exception e) {</span>
+<span class="nc" id="L67">      Logger.getLogger(JarManifest.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="fc" id="L68">    }</span>
+<span class="fc" id="L69">  }</span>
+
+  /**
+   * The problem is that in the test environment the class is NOT within the JAR, but in a class
+   * diretory where no MANIFEST.MF exists..
+   */
+  private static InputStream getManifestAsStream() {
+<span class="fc" id="L76">    String versionRef =</span>
+<span class="fc" id="L77">        JarManifest.class.getClassLoader().getResource(CURRENT_CLASS_RESOURCE_PATH).toString();</span>
+<span class="fc" id="L78">    String manifestRef =</span>
+<span class="fc" id="L79">        versionRef.substring(0, versionRef.lastIndexOf(CURRENT_CLASS_RESOURCE_PATH))</span>
+            + INNER_JAR_MANIFEST_PATH;
+<span class="fc" id="L81">    URL manifestURL = null;</span>
+<span class="fc" id="L82">    InputStream in = null;</span>
+    try {
+<span class="fc" id="L84">      manifestURL = new URL(manifestRef);</span>
+<span class="nc" id="L85">    } catch (MalformedURLException ex) {</span>
+<span class="nc" id="L86">      Logger.getLogger(JarManifest.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L87">    }</span>
+    try {
+<span class="fc" id="L89">      in = manifestURL.openStream();</span>
+<span class="nc" id="L90">    } catch (IOException ex) {</span>
+<span class="nc" id="L91">      Logger.getLogger(JarManifest.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L92">    }</span>
+<span class="fc" id="L93">    return in;</span>
+  }
+
+  private JarManifest() {}
+
+  /**
+   * The main method is meant to be called when the JAR is being executed, e.g.&quot;java -jar
+   * odfdom-java-1.0.0-SNAPSHOT-jar-with-dependencies.jar&quot; and provides versioning information:
+   *
+   * &lt;p&gt;odfdom 1.0.0-SNAPSHOT (build 2019-07-11T12:38:27) from https://odftoolkit.org/odfdom/
+   * supporting ODF 1.2
+   *
+   * &lt;p&gt;Allowing version access from the JAR without the need to unzip the JAR nor naming the JAR
+   * (requiring the change of classpath for every version due to JAR naming change).
+   *
+   * @param args a relative path to the ODT that should be transformed to JSON changes
+   */
+  public static void main(String[] args) throws IOException, Exception {
+<span class="nc bnc" id="L111" title="All 4 branches missed.">    if (args == null || args.length == 0) {</span>
+<span class="nc" id="L112">      System.out.println(</span>
+<span class="nc" id="L113">          getOdfdomTitle()</span>
+              + &quot; (build &quot;
+<span class="nc" id="L115">              + getOdfdomBuildDate()</span>
+              + ')'
+              + &quot;\nfrom &quot;
+<span class="nc" id="L118">              + getOdfdomWebsite()</span>
+              + &quot; supporting ODF &quot;
+<span class="nc" id="L120">              + getOdfdomSupportedOdfVersion());</span>
+    } else {
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      if (args[0].endsWith(&quot;.odt&quot;)) {</span>
+        // support of absolute file paths
+<span class="nc" id="L124">        try (CollabTextDocument doc1 =</span>
+<span class="nc" id="L125">            new CollabTextDocument(Files.newInputStream(Paths.get(args[0])))) {</span>
+<span class="nc" id="L126">          System.out.println(</span>
+<span class="nc" id="L127">              JsonOperationNormalizer.asString(doc1.getDocumentAsChanges())</span>
+<span class="nc" id="L128">                  .replace(&quot;,{\&quot;name\&quot;&quot;, &quot;,\n{\&quot;name\&quot;&quot;));</span>
+<span class="nc" id="L129">        } catch (FileNotFoundException e) {</span>
+          // support of relative file paths adding the current user directory ahead
+<span class="nc" id="L131">          try (CollabTextDocument doc2 =</span>
+              new CollabTextDocument(
+<span class="nc" id="L133">                  Files.newInputStream(</span>
+<span class="nc" id="L134">                      Paths.get(System.getProperty(&quot;user.dir&quot;) + File.separator + args[0])))) {</span>
+<span class="nc" id="L135">            System.out.println(</span>
+<span class="nc" id="L136">                JsonOperationNormalizer.asString(doc2.getDocumentAsChanges())</span>
+<span class="nc" id="L137">                    .replace(&quot;,{\&quot;name\&quot;&quot;, &quot;,\n{\&quot;name\&quot;&quot;));</span>
+          }
+<span class="nc" id="L139">        }</span>
+      } else {
+<span class="nc" id="L141">        System.out.println(</span>
+            &quot;NOTE:\n&quot;
+                + &quot;The first argument have to be the relative path to an OpenDocument Text document and therefore have to end with '.odt'!\n&quot;
+                + &quot;The ODT will be transformed to equivalent user changes (in JSON) to standard output&quot;);
+      }
+    }
+<span class="nc" id="L147">  }</span>
+
+  /**
+   * Return the name of ODFDOM;
+   *
+   * @return the ODFDOM library name
+   */
+  public static String getOdfdomName() {
+<span class="fc" id="L155">    return ODFDOM_NAME;</span>
+  }
+
+  /**
+   * Returns the ODFDOM library title
+   *
+   * @return A string containing both the name and the version of the ODFDOM library.
+   */
+  public static String getOdfdomTitle() {
+<span class="fc" id="L164">    return getOdfdomName() + ' ' + getOdfdomVersion();</span>
+  }
+
+  /**
+   * Return the version of the ODFDOM library (ie. odfdom.jar)
+   *
+   * @return the ODFDOM library version
+   */
+  public static String getOdfdomVersion() {
+<span class="fc" id="L173">    return ODFDOM_VERSION;</span>
+  }
+
+  /**
+   * Return the website of the ODFDOM library (ie. odfdom.jar)
+   *
+   * @return the ODFDOM library website
+   */
+  public static String getOdfdomWebsite() {
+<span class="fc" id="L182">    return ODFDOM_WEBSITE;</span>
+  }
+
+  /**
+   * Return the date when ODFDOM had been build
+   *
+   * @return the date of the build formated as &quot;yyyy-MM-dd'T'HH:mm:ss&quot;.
+   */
+  public static String getOdfdomBuildDate() {
+<span class="fc" id="L191">    return ODFDOM_BUILD_DATE;</span>
+  }
+
+  /**
+   * Returns the version of the OpenDocument specification covered by the ODFDOM library (ie.
+   * odfdom.jar)
+   *
+   * @return the supported ODF version number
+   */
+  public static String getOdfdomSupportedOdfVersion() {
+<span class="fc" id="L201">    return ODFDOM_SUPPORTED_ODF_VERSION;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

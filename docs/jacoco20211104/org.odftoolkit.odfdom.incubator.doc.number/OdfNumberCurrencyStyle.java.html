@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfNumberCurrencyStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.number</a> &gt; <span class="el_source">OdfNumberCurrencyStyle.java</span></div><h1>OdfNumberCurrencyStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.number;
+
+import java.util.Currency;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.odftoolkit.odfdom.changes.MapHelper;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.number.DataStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberCurrencyStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberCurrencySymbolElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMapElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/** Convenient functionalty for the parent ODF OpenDocument element */
+public class OdfNumberCurrencyStyle extends NumberCurrencyStyleElement {
+
+  public OdfNumberCurrencyStyle(OdfFileDom ownerDoc) {
+<span class="fc" id="L49">    super(ownerDoc);</span>
+<span class="fc" id="L50">  }</span>
+
+  public OdfNumberCurrencyStyle(
+      OdfFileDom ownerDoc, String currencySymbol, String format, String styleName) {
+<span class="fc" id="L54">    super(ownerDoc);</span>
+<span class="fc" id="L55">    this.setStyleNameAttribute(styleName);</span>
+<span class="fc" id="L56">    buildFromFormat(currencySymbol, format);</span>
+<span class="fc" id="L57">  }</span>
+
+  /**
+   * @param ownerDoc parent file
+   * @param format format string
+   * @param styleName new style name
+   */
+  public OdfNumberCurrencyStyle(OdfFileDom ownerDoc, String format, String styleName) {
+<span class="fc" id="L65">    super(ownerDoc);</span>
+<span class="fc" id="L66">    this.setStyleNameAttribute(styleName);</span>
+<span class="fc" id="L67">    setFormat(format);</span>
+<span class="fc" id="L68">  }</span>
+
+  /**
+   * Get the format string that represents this style.
+   *
+   * @return the format string
+   */
+  @Override
+  public String getFormat(boolean caps) {
+<span class="fc" id="L77">    String result = &quot;&quot;;</span>
+<span class="fc" id="L78">    String mappedResult = &quot;&quot;;</span>
+<span class="fc" id="L79">    Node m = getFirstChild();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">    while (m != null) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">      if (m instanceof NumberCurrencySymbolElement) {</span>
+<span class="fc" id="L82">        result += &quot;[$&quot;;</span>
+<span class="fc" id="L83">        result += m.getTextContent();</span>
+<span class="fc" id="L84">        String language =</span>
+            ((NumberCurrencySymbolElement) m)
+<span class="fc" id="L86">                .getAttributeNS(OdfDocumentNamespace.NUMBER.getUri(), &quot;language&quot;);</span>
+<span class="fc" id="L87">        String country =</span>
+            ((NumberCurrencySymbolElement) m)
+<span class="fc" id="L89">                .getAttributeNS(OdfDocumentNamespace.NUMBER.getUri(), &quot;country&quot;);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (!language.isEmpty()) {</span>
+<span class="fc" id="L91">          result += &quot;-&quot;;</span>
+          // convert local to ms language id
+<span class="fc" id="L93">          result += MapHelper.getMSLangCode(language, country);</span>
+        }
+<span class="fc" id="L95">        result += &quot;]&quot;;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">      } else if (m instanceof NumberNumberElement) {</span>
+<span class="fc" id="L97">        result += getNumberFormat();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">      } else if (m instanceof NumberTextElement) {</span>
+<span class="fc" id="L99">        String textcontent = m.getTextContent();</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">        if (textcontent == null || textcontent.length() == 0) {</span>
+<span class="nc" id="L101">          textcontent = &quot; &quot;;</span>
+        }
+<span class="fc" id="L103">        result += textcontent;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">      } else if (m instanceof StyleTextPropertiesElement) {</span>
+<span class="fc" id="L105">        result += getColorFromElement((StyleTextPropertiesElement) m);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">      } else if (m instanceof StyleMapElement) {</span>
+<span class="fc" id="L107">        mappedResult += getMapping((StyleMapElement) m);</span>
+<span class="fc" id="L108">        mappedResult += &quot;;&quot;;</span>
+      }
+<span class="fc" id="L110">      m = m.getNextSibling();</span>
+    }
+<span class="fc bfc" id="L112" title="All 2 branches covered.">    if (!mappedResult.isEmpty()) {</span>
+<span class="fc" id="L113">      result = mappedResult + result;</span>
+    }
+<span class="fc" id="L115">    return result;</span>
+  }
+
+  public String getCurrencyCode() {
+<span class="nc" id="L119">    Node m = getFirstChild();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">    while (m != null) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">      if (m instanceof NumberCurrencySymbolElement) {</span>
+<span class="nc" id="L122">        final String currencyValue = m.getTextContent();</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">        if (currencyValue != null &amp;&amp; currencyValue.equals(&quot;DM&quot;)) {</span>
+<span class="nc" id="L124">          return &quot;DEM&quot;;</span>
+        }
+<span class="nc" id="L126">        final String language =</span>
+            ((NumberCurrencySymbolElement) m)
+<span class="nc" id="L128">                .getAttributeNS(OdfDocumentNamespace.NUMBER.getUri(), &quot;language&quot;);</span>
+<span class="nc" id="L129">        final String country =</span>
+            ((NumberCurrencySymbolElement) m)
+<span class="nc" id="L131">                .getAttributeNS(OdfDocumentNamespace.NUMBER.getUri(), &quot;country&quot;);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (language != null) {</span>
+          try {
+            final Currency currency =
+<span class="nc" id="L135">                Currency.getInstance(</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">                    country != null ? new Locale(language, country) : new Locale(language));</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (currency != null) {</span>
+<span class="nc" id="L138">              return currency.toString();</span>
+            }
+<span class="nc" id="L140">          } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L141">          }</span>
+        }
+        break;
+      }
+<span class="nc" id="L145">      m = m.getNextSibling();</span>
+    }
+<span class="nc" id="L147">    return getCurrencySymbolElement().getTextContent();</span>
+  }
+
+  public String getConditionStyleName(double value) {
+<span class="nc" id="L151">    StyleMapElement map = OdfElement.findFirstChildNode(StyleMapElement.class, this);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">    while (map != null) {</span>
+<span class="nc" id="L153">      String condition = map.getStyleConditionAttribute();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">      if (isTrue(condition, value)) {</span>
+<span class="nc" id="L155">        return map.getStyleApplyStyleNameAttribute();</span>
+      }
+<span class="nc" id="L157">      map = OdfElement.findNextChildNode(StyleMapElement.class, map);</span>
+<span class="nc" id="L158">    }</span>
+<span class="nc" id="L159">    return getStyleNameAttribute();</span>
+  }
+
+  private boolean isTrue(String condition, double value) {
+<span class="nc" id="L163">    double rightOp = getLastNumber(condition);</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">    if (condition.indexOf('&gt;') != -1) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">      if (value &gt; rightOp) {</span>
+<span class="nc" id="L166">        return true;</span>
+      }
+<span class="nc bnc" id="L168" title="All 2 branches missed.">    } else if (condition.indexOf('&lt;') != -1) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">      if (value &lt; rightOp) {</span>
+<span class="nc" id="L170">        return true;</span>
+      }
+    }
+<span class="nc bnc" id="L173" title="All 2 branches missed.">    if (condition.indexOf('!') != -1) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">      if (value != rightOp) {</span>
+<span class="nc" id="L175">        return true;</span>
+      }
+<span class="nc bnc" id="L177" title="All 2 branches missed.">    } else if (condition.indexOf('=') != -1) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">      if (value == rightOp) {</span>
+<span class="nc" id="L179">        return true;</span>
+      }
+    }
+<span class="nc" id="L182">    return false;</span>
+  }
+
+  private Double getLastNumber(String condition) {
+<span class="nc" id="L186">    String results = &quot;&quot;;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">    for (int i = condition.length() - 1; i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L188" title="All 4 branches missed.">      if (condition.charAt(i) &gt;= '0' &amp;&amp; condition.charAt(i) &lt;= '9') {</span>
+<span class="nc" id="L189">        results += condition.charAt(i);</span>
+      } else {
+        break;
+      }
+    }
+<span class="nc" id="L194">    return Double.parseDouble(results);</span>
+  }
+
+  @Override
+  public void setFormat(String format) {
+<span class="fc" id="L199">    OdfFileDom dom = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="fc" id="L200">    List&lt;StringToken&gt; tokens = tokenize(format, DataStyleElement.NumberFormatType.FORMAT_CURRENCY);</span>
+<span class="fc" id="L201">    emitTokens(tokens, DataStyleElement.NumberFormatType.FORMAT_CURRENCY);</span>
+<span class="fc" id="L202">  }</span>
+  /**
+   * Creates a &amp;lt;number:date-style&amp;gt; element based upon format.
+   *
+   * @param currencySymbol the string to be placed as the currency symbol
+   * @param format the currency format string
+   */
+  public void buildFromFormat(String currencySymbol, String format) {
+    String preMatch;
+    String numberSpec;
+    String postMatch;
+    int pos;
+    char ch;
+    int nDigits;
+
+<span class="fc" id="L217">    Pattern p = Pattern.compile(&quot;[#0,.]+&quot;);</span>
+    Matcher m;
+    NumberNumberElement number;
+
+    /*
+     * If there is a numeric specifcation, then split the
+     * string into the part before the specifier, the specifier
+     * itself, and then part after the specifier. The parts
+     * before and after are just text (which may contain the
+     * currency symbol).
+     */
+<span class="fc" id="L228">    m = p.matcher(format);</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">    if (m.find()) {</span>
+<span class="fc" id="L230">      preMatch = format.substring(0, m.start());</span>
+<span class="fc" id="L231">      numberSpec = format.substring(m.start(), m.end());</span>
+<span class="fc" id="L232">      postMatch = format.substring(m.end());</span>
+
+<span class="fc" id="L234">      processText(preMatch, currencySymbol);</span>
+
+<span class="fc" id="L236">      number = new NumberNumberElement((OdfFileDom) this.getOwnerDocument());</span>
+
+      /* Process part before the decimal point (if any) */
+<span class="fc" id="L239">      nDigits = 0;</span>
+<span class="fc bfc" id="L240" title="All 4 branches covered.">      for (pos = 0; pos &lt; numberSpec.length() &amp;&amp; (ch = numberSpec.charAt(pos)) != '.'; pos++) {</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        if (ch == ',') {</span>
+<span class="fc" id="L242">          number.setNumberGroupingAttribute(new Boolean(true));</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        } else if (ch == '0') {</span>
+<span class="fc" id="L244">          nDigits++;</span>
+        }
+      }
+<span class="fc" id="L247">      number.setNumberMinIntegerDigitsAttribute(nDigits);</span>
+
+      /* Number of decimal places is the length after the decimal */
+<span class="fc bfc" id="L250" title="All 2 branches covered.">      if (pos &lt; numberSpec.length()) {</span>
+<span class="fc" id="L251">        number.setNumberDecimalPlacesAttribute(numberSpec.length() - (pos + 1));</span>
+      }
+<span class="fc" id="L253">      this.appendChild(number);</span>
+
+<span class="fc" id="L255">      processText(postMatch, currencySymbol);</span>
+    }
+<span class="fc" id="L257">  }</span>
+
+  /**
+   * Process text that may have a currency symbol ($) in it.
+   *
+   * @param text string to be processed
+   * @param currencySymbol the currency symbol under consideration
+   */
+  private void processText(String text, String currencySymbol) {
+<span class="fc" id="L266">    OdfFileDom dom = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="fc" id="L267">    int currencyPos = text.indexOf(currencySymbol);</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">    if (currencyPos &gt;= 0) {</span>
+<span class="fc" id="L269">      emitText(text.substring(0, currencyPos));</span>
+<span class="fc" id="L270">      NumberCurrencySymbolElement cSymbol = new NumberCurrencySymbolElement(dom);</span>
+<span class="fc" id="L271">      cSymbol.appendChild(dom.createTextNode(currencySymbol));</span>
+<span class="fc" id="L272">      this.appendChild(cSymbol);</span>
+<span class="fc" id="L273">      emitText(text.substring(currencyPos + currencySymbol.length()));</span>
+<span class="fc" id="L274">    } else {</span>
+<span class="fc" id="L275">      emitText(text);</span>
+    }
+<span class="fc" id="L277">  }</span>
+
+  /**
+   * Get OdfCurrencySymbol element from this currency style. Once you have it, you can add language
+   * and country.
+   *
+   * @return an OdfCurrencySymbol element
+   */
+  public NumberCurrencySymbolElement getCurrencySymbolElement() {
+<span class="fc" id="L286">    NumberCurrencySymbolElement cSymbol = null;</span>
+<span class="fc" id="L287">    NodeList list =</span>
+<span class="fc" id="L288">        this.getElementsByTagNameNS(OdfDocumentNamespace.NUMBER.getUri(), &quot;currency-symbol&quot;);</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">    if (list.getLength() &gt; 0) {</span>
+<span class="fc" id="L290">      cSymbol = (NumberCurrencySymbolElement) list.item(0);</span>
+    }
+<span class="fc" id="L292">    return cSymbol;</span>
+  }
+
+  /**
+   * Set language and currency for the currency symbol.
+   *
+   * @param language the language for the country
+   * @param country the country name
+   */
+  public void setCurrencyLocale(String language, String country) {
+<span class="fc" id="L302">    NumberCurrencySymbolElement cSymbol = getCurrencySymbolElement();</span>
+<span class="fc" id="L303">    cSymbol.setNumberCountryAttribute(country);</span>
+<span class="fc" id="L304">    cSymbol.setNumberLanguageAttribute(language);</span>
+<span class="fc" id="L305">  }</span>
+
+  /**
+   * Set language and currency for the currency symbol. Argument could be just a language like &quot;el&quot;
+   * or a language and country like &quot;en-US&quot;.
+   *
+   * @param locale string in form language-country or language
+   */
+  public void setCurrencyLocale(String locale) {
+<span class="fc" id="L314">    NumberCurrencySymbolElement cSymbol = getCurrencySymbolElement();</span>
+<span class="fc" id="L315">    int pos = locale.indexOf('-');</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">    if (pos &gt;= 0) {</span>
+<span class="fc" id="L317">      cSymbol.setNumberLanguageAttribute(locale.substring(0, pos));</span>
+<span class="fc" id="L318">      cSymbol.setNumberCountryAttribute(locale.substring(pos + 1));</span>
+    } else {
+<span class="fc" id="L320">      cSymbol.setNumberLanguageAttribute(locale);</span>
+    }
+<span class="fc" id="L322">  }</span>
+
+  /**
+   * Set &amp;lt;style:map&amp;gt; for positive values to the given style .
+   *
+   * @param mapName the style to map to
+   */
+  public void setMapPositive(String mapName) {
+<span class="fc" id="L330">    StyleMapElement map = new StyleMapElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="fc" id="L331">    map.setStyleApplyStyleNameAttribute(mapName);</span>
+<span class="fc" id="L332">    map.setStyleConditionAttribute(&quot;value()&gt;0&quot;);</span>
+<span class="fc" id="L333">    this.appendChild(map);</span>
+<span class="fc" id="L334">  }</span>
+
+  /**
+   * Set &amp;lt;style:map&amp;gt; for negative values to the given style .
+   *
+   * @param mapName the style to map to
+   */
+  public void setMapNegative(String mapName) {
+<span class="fc" id="L342">    StyleMapElement map = new StyleMapElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="fc" id="L343">    map.setStyleApplyStyleNameAttribute(mapName);</span>
+<span class="fc" id="L344">    map.setStyleConditionAttribute(&quot;value()&lt;0&quot;);</span>
+<span class="fc" id="L345">    this.appendChild(map);</span>
+<span class="fc" id="L346">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

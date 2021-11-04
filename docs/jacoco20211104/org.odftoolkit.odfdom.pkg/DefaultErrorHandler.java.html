@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultErrorHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">DefaultErrorHandler.java</span></div><h1>DefaultErrorHandler.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
+/**
+ * Warnings and errors of the ODF input document are being registered here without breaking the load process.
+ * In general the end user would like to load the full document to access its information.
+ *
+ * Default implementation of the SAX &lt;code&gt;ErrorHandler&lt;/code&gt; interface.
+ * Enabled by System property &lt;code&gt;System.setProperty(&quot;org.odftoolkit.odfdom.validation&quot;, &quot;true&quot;)&lt;code&gt;;
+ *
+ * Unfulfilled recommendations from the specification (e.g. ODF specifications) are warnings.
+ * Unfulfilled mandatory requirements from the specifications are warnings.
+ * Those errors, which interrupt the program flow, e.g. loading a graphic instead of XML is a fatal error.
+ */
+public class DefaultErrorHandler implements ErrorHandler {
+
+<span class="fc" id="L49">  private static final Logger LOG = Logger.getLogger(DefaultErrorHandler.class.getName());</span>
+
+  private static String getStackTrace(final Throwable throwable) {
+<span class="nc" id="L52">    final StringWriter sw = new StringWriter();</span>
+<span class="nc" id="L53">    final PrintWriter pw = new PrintWriter(sw, true);</span>
+<span class="nc" id="L54">    throwable.printStackTrace(pw);</span>
+<span class="nc" id="L55">    return sw.getBuffer().toString();</span>
+  }
+
+<span class="fc" id="L58">  private ArrayList&lt;SAXParseException&gt; mWarnings = null;</span>
+<span class="fc" id="L59">  private ArrayList&lt;SAXParseException&gt; mErrors = null;</span>
+<span class="fc" id="L60">  private ArrayList&lt;SAXParseException&gt; mFatalErrors = null;</span>
+  private final StringBuilder mValidationMessages;
+
+<span class="fc" id="L63">  public DefaultErrorHandler() {</span>
+<span class="fc" id="L64">    this.mValidationMessages = new StringBuilder();</span>
+<span class="fc" id="L65">  }</span>
+
+  /**
+   * Triggers an warning. In case an optional ODF conformance was not satisfied. Default handling is
+   * to write into Java log using warning level
+   */
+  @Override
+  public void warning(SAXParseException exception) throws SAXException {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">    if (mWarnings == null) {</span>
+<span class="nc" id="L74">      mWarnings = new ArrayList&lt;&gt;(1);</span>
+    }
+<span class="nc" id="L76">    mWarnings.add(exception);</span>
+<span class="nc" id="L77">    mValidationMessages</span>
+<span class="nc" id="L78">        .append(&quot;\n\nVALIDATION WARNING:\n&quot;)</span>
+<span class="nc" id="L79">        .append(getStackTrace(exception))</span>
+<span class="nc" id="L80">        .append(&quot;\n&quot;);</span>
+<span class="nc" id="L81">    LOG.log(Level.WARNING, &quot;\n\nVALIDATION WARNING:\n{0}\n&quot;, getStackTrace(exception));</span>
+<span class="nc" id="L82">  }</span>
+
+  /**
+   * Triggers an error. In case a mandatory ODF conformance was not satisfied. Default handling is
+   * to write into Java log using severe level
+   */
+  @Override
+  public void error(SAXParseException exception) throws SAXException {
+<span class="nc bnc" id="L90" title="All 2 branches missed.">    if (mErrors == null) {</span>
+<span class="nc" id="L91">      mErrors = new ArrayList&lt;&gt;(1);</span>
+    }
+<span class="nc" id="L93">    mErrors.add(exception);</span>
+<span class="nc" id="L94">    mValidationMessages</span>
+<span class="nc" id="L95">        .append(&quot;\n\nVALIDATION ERROR:\n&quot;)</span>
+<span class="nc" id="L96">        .append(getStackTrace(exception))</span>
+<span class="nc" id="L97">        .append(&quot;\n&quot;);</span>
+<span class="nc" id="L98">    LOG.log(Level.SEVERE, &quot;\n\nVALIDATION ERROR:\n{0}\n&quot;, getStackTrace(exception));</span>
+<span class="nc" id="L99">  }</span>
+
+  /**
+   * Triggers a fatalError. The ODF document can not be loaded due to an error. * Default handling
+   * is to write into Java log using severe level and to throw a SAXException
+   */
+  @Override
+  public void fatalError(SAXParseException exception) throws SAXException {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (mFatalErrors == null) {</span>
+<span class="nc" id="L108">      mFatalErrors = new ArrayList&lt;&gt;(1);</span>
+    }
+<span class="nc" id="L110">    mFatalErrors.add(exception);</span>
+<span class="nc" id="L111">    mValidationMessages</span>
+<span class="nc" id="L112">        .append(&quot;\n\nVALIDATION FATALERROR:\n&quot;)</span>
+<span class="nc" id="L113">        .append(getStackTrace(exception))</span>
+<span class="nc" id="L114">        .append(&quot;\n&quot;);</span>
+<span class="nc" id="L115">    LOG.log(Level.SEVERE, &quot;\n\nVALIDATION FATALERROR:\n{0}\n&quot;, getStackTrace(exception));</span>
+<span class="nc" id="L116">    throw exception;</span>
+  }
+
+  /**
+   * @return all warning SaxParseExceptions, all ODF recommendations not being fulfilled. Might be
+   *     NULL.
+   */
+  public List&lt;SAXParseException&gt; getWarnings() {
+<span class="nc" id="L124">    return mWarnings;</span>
+  }
+
+  /**
+   * @return all error SaxParseExceptions, all mandatory ODF requirements not being fulfilled. Might
+   *     be NULL.
+   */
+  public List&lt;SAXParseException&gt; getErrors() {
+<span class="nc" id="L132">    return mErrors;</span>
+  }
+
+  /**
+   * @return all fatal-error SaxParseExceptions, ODF errors, which interrupt the program flow, e.g.
+   *     loading a PDF as ODF. Might be NULL.
+   */
+  public List&lt;SAXParseException&gt; getFatalErrors() {
+<span class="nc" id="L140">    return mFatalErrors;</span>
+  }
+
+  public String getValidationMessages() {
+<span class="nc" id="L144">    return mValidationMessages.toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

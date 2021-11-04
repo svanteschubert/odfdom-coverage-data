@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfFileEntry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.manifest</a> &gt; <span class="el_source">OdfFileEntry.java</span></div><h1>OdfFileEntry.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.manifest;
+
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+
+public class OdfFileEntry {
+
+  private FileEntryElement mFileEntryElement;
+
+<span class="fc" id="L35">  private static Map&lt;String, String&gt; MEDIA_TYPE_MAP = null;</span>
+  private static final String EMPTY_STRING = &quot;&quot;;
+  private static final String DEFAULT_TYPE = &quot;application/octet-stream&quot;;
+  private static final String APPLICATION_POSTSCRIPT = &quot;application/postscript&quot;;
+  private static final String APPLICATION_RTF = &quot;application/rtf&quot;;
+  private static final String APPLICATION_X_TEX = &quot;application/x-tex&quot;;
+  private static final String APPLICATION_X_TEXINFO = &quot;application/x-texinfo&quot;;
+  private static final String APPLICATION_X_TROFF = &quot;application/x-troff&quot;;
+  private static final String AUDIO_BASIC = &quot;audio/basic&quot;;
+  private static final String AUDIO_MIDI = &quot;audio/midi&quot;;
+  private static final String AUDIO_X_AIFC = &quot;audio/x-aifc&quot;;
+  private static final String AUDIO_X_AIFF = &quot;audio/x-aiff&quot;;
+  private static final String AUDIO_X_MPEG = &quot;audio/x-mpeg&quot;;
+  private static final String AUDIO_X_WAV = &quot;audio/x-wav&quot;;
+  private static final String IMAGE_GIF = &quot;image/gif&quot;;
+  private static final String IMAGE_IEF = &quot;image/ief&quot;;
+  private static final String IMAGE_JPEG = &quot;image/jpeg&quot;;
+  private static final String IMAGE_PNG = &quot;image/png&quot;;
+  private static final String IMAGE_TIFF = &quot;image/tiff&quot;;
+  private static final String IMAGE_X_XWINDOWDUMP = &quot;image/x-xwindowdump&quot;;
+  private static final String TEXT_HTML = &quot;text/html&quot;;
+  private static final String TEXT_PLAIN = &quot;text/plain&quot;;
+  private static final String TEXT_XML = &quot;text/xml&quot;;
+  private static final String VIDEO_MEPG = &quot;video/mpeg&quot;;
+  private static final String VIDEO_QUICKTIME = &quot;video/quicktime&quot;;
+  private static final String VIDEO_X_MSVIDEO = &quot;video/x-msvideo&quot;;
+
+  /** @param fileEntryElement the OdfElement of the &lt;manifest:file-entry&gt; */
+<span class="fc" id="L63">  public OdfFileEntry(FileEntryElement fileEntryElement) {</span>
+<span class="fc" id="L64">    mFileEntryElement = fileEntryElement;</span>
+<span class="fc" id="L65">  }</span>
+
+  public OdfFileEntry getCopy() {
+<span class="nc" id="L68">    return new OdfFileEntry((FileEntryElement) this.mFileEntryElement.cloneNode(true));</span>
+  }
+
+  public void setPath(String path) {
+<span class="nc" id="L72">    mFileEntryElement.setFullPathAttribute(path);</span>
+<span class="nc" id="L73">  }</span>
+
+  public String getPath() {
+<span class="fc" id="L76">    return mFileEntryElement.getFullPathAttribute();</span>
+  }
+
+  /**
+   * @param mediaType of the file. Use &lt;code&gt;null&lt;/code&gt; or an empty string to unset the mediaType
+   *     to an empty string.
+   */
+  public void setMediaTypeString(String mediaType) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">    if (mediaType != null) {</span>
+<span class="fc" id="L85">      mFileEntryElement.setMediaTypeAttribute(mediaType);</span>
+    } else {
+<span class="fc" id="L87">      mFileEntryElement.setMediaTypeAttribute(EMPTY_STRING);</span>
+    }
+<span class="fc" id="L89">  }</span>
+
+  /**
+   * @return the mediatype of the mandatory &amp;lt;manifest:file-entry&amp;gt; attribute. If no mediatype
+   *     exists an empty string is returned
+   */
+  public String getMediaTypeString() {
+<span class="fc" id="L96">    return mFileEntryElement.getMediaTypeAttribute();</span>
+  }
+
+  /**
+   * Get the media type from the given file reference
+   *
+   * @param fileRef the reference to the file the media type is questioned
+   * @return the mediaType string of the given file reference
+   */
+  public static String getMediaTypeString(String fileRef) {
+<span class="fc" id="L106">    String mediaType = null;</span>
+    try {
+      // use 'JavaBeans Activation Framework' if available (as library or
+      // as part of JDK 6)
+<span class="nc" id="L110">      Class&lt;?&gt; mimetypesClass = Class.forName(&quot;javax.activation.MimetypesFileTypeMap&quot;);</span>
+<span class="nc" id="L111">      Method getContentTypeMethod = mimetypesClass.getMethod(&quot;getContentType&quot;, String.class);</span>
+<span class="nc" id="L112">      mediaType = (String) getContentTypeMethod.invoke(getContentTypeMethod, fileRef);</span>
+<span class="fc" id="L113">    } catch (Exception e) {</span>
+      // otherwise (JDK 5 without library of 'JavaBeans Activation
+      // Framework')
+      // use local fallback implementation
+      // mLog.fine(&quot;Using own mediatype handling as 'JavaBeans Activation Framework' not found: &quot;
+      // + e.getMessage());
+<span class="fc" id="L119">      mediaType = findMediaTypeString(fileRef);</span>
+<span class="nc" id="L120">    }</span>
+<span class="fc" id="L121">    return mediaType;</span>
+  }
+
+  public void setSize(Integer size) {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">    if (size == null) {</span>
+<span class="fc" id="L126">      mFileEntryElement.removeAttributeNS(</span>
+<span class="fc" id="L127">          SizeAttribute.ATTRIBUTE_NAME.getUri(), SizeAttribute.ATTRIBUTE_NAME.getLocalName());</span>
+    } else {
+<span class="fc" id="L129">      mFileEntryElement.setSizeAttribute(size);</span>
+    }
+<span class="fc" id="L131">  }</span>
+
+  /** Get the size. */
+  public Integer getSize() {
+<span class="fc" id="L135">    return mFileEntryElement.getSizeAttribute();</span>
+  }
+
+  public void setEncryptionData(EncryptionDataElement encryptionData) {
+<span class="nc" id="L139">    EncryptionDataElement encryptionDataEle = getEncryptionData();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">    if (encryptionData != null) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">      if (encryptionDataEle != null) {</span>
+<span class="nc" id="L142">        mFileEntryElement.replaceChild(encryptionData, encryptionDataEle);</span>
+      } else {
+<span class="nc" id="L144">        mFileEntryElement.appendChild(encryptionData);</span>
+      }
+    } else {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">      if (encryptionDataEle != null) {</span>
+<span class="nc" id="L148">        mFileEntryElement.removeChild(encryptionDataEle);</span>
+      }
+    }
+<span class="nc" id="L151">  }</span>
+
+  /** @return null if no encryption data had been set */
+  public EncryptionDataElement getEncryptionData() {
+<span class="fc" id="L155">    return OdfElement.findFirstChildNode(EncryptionDataElement.class, mFileEntryElement);</span>
+  }
+
+  /**
+   * Gets the OdfElement of this OdfFileEntry.
+   *
+   * @return the OdfElement of this OdfFileEntry.
+   */
+  public FileEntryElement getOdfElement() {
+<span class="fc" id="L164">    return mFileEntryElement;</span>
+  }
+
+  /** Own mediatype functionality which can be removed as soon JDK 6 is base line */
+  private static String findMediaTypeString(String fileRef) {
+<span class="fc" id="L169">    String fileSuffix = null;</span>
+<span class="fc" id="L170">    String mediaType = null;</span>
+
+<span class="fc" id="L172">    int suffixStart = fileRef.lastIndexOf(&quot;.&quot;);</span>
+    // default mediatype, if no dot exists
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">    if (suffixStart &lt; 0) {</span>
+<span class="nc" id="L175">      mediaType = DEFAULT_TYPE;</span>
+    } else {
+<span class="fc" id="L177">      fileSuffix = fileRef.substring(suffixStart + 1);</span>
+      // default mediattype, if the file ends with a dot, the suffix is
+      // empty
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">      if (fileSuffix.length() == 0) {</span>
+<span class="nc" id="L181">        mediaType = DEFAULT_TYPE;</span>
+      } else {
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (MEDIA_TYPE_MAP == null) {</span>
+<span class="fc" id="L184">          initializeMediaTypeMap();</span>
+        }
+<span class="fc" id="L186">        mediaType = MEDIA_TYPE_MAP.get(fileSuffix.toLowerCase());</span>
+        // default mediatype, if no mediatype for this suffix exists
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        if (mediaType == null) {</span>
+<span class="fc" id="L189">          mediaType = DEFAULT_TYPE;</span>
+        }
+      }
+    }
+<span class="fc" id="L193">    return mediaType;</span>
+  }
+
+  // initializes Map for suffix to media type string mapping
+  private static void initializeMediaTypeMap() {
+<span class="fc" id="L198">    MEDIA_TYPE_MAP = new HashMap&lt;String, String&gt;(39);</span>
+<span class="fc" id="L199">    MEDIA_TYPE_MAP.put(&quot;ai&quot;, APPLICATION_POSTSCRIPT);</span>
+<span class="fc" id="L200">    MEDIA_TYPE_MAP.put(&quot;eps&quot;, APPLICATION_POSTSCRIPT);</span>
+<span class="fc" id="L201">    MEDIA_TYPE_MAP.put(&quot;ps&quot;, APPLICATION_POSTSCRIPT);</span>
+<span class="fc" id="L202">    MEDIA_TYPE_MAP.put(&quot;rtf&quot;, APPLICATION_RTF);</span>
+<span class="fc" id="L203">    MEDIA_TYPE_MAP.put(&quot;tex&quot;, APPLICATION_X_TEX);</span>
+<span class="fc" id="L204">    MEDIA_TYPE_MAP.put(&quot;texi&quot;, APPLICATION_X_TEXINFO);</span>
+<span class="fc" id="L205">    MEDIA_TYPE_MAP.put(&quot;texinfo&quot;, APPLICATION_X_TEXINFO);</span>
+<span class="fc" id="L206">    MEDIA_TYPE_MAP.put(&quot;t&quot;, APPLICATION_X_TROFF);</span>
+<span class="fc" id="L207">    MEDIA_TYPE_MAP.put(&quot;tr&quot;, APPLICATION_X_TROFF);</span>
+<span class="fc" id="L208">    MEDIA_TYPE_MAP.put(&quot;roff&quot;, APPLICATION_X_TROFF);</span>
+<span class="fc" id="L209">    MEDIA_TYPE_MAP.put(&quot;au&quot;, AUDIO_BASIC);</span>
+<span class="fc" id="L210">    MEDIA_TYPE_MAP.put(&quot;midi&quot;, AUDIO_MIDI);</span>
+<span class="fc" id="L211">    MEDIA_TYPE_MAP.put(&quot;mid&quot;, AUDIO_MIDI);</span>
+<span class="fc" id="L212">    MEDIA_TYPE_MAP.put(&quot;aifc&quot;, AUDIO_X_AIFC);</span>
+<span class="fc" id="L213">    MEDIA_TYPE_MAP.put(&quot;aif&quot;, AUDIO_X_AIFF);</span>
+<span class="fc" id="L214">    MEDIA_TYPE_MAP.put(&quot;aiff&quot;, AUDIO_X_AIFF);</span>
+<span class="fc" id="L215">    MEDIA_TYPE_MAP.put(&quot;mpeg&quot;, AUDIO_X_MPEG);</span>
+<span class="fc" id="L216">    MEDIA_TYPE_MAP.put(&quot;mpg&quot;, AUDIO_X_MPEG);</span>
+<span class="fc" id="L217">    MEDIA_TYPE_MAP.put(&quot;wav&quot;, AUDIO_X_WAV);</span>
+<span class="fc" id="L218">    MEDIA_TYPE_MAP.put(&quot;gif&quot;, IMAGE_GIF);</span>
+<span class="fc" id="L219">    MEDIA_TYPE_MAP.put(&quot;ief&quot;, IMAGE_IEF);</span>
+<span class="fc" id="L220">    MEDIA_TYPE_MAP.put(&quot;jpeg&quot;, IMAGE_JPEG);</span>
+<span class="fc" id="L221">    MEDIA_TYPE_MAP.put(&quot;jpg&quot;, IMAGE_JPEG);</span>
+<span class="fc" id="L222">    MEDIA_TYPE_MAP.put(&quot;jpe&quot;, IMAGE_JPEG);</span>
+<span class="fc" id="L223">    MEDIA_TYPE_MAP.put(&quot;png&quot;, IMAGE_PNG);</span>
+<span class="fc" id="L224">    MEDIA_TYPE_MAP.put(&quot;tiff&quot;, IMAGE_TIFF);</span>
+<span class="fc" id="L225">    MEDIA_TYPE_MAP.put(&quot;tif&quot;, IMAGE_TIFF);</span>
+<span class="fc" id="L226">    MEDIA_TYPE_MAP.put(&quot;xwd&quot;, IMAGE_X_XWINDOWDUMP);</span>
+<span class="fc" id="L227">    MEDIA_TYPE_MAP.put(&quot;html&quot;, TEXT_HTML);</span>
+<span class="fc" id="L228">    MEDIA_TYPE_MAP.put(&quot;htm&quot;, TEXT_HTML);</span>
+<span class="fc" id="L229">    MEDIA_TYPE_MAP.put(&quot;xhtml&quot;, TEXT_HTML);</span>
+<span class="fc" id="L230">    MEDIA_TYPE_MAP.put(&quot;txt&quot;, TEXT_PLAIN);</span>
+<span class="fc" id="L231">    MEDIA_TYPE_MAP.put(&quot;text&quot;, TEXT_PLAIN);</span>
+<span class="fc" id="L232">    MEDIA_TYPE_MAP.put(&quot;xml&quot;, TEXT_XML);</span>
+<span class="fc" id="L233">    MEDIA_TYPE_MAP.put(&quot;mpeg&quot;, VIDEO_MEPG);</span>
+<span class="fc" id="L234">    MEDIA_TYPE_MAP.put(&quot;mpg&quot;, VIDEO_MEPG);</span>
+<span class="fc" id="L235">    MEDIA_TYPE_MAP.put(&quot;mpe&quot;, VIDEO_MEPG);</span>
+<span class="fc" id="L236">    MEDIA_TYPE_MAP.put(&quot;qt&quot;, VIDEO_QUICKTIME);</span>
+<span class="fc" id="L237">    MEDIA_TYPE_MAP.put(&quot;mov&quot;, VIDEO_QUICKTIME);</span>
+<span class="fc" id="L238">    MEDIA_TYPE_MAP.put(&quot;avi&quot;, VIDEO_X_MSVIDEO);</span>
+<span class="fc" id="L239">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

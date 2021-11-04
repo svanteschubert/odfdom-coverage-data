@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JenaSink.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg.rdfa</a> &gt; <span class="el_source">JenaSink.java</span></div><h1>JenaSink.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg.rdfa;
+
+import java.util.HashMap;
+import java.util.Map;
+import net.rootdev.javardfa.StatementSink;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/** To cache the Jena RDF triples parsed from RDFaParser */
+public class JenaSink implements StatementSink {
+
+  //	private OdfFileSaxHandler odf;
+  private Node contextNode;
+  private OdfFileDom mFileDom;
+  private Map&lt;String, Resource&gt; bnodeLookup;
+  private URIExtractor extractor;
+  private EvalContext context;
+
+<span class="fc" id="L47">  public JenaSink(OdfFileDom mFileDom) {</span>
+<span class="fc" id="L48">    this.mFileDom = mFileDom;</span>
+<span class="fc" id="L49">    this.bnodeLookup = new HashMap&lt;String, Resource&gt;();</span>
+<span class="fc" id="L50">  }</span>
+
+  // @Override
+  public void start() {
+<span class="fc" id="L54">    bnodeLookup = new HashMap&lt;String, Resource&gt;();</span>
+<span class="fc" id="L55">  }</span>
+
+  // @Override
+  public void end() {
+<span class="fc" id="L59">    bnodeLookup = null;</span>
+<span class="fc" id="L60">  }</span>
+
+  // @Override
+  public void addObject(String subject, String predicate, String object) {
+<span class="nc" id="L64">    Model model = getContextModel();</span>
+<span class="nc" id="L65">    Resource s = getResource(model, subject.trim());</span>
+<span class="nc" id="L66">    Property p = model.createProperty(predicate.trim());</span>
+<span class="nc" id="L67">    Resource o = getResource(model, object.trim());</span>
+<span class="nc" id="L68">    model.add(s, p, o);</span>
+<span class="nc" id="L69">  }</span>
+
+  // @Override
+  public void addLiteral(
+      String subject, String predicate, String lex, String lang, String datatype) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">    if (lex.isEmpty()) {</span>
+<span class="fc" id="L75">      return;</span>
+    }
+<span class="fc" id="L77">    Model model = getContextModel();</span>
+<span class="fc" id="L78">    Resource s = getResource(model, subject.trim());</span>
+<span class="fc" id="L79">    Property p = model.createProperty(predicate.trim());</span>
+    Literal o;
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">    if (lang == null &amp;&amp; datatype == null) {</span>
+<span class="fc" id="L82">      o = model.createLiteral(lex.trim());</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">    } else if (lang != null) {</span>
+<span class="nc" id="L84">      o = model.createLiteral(lex.trim(), lang.trim());</span>
+    } else {
+<span class="nc" id="L86">      o = model.createTypedLiteral(lex.trim(), datatype.trim());</span>
+    }
+<span class="fc" id="L88">    model.add(s, p, o);</span>
+<span class="fc" id="L89">  }</span>
+
+  private Resource getResource(Model model, String res) {
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">    if (res.startsWith(&quot;_:&quot;)) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">      if (bnodeLookup.containsKey(res)) {</span>
+<span class="nc" id="L94">        return bnodeLookup.get(res);</span>
+      }
+<span class="nc" id="L96">      Resource bnode = model.createResource();</span>
+<span class="nc" id="L97">      bnodeLookup.put(res, bnode);</span>
+<span class="nc" id="L98">      return bnode;</span>
+    } else {
+<span class="fc" id="L100">      return model.createResource(res);</span>
+    }
+  }
+
+  public void addPrefix(String prefix, String uri) {
+    //    	Model model =getContextModel();
+    //        try {
+    //            model.setNsPrefix(prefix.trim(), uri.trim());
+    //        } catch (IllegalPrefixException e) {
+    //        }
+<span class="fc" id="L110">  }</span>
+
+<span class="fc" id="L112">  public void setBase(String base) {}</span>
+
+  private Model getContextModel() {
+<span class="fc" id="L115">    Map&lt;Node, Model&gt; cache = this.mFileDom.getInContentMetadataCache();</span>
+<span class="fc" id="L116">    Model model = cache.get(contextNode);</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">    if (model == null) {</span>
+<span class="fc" id="L118">      model = ModelFactory.createDefaultModel();</span>
+<span class="fc" id="L119">      this.mFileDom.getInContentMetadataCache().put(contextNode, model);</span>
+    }
+<span class="fc" id="L121">    return model;</span>
+  }
+
+  public Node getContextNode() {
+<span class="nc" id="L125">    return contextNode;</span>
+  }
+
+  public void setContextNode(Node contextNode) {
+<span class="fc" id="L129">    this.contextNode = contextNode;</span>
+<span class="fc" id="L130">  }</span>
+
+  public URIExtractor getExtractor() {
+<span class="fc" id="L133">    return extractor;</span>
+  }
+
+  public void setExtractor(URIExtractor extractor) {
+<span class="fc" id="L137">    this.extractor = extractor;</span>
+<span class="fc" id="L138">  }</span>
+
+  public EvalContext getContext() {
+<span class="fc" id="L141">    return context;</span>
+  }
+
+  public void setContext(EvalContext context) {
+<span class="fc" id="L145">    this.context = context;</span>
+<span class="fc" id="L146">  }</span>
+
+  //    // Namespace methods
+  //    public void setNamespaceURI(String prefix, String uri) {
+  //        if (uri.length() == 0) {
+  //            uri = base;
+  //        }
+  //        if (xmlnsMap == Collections.EMPTY_MAP) xmlnsMap = new HashMap&lt;String, String&gt;();
+  //        xmlnsMap.put(prefix, uri);
+  //    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

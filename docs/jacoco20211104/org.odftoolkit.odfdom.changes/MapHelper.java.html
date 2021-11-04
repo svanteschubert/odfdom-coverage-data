@@ -1,0 +1,2502 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MapHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">MapHelper.java</span></div><h1>MapHelper.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.doc.OdfTextDocument;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument;
+import org.odftoolkit.odfdom.dom.attribute.office.OfficeValueTypeAttribute;
+import org.odftoolkit.odfdom.dom.attribute.office.OfficeValueTypeAttribute.Value;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.OdfStylePropertiesBase;
+import org.odftoolkit.odfdom.dom.element.number.DataStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleParagraphPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTabStopElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTabStopsElement;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfStylesBase;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfNamespace;
+import org.odftoolkit.odfdom.type.Length;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+<span class="nc" id="L70">public class MapHelper {</span>
+
+  public static final String AUTO = &quot;auto&quot;;
+  public static final String NORMAL = &quot;normal&quot;;
+  public static final String BOLD = &quot;bold&quot;;
+  public static final String THIN = &quot;thin&quot;;
+  public static final String MEDIUM = &quot;medium&quot;;
+  public static final String THICK = &quot;thick&quot;;
+  public static final String HASH = &quot;#&quot;;
+  public static final String TRANSPARENT = &quot;transparent&quot;;
+  private static final String PERCENT = &quot;%&quot;;
+<span class="fc" id="L81">  private static final Logger LOG = Logger.getLogger(JsonOperationProducer.class.getName());</span>
+<span class="fc" id="L82">  private static Map&lt;Integer, String&gt; languageToLocaleMap = null;</span>
+<span class="fc" id="L83">  private static Map&lt;String, Integer&gt; localeToLanguageMap = null;</span>
+  // a color, which type is set to auto - adapting color to environment
+<span class="fc" id="L85">  private static final Map&lt;String, String&gt; COLOR_MAP_AUTO =</span>
+<span class="fc" id="L86">      MapHelper.createColorMap(MapHelper.AUTO);</span>
+
+  /** map odf border strings to JSON border object see Changes API Border */
+  public static JSONObject createBorderMap(String borderValue) {
+<span class="fc" id="L90">    JSONObject border = new JSONObject();</span>
+    try {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">      if (borderValue.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L93">        border.put(&quot;style&quot;, &quot;none&quot;);</span>
+      } else {
+<span class="fc" id="L95">        String[] tokens = borderValue.split(&quot;\\s+&quot;);</span>
+<span class="fc" id="L96">        boolean checkedColor = false;</span>
+<span class="fc" id="L97">        boolean checkedStyle = false;</span>
+<span class="fc" id="L98">        boolean checkedWidth = false;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; tokens.length; i++) {</span>
+<span class="fc" id="L100">          String token = tokens[i];</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">          if (!token.isEmpty()) {</span>
+<span class="fc" id="L102">            boolean isTokenTaken = false;</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">            if (!checkedColor) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">              if (isColor(token)) {</span>
+<span class="fc" id="L105">                checkedColor = mapColor(border, token);</span>
+<span class="fc" id="L106">                isTokenTaken = checkedColor;</span>
+              }
+            }
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">            if (!isTokenTaken &amp;&amp; !checkedStyle) {</span>
+<span class="fc" id="L110">              checkedStyle = mapStyle(border, token);</span>
+<span class="fc" id="L111">              isTokenTaken = checkedStyle;</span>
+            }
+<span class="fc bfc" id="L113" title="All 4 branches covered.">            if (!isTokenTaken &amp;&amp; !checkedWidth) {</span>
+<span class="fc" id="L114">              checkedWidth = mapWidth(border, token, tokens);</span>
+            }
+          }
+        }
+      }
+<span class="nc" id="L119">    } catch (JSONException ex) {</span>
+<span class="nc" id="L120">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L121">    }</span>
+<span class="fc" id="L122">    return border;</span>
+  }
+
+  public static boolean isColor(String color) {
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">    return color.startsWith(HASH) || color.equals(TRANSPARENT);</span>
+  }
+
+  public static boolean mapColor(JSONObject border, String width) {
+<span class="fc" id="L130">    boolean isColor = false;</span>
+    try {
+      // try if the first token is a width
+<span class="fc" id="L133">      border.put(&quot;color&quot;, createColorMap(width));</span>
+
+<span class="nc" id="L135">    } catch (JSONException ex) {</span>
+<span class="nc" id="L136">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L137">    }</span>
+<span class="fc" id="L138">    isColor = true;</span>
+
+<span class="fc" id="L140">    return isColor;</span>
+  }
+
+  public static boolean mapStyle(JSONObject border, String style) throws JSONException {
+<span class="fc" id="L144">    boolean isStyle = false;</span>
+    // solid The border is a solid line
+    // groove    The border looks like it were carved into the canvas
+    // ridge The border &quot;comes out&quot; of the canvas
+<span class="pc bpc" id="L148" title="2 of 6 branches missed.">    if (style.equals(&quot;solid&quot;) || style.equals(&quot;groove&quot;) || style.equals(&quot;ridge&quot;)) {</span>
+<span class="fc" id="L149">      style = &quot;single&quot;;</span>
+<span class="fc" id="L150">      border.put(&quot;style&quot;, style);</span>
+<span class="fc" id="L151">      isStyle = true;</span>
+
+      // hidden   A hidden border
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">    } else if (style.equals(&quot;hidden&quot;)) {</span>
+<span class="nc" id="L155">      style = &quot;none&quot;;</span>
+<span class="nc" id="L156">      border.put(&quot;style&quot;, style);</span>
+<span class="nc" id="L157">      isStyle = true;</span>
+
+<span class="fc bfc" id="L159" title="All 2 branches covered.">    } else if (style.equals(&quot;double&quot;)</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        || style.equals(&quot;dotted&quot;)</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        || style.equals(&quot;dashed&quot;)</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        || style.equals(&quot;outset&quot;)</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        || style.equals(&quot;inset&quot;)) {</span>
+<span class="fc" id="L164">      border.put(&quot;style&quot;, style);</span>
+<span class="fc" id="L165">      isStyle = true;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">    } else if (style.contains(&quot;-dash&quot;)) {</span>
+<span class="nc" id="L167">      border.put(&quot;style&quot;, &quot;dashed&quot;);</span>
+<span class="nc" id="L168">      isStyle = true;</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">    } else if (style.contains(&quot;-dot&quot;)) {</span>
+<span class="nc" id="L170">      border.put(&quot;style&quot;, &quot;dotted&quot;);</span>
+<span class="nc" id="L171">      isStyle = true;</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">    } else if (style.contains(&quot;double&quot;)) {</span>
+<span class="nc" id="L173">      border.put(&quot;style&quot;, &quot;double&quot;);</span>
+<span class="nc" id="L174">      isStyle = true;</span>
+    }
+<span class="fc" id="L176">    return isStyle;</span>
+  }
+
+  /** see Changes API Color */
+  public static Map&lt;String, String&gt; createColorMap(String rgbValue) {
+<span class="fc" id="L181">    Map color = new HashMap&lt;String, String&gt;();</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">    if (rgbValue.contains(HASH)) {</span>
+<span class="fc" id="L183">      color.put(&quot;type&quot;, &quot;rgb&quot;);</span>
+<span class="fc" id="L184">      rgbValue = rgbValue.subSequence(rgbValue.indexOf('#') + 1, rgbValue.length()).toString();</span>
+<span class="fc" id="L185">      color.put(&quot;value&quot;, rgbValue);</span>
+<span class="fc bfc" id="L186" title="All 4 branches covered.">    } else if (rgbValue.equals(TRANSPARENT) || rgbValue.equals(AUTO)) {</span>
+<span class="fc" id="L187">      color.put(&quot;type&quot;, AUTO);</span>
+    }
+<span class="fc" id="L189">    return color;</span>
+  }
+
+  /**
+   * &lt;define name=&quot;lineWidth&quot;&gt; &lt;choice&gt; &lt;value&gt;auto&lt;/value&gt; &lt;value&gt;normal&lt;/value&gt;
+   * &lt;value&gt;bold&lt;/value&gt; &lt;value&gt;thin&lt;/value&gt; &lt;value&gt;medium&lt;/value&gt; &lt;value&gt;thick&lt;/value&gt; &lt;ref
+   * name=&quot;positiveInteger&quot;/&gt; &lt;ref name=&quot;percent&quot;/&gt; &lt;ref name=&quot;positiveLength&quot;/&gt; &lt;/choice&gt; &lt;/define&gt;
+   */
+  public static boolean mapWidth(JSONObject border, String widthString, String[] tokens) {
+<span class="fc" id="L198">    boolean isWidth = false;</span>
+    int width;
+    try {
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">      if (widthString.equals(AUTO)) {</span>
+<span class="nc" id="L202">        width = 26; // my guess</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">      } else if (widthString.equals(NORMAL)) {</span>
+<span class="nc" id="L204">        width = 27; // my guess</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">      } else if (widthString.equals(BOLD)) {</span>
+<span class="nc" id="L206">        width = 54; // my guess</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">      } else if (widthString.equals(THIN)) {</span>
+<span class="nc" id="L208">        width = 26;</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">      } else if (widthString.equals(MEDIUM)) {</span>
+<span class="nc" id="L210">        width = 53;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">      } else if (widthString.equals(THICK)) {</span>
+<span class="nc" id="L212">        width = 79;</span>
+      } else {
+<span class="fc" id="L214">        width = normalizeLength(widthString);</span>
+      }
+      // try if the first token is a width
+<span class="fc" id="L217">      border.put(&quot;width&quot;, width);</span>
+<span class="fc" id="L218">      isWidth = true;</span>
+<span class="nc" id="L219">    } catch (Throwable t) {</span>
+      // there have to a a width with three tokens
+<span class="nc bnc" id="L221" title="All 2 branches missed.">      if (tokens.length == 3) {</span>
+<span class="nc" id="L222">        throw new RuntimeException(t);</span>
+      }
+<span class="fc" id="L224">    }</span>
+<span class="fc" id="L225">    return isWidth;</span>
+  }
+
+  /** Currently the normalized length is 100th millimeter (or 10 micrometer) */
+  public static int normalizeLength(String value) {
+<span class="fc" id="L230">    Length length = new Length(value);</span>
+<span class="fc" id="L231">    return (int) Math.round(length.getMicrometer() / 10.0);</span>
+  }
+
+  public static JSONObject mapProperties(String styleFamilyGroup, Map&lt;String, String&gt; odfProps) {
+<span class="fc" id="L235">    JSONObject newProps = null;</span>
+<span class="fc" id="L236">    JSONObject shapeProps = null;</span>
+<span class="fc" id="L237">    JSONObject imageProps = null;</span>
+<span class="fc" id="L238">    JSONObject lineProps = null;</span>
+<span class="fc" id="L239">    JSONObject fillProps = null;</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">    if (odfProps != null) {</span>
+
+      // ToDo: Recycle the maps... (??)
+<span class="fc" id="L243">      newProps = new JSONObject();</span>
+      String propValue;
+
+      // *** TEXT STYLES ***
+<span class="fc bfc" id="L247" title="All 2 branches covered.">      if (styleFamilyGroup.equals(&quot;character&quot;)) {</span>
+<span class="fc" id="L248">        boolean borderToBeDone = true;</span>
+<span class="fc" id="L249">        boolean paddingToBeDone = true;</span>
+<span class="fc" id="L250">        boolean marginToBeDone = true;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">            if (propName.contains(&quot;margin&quot;)) {</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">              if (marginToBeDone) {</span>
+<span class="nc" id="L255">                mapMargin(newProps, odfProps);</span>
+<span class="nc" id="L256">                marginToBeDone = false;</span>
+              }
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">            } else if (propName.contains(&quot;padding&quot;)) {</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">              if (paddingToBeDone) {</span>
+<span class="nc" id="L260">                mapPadding(newProps, odfProps);</span>
+<span class="nc" id="L261">                paddingToBeDone = false;</span>
+              }
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            } else if (propName.contains(&quot;border&quot;)) {</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">              if (borderToBeDone) {</span>
+<span class="nc" id="L265">                mapBorder(newProps, odfProps);</span>
+<span class="nc" id="L266">                borderToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L268" title="All 2 branches covered.">            } else if (propName.contains(&quot;letter-spacing&quot;)) {</span>
+<span class="fc" id="L269">              propValue = odfProps.get(&quot;fo:letter-spacing&quot;);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L271">                newProps.put(&quot;letterSpacing&quot;, propValue);</span>
+              } else {
+<span class="fc" id="L273">                Integer spacing = MapHelper.normalizeLength(propValue);</span>
+<span class="fc" id="L274">                newProps.put(&quot;letterSpacing&quot;, spacing);</span>
+<span class="fc" id="L275">              }</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:font-size&quot;)) {</span>
+<span class="fc" id="L277">              propValue = odfProps.get(&quot;fo:font-size&quot;);</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">              if (propValue.contains(&quot;%&quot;)) {</span>
+<span class="fc" id="L279">                LOG.fine(&quot;fo:font-size does have a percentage value, which we do not support!&quot;);</span>
+              } else {
+<span class="fc" id="L281">                Length length = new Length(propValue);</span>
+<span class="fc" id="L282">                Double fontSize = length.getPoint();</span>
+<span class="fc" id="L283">                newProps.put(&quot;fontSize&quot;, fontSize);</span>
+<span class="fc" id="L284">              }</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-size-asian&quot;)) {</span>
+<span class="fc" id="L286">              propValue = odfProps.get(&quot;style:font-size-asian&quot;);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">              if (propValue.contains(&quot;%&quot;)) {</span>
+<span class="fc" id="L288">                LOG.fine(&quot;style:font-size-asia does have a percentage value!&quot;);</span>
+              } else {
+<span class="fc" id="L290">                Length length = new Length(propValue);</span>
+<span class="fc" id="L291">                Double fontSize = length.getPoint();</span>
+<span class="fc" id="L292">                newProps.put(&quot;fontSizeAsian&quot;, fontSize);</span>
+<span class="fc" id="L293">              }</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-size-complex&quot;)) {</span>
+<span class="fc" id="L295">              propValue = odfProps.get(&quot;style:font-size-complex&quot;);</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">              if (propValue.contains(&quot;%&quot;)) {</span>
+<span class="fc" id="L297">                LOG.fine(&quot;style:font-size-complex does have a percentage value!&quot;);</span>
+              } else {
+<span class="fc" id="L299">                Length length = new Length(propValue);</span>
+<span class="fc" id="L300">                Double fontSize = length.getPoint();</span>
+<span class="fc" id="L301">                newProps.put(&quot;fontSizeAsian&quot;, fontSize);</span>
+<span class="fc" id="L302">              }</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-name&quot;)) {</span>
+<span class="fc" id="L304">              propValue = odfProps.get(&quot;style:font-name&quot;);</span>
+<span class="fc" id="L305">              newProps.put(&quot;fontName&quot;, propValue);</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-name-asian&quot;)) {</span>
+<span class="fc" id="L307">              propValue = odfProps.get(&quot;style:font-name-asian&quot;);</span>
+<span class="fc" id="L308">              newProps.put(&quot;fontNameAsian&quot;, propValue);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-name-complex&quot;)) {</span>
+<span class="fc" id="L310">              propValue = odfProps.get(&quot;style:font-name-complex&quot;);</span>
+<span class="fc" id="L311">              newProps.put(&quot;fontNameComplex&quot;, propValue);</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:text-position&quot;)) {</span>
+<span class="fc" id="L313">              propValue = odfProps.get(&quot;style:text-position&quot;);</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">              if (propValue.contains(&quot;sub&quot;)) {</span>
+<span class="fc" id="L315">                propValue = &quot;sub&quot;;</span>
+<span class="fc" id="L316">                newProps.put(&quot;vertAlign&quot;, propValue);</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">              } else if (propValue.contains(&quot;super&quot;)) {</span>
+<span class="fc" id="L318">                propValue = &quot;super&quot;;</span>
+<span class="fc" id="L319">                newProps.put(&quot;vertAlign&quot;, propValue);</span>
+<span class="pc bpc" id="L320" title="2 of 4 branches missed.">              } else if (propValue.equals(&quot;0%&quot;) || propValue.equals(&quot;0% 100%&quot;)) {</span>
+<span class="fc" id="L321">                propValue = &quot;baseline&quot;;</span>
+<span class="fc" id="L322">                newProps.put(&quot;vertAlign&quot;, propValue);</span>
+              }
+<span class="fc bfc" id="L324" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:language&quot;)) {</span>
+<span class="fc" id="L325">              propValue = odfProps.get(&quot;fo:language&quot;);</span>
+<span class="fc" id="L326">              String country = odfProps.get(&quot;fo:country&quot;);</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">              if (propValue != null) {</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                if (!propValue.equals(&quot;none&quot;)) {</span>
+<span class="pc bpc" id="L329" title="1 of 6 branches missed.">                  if (country != null &amp;&amp; !country.isEmpty() &amp;&amp; !country.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L330">                    propValue = propValue + '-' + country;</span>
+                  }
+<span class="fc" id="L332">                  newProps.put(&quot;language&quot;, propValue);</span>
+                } else {
+<span class="fc" id="L334">                  newProps.put(&quot;noProof&quot;, true);</span>
+<span class="fc" id="L335">                  newProps.put(&quot;language&quot;, &quot;none&quot;);</span>
+                }
+              }
+            }
+            // TODO -- !!!!!!!!!!!!!!!!ROUNDTRIP WITH THESE VALUES!!!!!!!!!!!
+            //  &lt;define name=&quot;fontWeight&quot;&gt;
+            //      &lt;choice&gt;
+            //          &lt;value&gt;normal&lt;/value&gt;
+            //          &lt;value&gt;bold&lt;/value&gt;
+            //          &lt;value&gt;100&lt;/value&gt;
+            //          &lt;value&gt;200&lt;/value&gt;
+            //          &lt;value&gt;300&lt;/value&gt;
+            //          &lt;value&gt;400&lt;/value&gt;
+            //          &lt;value&gt;500&lt;/value&gt;
+            //          &lt;value&gt;600&lt;/value&gt;
+            //          &lt;value&gt;700&lt;/value&gt;
+            //          &lt;value&gt;800&lt;/value&gt;
+            //          &lt;value&gt;900&lt;/value&gt;
+            //      &lt;/choice&gt;
+            //  &lt;/define&gt;
+<span class="fc bfc" id="L355" title="All 2 branches covered.">            if (propName.equals(&quot;fo:font-weight&quot;)) {</span>
+<span class="fc" id="L356">              propValue = odfProps.get(&quot;fo:font-weight&quot;);</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L358">                newProps.put(&quot;bold&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L360">                newProps.put(&quot;bold&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L362" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-weight-asian&quot;)) {</span>
+<span class="fc" id="L363">              propValue = odfProps.get(&quot;style:font-weight-asian&quot;);</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L365">                newProps.put(&quot;boldAsian&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L367">                newProps.put(&quot;boldAsian&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L369" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-weight-complex&quot;)) {</span>
+<span class="fc" id="L370">              propValue = odfProps.get(&quot;style:font-weight-complex&quot;);</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L372">                newProps.put(&quot;boldComplex&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L374">                newProps.put(&quot;boldComplex&quot;, Boolean.TRUE);</span>
+              }
+            } //    &lt;define name=&quot;lineStyle&quot;&gt;
+            //      &lt;choice&gt;
+            //          &lt;value&gt;none&lt;/value&gt;
+            //          &lt;value&gt;solid&lt;/value&gt;
+            //          &lt;value&gt;dotted&lt;/value&gt;
+            //          &lt;value&gt;dash&lt;/value&gt;
+            //          &lt;value&gt;long-dash&lt;/value&gt;
+            //          &lt;value&gt;dot-dash&lt;/value&gt;
+            //          &lt;value&gt;dot-dot-dash&lt;/value&gt;
+            //          &lt;value&gt;wave&lt;/value&gt;
+            //      &lt;/choice&gt;
+            //  &lt;/define&gt;
+<span class="fc bfc" id="L388" title="All 2 branches covered.">            else if (propName.equals(&quot;style:text-underline-style&quot;)) {</span>
+<span class="fc" id="L389">              propValue = odfProps.get(&quot;style:text-underline-style&quot;);</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">              if (propValue.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L391">                newProps.put(&quot;underline&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L393">                newProps.put(&quot;underline&quot;, Boolean.TRUE);</span>
+              }
+
+              //  &lt;define name=&quot;fontStyle&quot;&gt;
+              //      &lt;choice&gt;
+              //          &lt;value&gt;normal&lt;/value&gt;
+              //          &lt;value&gt;italic&lt;/value&gt;
+              //          &lt;value&gt;oblique&lt;/value&gt;
+              //      &lt;/choice&gt;
+              //  &lt;/define&gt;
+<span class="fc bfc" id="L403" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:font-style&quot;)) {</span>
+<span class="fc" id="L404">              propValue = odfProps.get(&quot;fo:font-style&quot;);</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L406">                newProps.put(&quot;italic&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L408">                newProps.put(&quot;italic&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L410" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-style-asian&quot;)) {</span>
+<span class="fc" id="L411">              propValue = odfProps.get(&quot;style:font-style-asian&quot;);</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L413">                newProps.put(&quot;italicAsian&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L415">                newProps.put(&quot;italicAsian&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L417" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:font-style-complex&quot;)) {</span>
+<span class="fc" id="L418">              propValue = odfProps.get(&quot;style:font-style-complex&quot;);</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">              if (propValue.equals(&quot;normal&quot;)) {</span>
+<span class="fc" id="L420">                newProps.put(&quot;italicComplex&quot;, Boolean.FALSE);</span>
+              } else {
+<span class="fc" id="L422">                newProps.put(&quot;italicComplex&quot;, Boolean.TRUE);</span>
+              }
+            } // fo:color - text props only
+<span class="fc bfc" id="L425" title="All 2 branches covered.">            else if (propName.equals(&quot;fo:color&quot;)) {</span>
+              // &quot;auto&quot; color type wins..
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">              if (!newProps.has(&quot;color&quot;)) {</span>
+<span class="fc" id="L428">                propValue = odfProps.get(&quot;fo:color&quot;);</span>
+<span class="fc" id="L429">                Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L430">                newProps.put(&quot;color&quot;, color);</span>
+<span class="fc" id="L431">              }</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:use-window-font-color&quot;)) {</span>
+<span class="fc" id="L433">              propValue = odfProps.get(&quot;style:use-window-font-color&quot;);</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">              if (propValue.equals(&quot;true&quot;)) {</span>
+<span class="fc" id="L435">                newProps.put(&quot;color&quot;, COLOR_MAP_AUTO);</span>
+              }
+<span class="fc bfc" id="L437" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="fc" id="L438">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="fc" id="L439">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L440">              newProps.put(&quot;fillColor&quot;, color);</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">            } else if (propName.equals(&quot;style:width&quot;)) {</span>
+<span class="nc" id="L442">              propValue = odfProps.get(&quot;style:width&quot;);</span>
+<span class="nc bnc" id="L443" title="All 2 branches missed.">              if (!propValue.contains(PERCENT)) {</span>
+<span class="nc" id="L444">                newProps.put(&quot;width&quot;, MapHelper.normalizeLength(propValue));</span>
+              }
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">            } else if (propName.equals(&quot;style:writing-mode&quot;)) {</span>
+<span class="nc" id="L447">              propValue = odfProps.get(&quot;style:writing-mode&quot;);</span>
+<span class="nc" id="L448">              newProps.put(&quot;writingMode&quot;, propValue);</span>
+
+<span class="fc bfc" id="L450" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:text-line-through-style&quot;)) {</span>
+              /* the style might be 'none'*/
+<span class="fc" id="L452">              propValue = odfProps.get(&quot;style:text-line-through-style&quot;);</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">              if (propValue.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L454">                newProps.put(&quot;strike&quot;, &quot;none&quot;);</span>
+              } else {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">                if (odfProps.containsKey(&quot;style:text-line-through-type&quot;)) {</span>
+<span class="fc" id="L457">                  propValue = odfProps.get(&quot;style:text-line-through-type&quot;);</span>
+                  /* The type is either &quot;double&quot; or different, than we are providing a &quot;single&quot; style */
+<span class="fc bfc" id="L459" title="All 2 branches covered.">                  if (propValue.equals(&quot;double&quot;)) {</span>
+<span class="fc" id="L460">                    newProps.put(&quot;strike&quot;, &quot;double&quot;);</span>
+                  } else {
+<span class="fc" id="L462">                    newProps.put(&quot;strike&quot;, &quot;single&quot;);</span>
+                  }
+                } else {
+<span class="fc" id="L465">                  newProps.put(&quot;strike&quot;, &quot;single&quot;);</span>
+                }
+              }
+            }
+            // fo:letter-spacing=&quot;0.0104in&quot; fo:hyphenate=&quot;false
+            //                      &quot;vertAlign&quot;:&quot;super&quot;}
+<span class="nc" id="L471">          } catch (JSONException ex) {</span>
+<span class="nc" id="L472">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L473">          }</span>
+<span class="fc" id="L474">        }</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">      } else if (styleFamilyGroup.equals(&quot;paragraph&quot;)) {</span>
+<span class="fc" id="L476">        boolean borderToBeDone = true;</span>
+<span class="fc" id="L477">        boolean paddingToBeDone = true;</span>
+<span class="fc" id="L478">        boolean marginToBeDone = true;</span>
+<span class="fc" id="L479">        JSONArray tabs = null;</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+<span class="fc bfc" id="L482" title="All 2 branches covered.">            if (propName.contains(&quot;margin&quot;)) {</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">              if (marginToBeDone) {</span>
+<span class="fc" id="L484">                mapMargin(newProps, odfProps);</span>
+<span class="fc" id="L485">                marginToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L487" title="All 2 branches covered.">            } else if (propName.contains(&quot;padding&quot;)) {</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">              if (paddingToBeDone) {</span>
+<span class="fc" id="L489">                mapPadding(newProps, odfProps);</span>
+<span class="fc" id="L490">                paddingToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L492" title="All 2 branches covered.">            } else if (propName.contains(&quot;border&quot;)) {</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">              if (borderToBeDone) {</span>
+<span class="fc" id="L494">                mapBorder(newProps, odfProps);</span>
+<span class="fc" id="L495">                borderToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L497" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="fc" id="L498">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="fc" id="L499">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L500">              newProps.put(&quot;fillColor&quot;, color);</span>
+              //              &lt;attribute name=&quot;fo:line-height&quot;&gt;
+              //                  &lt;choice&gt;
+              //                      &lt;value&gt;normal&lt;/value&gt;
+              //                      &lt;ref name=&quot;nonNegativeLength&quot;/&gt;
+              //                      &lt;ref name=&quot;percent&quot;/&gt;
+              //                  &lt;/choice&gt;
+              //              &lt;/attribute&gt;
+              // { type: 'percent', value: 100 }
+<span class="fc bfc" id="L509" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:line-height&quot;)) {</span>
+<span class="fc" id="L510">              String lineHeightValue = odfProps.get(&quot;fo:line-height&quot;);</span>
+<span class="pc bpc" id="L511" title="2 of 4 branches missed.">              if (lineHeightValue != null &amp;&amp; !lineHeightValue.isEmpty()) {</span>
+<span class="fc" id="L512">                JSONObject lineHeight = createLineHeightMap(lineHeightValue);</span>
+<span class="fc" id="L513">                newProps.put(&quot;lineHeight&quot;, lineHeight);</span>
+              }
+<span class="fc bfc" id="L515" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:line-spacing&quot;)) {</span>
+<span class="fc" id="L516">              String lineLeadingValue = odfProps.get(&quot;style:line-spacing&quot;);</span>
+<span class="pc bpc" id="L517" title="2 of 4 branches missed.">              if (lineLeadingValue != null &amp;&amp; !lineLeadingValue.isEmpty()) {</span>
+<span class="fc" id="L518">                JSONObject lineHeightLeadingMap = new JSONObject();</span>
+<span class="fc" id="L519">                lineHeightLeadingMap.put(&quot;type&quot;, &quot;leading&quot;);</span>
+<span class="fc" id="L520">                lineHeightLeadingMap.put(&quot;value&quot;, MapHelper.normalizeLength(lineLeadingValue));</span>
+<span class="fc" id="L521">                newProps.put(&quot;lineHeight&quot;, lineHeightLeadingMap);</span>
+              }
+<span class="fc bfc" id="L523" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:line-height-at-least&quot;)) {</span>
+<span class="fc" id="L524">              String lineHeightAtLeastValue = odfProps.get(&quot;style:line-height-at-least&quot;);</span>
+<span class="pc bpc" id="L525" title="2 of 4 branches missed.">              if (lineHeightAtLeastValue != null &amp;&amp; !lineHeightAtLeastValue.isEmpty()) {</span>
+<span class="fc" id="L526">                JSONObject lineHeightAtLeastMap = new JSONObject();</span>
+<span class="fc" id="L527">                lineHeightAtLeastMap.put(&quot;type&quot;, &quot;atLeast&quot;);</span>
+<span class="fc" id="L528">                lineHeightAtLeastMap.put(</span>
+<span class="fc" id="L529">                    &quot;value&quot;, MapHelper.normalizeLength(lineHeightAtLeastValue));</span>
+<span class="fc" id="L530">                newProps.put(&quot;lineHeight&quot;, lineHeightAtLeastMap);</span>
+              }
+<span class="fc" id="L532">            } // see Changes API Paragraph_Formatting_Attributes</span>
+            // One of 'left', 'center', 'right', or 'justify'.
+            // start, end, left, right, center or justify.
+<span class="fc bfc" id="L535" title="All 2 branches covered.">            else if (propName.equals(&quot;fo:text-align&quot;)) {</span>
+<span class="fc" id="L536">              propValue = odfProps.get(&quot;fo:text-align&quot;);</span>
+<span class="fc" id="L537">              newProps.put(&quot;alignment&quot;, mapFoTextAlign(propValue));</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:text-indent&quot;)) {</span>
+<span class="fc" id="L539">              propValue = odfProps.get(&quot;fo:text-indent&quot;);</span>
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">              if (propValue.contains(&quot;%&quot;)) {</span>
+<span class="nc" id="L541">                LOG.fine(</span>
+                    &quot;WARNING: Found a 'fo:text-indent' with percentage we are not yet supporting in our API: &quot;
+                        + propValue);
+              } else {
+<span class="fc" id="L545">                newProps.put(&quot;indentFirstLine&quot;, MapHelper.normalizeLength(propValue));</span>
+              }
+<span class="fc bfc" id="L547" title="All 2 branches covered.">            } else if (propName.startsWith(&quot;tab_&quot;)) {</span>
+<span class="fc" id="L548">              int i = 0;</span>
+<span class="fc" id="L549">              boolean hasTabChar = false;</span>
+<span class="fc" id="L550">              boolean hasTabPos = false;</span>
+<span class="fc" id="L551">              boolean hasTabType = false;</span>
+<span class="fc" id="L552">              JSONObject tab = null;</span>
+              // addChild tab property only once
+<span class="fc bfc" id="L554" title="All 2 branches covered.">              if (!newProps.has(&quot;tabStops&quot;)) {</span>
+                while (true) {
+<span class="fc bfc" id="L556" title="All 2 branches covered.">                  if (odfProps.containsKey(&quot;tab_LeaderText&quot; + i)) {</span>
+<span class="fc" id="L557">                    propValue = odfProps.get(&quot;tab_LeaderText&quot; + i);</span>
+<span class="pc bpc" id="L558" title="1 of 2 branches missed.">                    if (tab == null) {</span>
+<span class="fc" id="L559">                      tab = new JSONObject();</span>
+                    }
+<span class="fc" id="L561">                    tab.put(&quot;fillChar&quot;, propValue);</span>
+<span class="fc" id="L562">                    hasTabChar = true;</span>
+                  } else {
+<span class="fc" id="L564">                    hasTabChar = false;</span>
+                  }
+<span class="fc bfc" id="L566" title="All 2 branches covered.">                  if (odfProps.containsKey(&quot;tab_Pos&quot; + i)) {</span>
+<span class="fc" id="L567">                    propValue = odfProps.get(&quot;tab_Pos&quot; + i);</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">                    if (tab == null) {</span>
+<span class="fc" id="L569">                      tab = new JSONObject();</span>
+                    }
+<span class="fc" id="L571">                    tab.put(&quot;pos&quot;, Integer.parseInt(propValue));</span>
+<span class="fc" id="L572">                    hasTabPos = true;</span>
+                  } else {
+<span class="fc" id="L574">                    hasTabPos = false;</span>
+                  }
+<span class="fc bfc" id="L576" title="All 2 branches covered.">                  if (odfProps.containsKey(&quot;tab_Type&quot; + i)) {</span>
+<span class="fc" id="L577">                    propValue = odfProps.get(&quot;tab_Type&quot; + i);</span>
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">                    if (tab == null) {</span>
+<span class="nc" id="L579">                      tab = new JSONObject();</span>
+                    }
+<span class="fc bfc" id="L581" title="All 2 branches covered.">                    if (propValue.equals(&quot;left&quot;)) {</span>
+<span class="fc" id="L582">                      propValue = null;</span>
+                      // as default
+                    }
+<span class="fc bfc" id="L585" title="All 2 branches covered.">                    if (propValue != null) {</span>
+<span class="fc" id="L586">                      tab.put(&quot;value&quot;, (String) propValue);</span>
+<span class="fc" id="L587">                      hasTabType = true;</span>
+                    }
+                  } else {
+<span class="fc" id="L590">                    hasTabType = false;</span>
+                  }
+<span class="fc bfc" id="L592" title="All 6 branches covered.">                  if (!hasTabChar &amp;&amp; !hasTabType &amp;&amp; !hasTabPos) {</span>
+<span class="fc" id="L593">                    newProps.put(&quot;tabStops&quot;, tabs);</span>
+<span class="fc" id="L594">                    break;</span>
+                  } else {
+<span class="fc bfc" id="L596" title="All 2 branches covered.">                    if (tabs == null) {</span>
+<span class="fc" id="L597">                      tabs = new JSONArray();</span>
+                    }
+<span class="fc" id="L599">                    tabs.put(tab);</span>
+<span class="fc" id="L600">                    hasTabType = false;</span>
+<span class="fc" id="L601">                    hasTabPos = false;</span>
+<span class="fc" id="L602">                    hasTabChar = false;</span>
+<span class="fc" id="L603">                    tab = null;</span>
+                  }
+<span class="fc" id="L605">                  i++;</span>
+                }
+              }
+<span class="fc bfc" id="L608" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:tab-stop-distance&quot;)) {</span>
+<span class="fc" id="L609">              propValue = odfProps.get(&quot;style:tab-stop-distance&quot;);</span>
+<span class="pc bpc" id="L610" title="2 of 4 branches missed.">              if (propValue != null &amp;&amp; !propValue.isEmpty()) {</span>
+                JSONObject documentProps;
+<span class="pc bpc" id="L612" title="1 of 2 branches missed.">                if (newProps.has(&quot;document&quot;)) {</span>
+<span class="nc" id="L613">                  documentProps = newProps.getJSONObject(&quot;document&quot;);</span>
+                } else {
+<span class="fc" id="L615">                  documentProps = new JSONObject();</span>
+                }
+<span class="fc" id="L617">                documentProps.put(&quot;defaultTabStop&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="fc" id="L618">                newProps.put(&quot;document&quot;, documentProps);</span>
+<span class="fc" id="L619">              }</span>
+<span class="fc bfc" id="L620" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:break-before&quot;)) {</span>
+<span class="fc" id="L621">              propValue = odfProps.get(&quot;fo:break-before&quot;);</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">              if (propValue.equals(&quot;page&quot;)) {</span>
+<span class="fc" id="L623">                newProps.put(&quot;pageBreakBefore&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L625" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:break-after&quot;)) {</span>
+<span class="fc" id="L626">              propValue = odfProps.get(&quot;fo:break-after&quot;);</span>
+<span class="fc bfc" id="L627" title="All 2 branches covered.">              if (propValue.equals(&quot;page&quot;)) {</span>
+<span class="fc" id="L628">                newProps.put(&quot;pageBreakAfter&quot;, Boolean.TRUE);</span>
+              }
+            }
+
+<span class="nc" id="L632">          } catch (JSONException ex) {</span>
+<span class="nc" id="L633">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L634">          }</span>
+<span class="fc" id="L635">        }</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">      } else if (styleFamilyGroup.equals(&quot;cell&quot;)) {</span>
+<span class="fc" id="L637">        boolean borderToBeDone = true;</span>
+<span class="fc" id="L638">        boolean paddingToBeDone = true;</span>
+<span class="fc bfc" id="L639" title="All 2 branches covered.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+            // No margin
+<span class="fc bfc" id="L642" title="All 2 branches covered.">            if (propName.contains(&quot;padding&quot;)) {</span>
+<span class="fc bfc" id="L643" title="All 2 branches covered.">              if (paddingToBeDone) {</span>
+<span class="fc" id="L644">                mapPadding(newProps, odfProps);</span>
+<span class="fc" id="L645">                paddingToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L647" title="All 2 branches covered.">            } else if (propName.contains(&quot;border&quot;)) {</span>
+<span class="fc bfc" id="L648" title="All 2 branches covered.">              if (borderToBeDone) {</span>
+<span class="fc" id="L649">                mapBorder(newProps, odfProps);</span>
+<span class="fc" id="L650">                borderToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L652" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="fc" id="L653">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="fc" id="L654">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L655">              newProps.put(&quot;fillColor&quot;, color);</span>
+<span class="fc bfc" id="L656" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:vertical-align&quot;)) {</span>
+<span class="fc" id="L657">              propValue = odfProps.get(&quot;style:vertical-align&quot;);</span>
+<span class="fc" id="L658">              newProps.put(&quot;alignVert&quot;, propValue);</span>
+            }
+<span class="nc" id="L660">          } catch (JSONException ex) {</span>
+<span class="nc" id="L661">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L662">          }</span>
+<span class="fc" id="L663">        }</span>
+<span class="pc bpc" id="L664" title="1 of 2 branches missed.">      } else if (styleFamilyGroup.equals(&quot;column&quot;)) {</span>
+<span class="nc bnc" id="L665" title="All 2 branches missed.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+            // No margin
+<span class="nc bnc" id="L668" title="All 2 branches missed.">            if (propName.equals(&quot;style:column-width&quot;)) {</span>
+<span class="nc" id="L669">              propValue = odfProps.get(&quot;style:column-width&quot;);</span>
+<span class="nc" id="L670">              newProps.put(&quot;width&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="nc bnc" id="L671" title="All 2 branches missed.">            } else if (propName.contains(&quot;style:use-optimal-column-width&quot;)) {</span>
+<span class="nc" id="L672">              propValue = odfProps.get(&quot;style:use-optimal-column-width&quot;);</span>
+<span class="nc bnc" id="L673" title="All 2 branches missed.">              newProps.put(&quot;customWidth&quot;, !Boolean.parseBoolean(propValue));</span>
+            }
+<span class="nc" id="L675">          } catch (JSONException ex) {</span>
+<span class="nc" id="L676">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L677">          }</span>
+<span class="nc" id="L678">        }</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">      } else if (styleFamilyGroup.equals(&quot;row&quot;)) {</span>
+        try {
+<span class="fc bfc" id="L681" title="All 2 branches covered.">          for (String propName : odfProps.keySet()) {</span>
+<span class="fc bfc" id="L682" title="All 2 branches covered.">            if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="fc" id="L683">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="fc" id="L684">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L685">              newProps.put(&quot;fillColor&quot;, color);</span>
+<span class="fc bfc" id="L686" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:min-row-height&quot;)) {</span>
+<span class="fc" id="L687">              propValue = odfProps.get(&quot;style:min-row-height&quot;);</span>
+<span class="fc" id="L688">              newProps.put(&quot;height&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:row-height&quot;)) {</span>
+<span class="fc" id="L690">              propValue = odfProps.get(&quot;style:row-height&quot;);</span>
+<span class="fc" id="L691">              newProps.put(&quot;height&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="pc bpc" id="L692" title="1 of 2 branches missed.">            } else if (propName.contains(&quot;style:use-optimal-row-height&quot;)) {</span>
+<span class="nc" id="L693">              propValue = odfProps.get(&quot;style:use-optimal-row-height&quot;);</span>
+<span class="nc bnc" id="L694" title="All 2 branches missed.">              newProps.put(&quot;customHeight&quot;, !Boolean.parseBoolean(propValue));</span>
+            }
+<span class="fc" id="L696">          }</span>
+<span class="nc" id="L697">        } catch (JSONException ex) {</span>
+<span class="nc" id="L698">          Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="pc" id="L699">        }</span>
+<span class="pc bpc" id="L700" title="1 of 2 branches missed.">      } else if (styleFamilyGroup.equals(&quot;list&quot;)) {</span>
+        try {
+<span class="nc bnc" id="L702" title="All 2 branches missed.">          for (String propName : odfProps.keySet()) {</span>
+<span class="nc bnc" id="L703" title="All 2 branches missed.">            if (propName.equals(&quot;style:font-name&quot;)) {</span>
+<span class="nc" id="L704">              propValue = odfProps.get(&quot;style:font-name&quot;);</span>
+<span class="nc" id="L705">              newProps.put(&quot;fontName&quot;, propValue);</span>
+<span class="nc bnc" id="L706" title="All 2 branches missed.">            } else if (propName.equals(&quot;style:font-name-asian&quot;)) {</span>
+<span class="nc" id="L707">              propValue = odfProps.get(&quot;style:font-name-asian&quot;);</span>
+<span class="nc" id="L708">              newProps.put(&quot;fontNameAsian&quot;, propValue);</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">            } else if (propName.equals(&quot;style:font-name-complex&quot;)) {</span>
+<span class="nc" id="L710">              propValue = odfProps.get(&quot;style:font-name-complex&quot;);</span>
+<span class="nc" id="L711">              newProps.put(&quot;fontNameComplex&quot;, propValue);</span>
+<span class="nc bnc" id="L712" title="All 2 branches missed.">            } else if (propName.equals(&quot;fo:text-align&quot;)) {</span>
+<span class="nc" id="L713">              propValue = odfProps.get(&quot;fo:text-align&quot;);</span>
+
+<span class="nc bnc" id="L715" title="All 4 branches missed.">              if (propValue.equals(&quot;start&quot;) || propValue.equals(&quot;left&quot;)) {</span>
+                // ToDo: I8N requires a correspondonce to the writing direction
+<span class="nc" id="L717">                propValue = &quot;left&quot;;</span>
+<span class="nc bnc" id="L718" title="All 4 branches missed.">              } else if (propValue.equals(&quot;end&quot;) || propValue.equals(&quot;right&quot;)) {</span>
+                // ToDo: I8N requires a correspondonce to the writing direction
+<span class="nc" id="L720">                propValue = &quot;right&quot;;</span>
+              }
+<span class="nc" id="L722">              newProps.put(&quot;alignment&quot;, propValue);</span>
+            }
+<span class="nc" id="L724">          }</span>
+<span class="nc" id="L725">        } catch (JSONException ex) {</span>
+<span class="nc" id="L726">          Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L727">        }</span>
+<span class="fc bfc" id="L728" title="All 2 branches covered.">      } else if (styleFamilyGroup.equals(&quot;table&quot;)) {</span>
+<span class="fc" id="L729">        boolean marginToBeDone = true;</span>
+<span class="fc bfc" id="L730" title="All 2 branches covered.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+            // no padding, no border
+<span class="fc bfc" id="L733" title="All 2 branches covered.">            if (propName.contains(&quot;margin&quot;)) {</span>
+<span class="fc bfc" id="L734" title="All 2 branches covered.">              if (marginToBeDone) {</span>
+<span class="fc" id="L735">                mapMargin(newProps, odfProps);</span>
+<span class="fc" id="L736">                marginToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L738" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:width&quot;)) {</span>
+<span class="fc" id="L739">              propValue = odfProps.get(&quot;style:width&quot;);</span>
+<span class="pc bpc" id="L740" title="1 of 2 branches missed.">              if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L741">                newProps.put(&quot;width&quot;, MapHelper.normalizeLength(propValue));</span>
+              }
+<span class="fc bfc" id="L743" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="fc" id="L744">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="fc" id="L745">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L746">              newProps.put(&quot;fillColor&quot;, color);</span>
+<span class="pc bpc" id="L747" title="1 of 2 branches missed.">            } else if (propName.equals(&quot;table:display&quot;)) {</span>
+<span class="nc" id="L748">              propValue = odfProps.get(&quot;table:display&quot;);</span>
+<span class="nc" id="L749">              newProps.put(&quot;visible&quot;, Boolean.parseBoolean(propValue));</span>
+<span class="fc bfc" id="L750" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:break-before&quot;)) {</span>
+<span class="fc" id="L751">              propValue = odfProps.get(&quot;fo:break-before&quot;);</span>
+<span class="fc" id="L752">              newProps.put(&quot;pageBreakBefore&quot;, propValue.equals(&quot;page&quot;));</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:break-after&quot;)) {</span>
+<span class="fc" id="L754">              propValue = odfProps.get(&quot;fo:break-after&quot;);</span>
+<span class="fc" id="L755">              newProps.put(&quot;pageBreakAfter&quot;, propValue.equals(&quot;page&quot;));</span>
+            }
+<span class="nc" id="L757">          } catch (JSONException ex) {</span>
+<span class="nc" id="L758">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L759">          }</span>
+<span class="fc" id="L760">        }</span>
+<span class="pc bpc" id="L761" title="1 of 2 branches missed.">      } else if (styleFamilyGroup.equals(&quot;page&quot;)) {</span>
+<span class="nc" id="L762">        boolean borderToBeDone = true;</span>
+<span class="nc" id="L763">        boolean paddingToBeDone = true;</span>
+<span class="nc" id="L764">        boolean marginToBeDone = true;</span>
+<span class="nc bnc" id="L765" title="All 2 branches missed.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+<span class="nc bnc" id="L767" title="All 2 branches missed.">            if (propName.contains(&quot;margin&quot;)) {</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">              if (marginToBeDone) {</span>
+<span class="nc" id="L769">                mapMargin(newProps, odfProps);</span>
+<span class="nc" id="L770">                marginToBeDone = false;</span>
+              }
+<span class="nc bnc" id="L772" title="All 2 branches missed.">            } else if (propName.contains(&quot;padding&quot;)) {</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">              if (paddingToBeDone) {</span>
+<span class="nc" id="L774">                mapPadding(newProps, odfProps);</span>
+<span class="nc" id="L775">                paddingToBeDone = false;</span>
+              }
+<span class="nc bnc" id="L777" title="All 2 branches missed.">            } else if (propName.contains(&quot;border&quot;)) {</span>
+<span class="nc bnc" id="L778" title="All 2 branches missed.">              if (borderToBeDone) {</span>
+<span class="nc" id="L779">                mapBorder(newProps, odfProps);</span>
+<span class="nc" id="L780">                borderToBeDone = false;</span>
+              }
+<span class="nc bnc" id="L782" title="All 2 branches missed.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="nc" id="L783">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="nc" id="L784">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="nc" id="L785">              newProps.put(&quot;fillColor&quot;, color);</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">            } else if (propName.equals(&quot;fo:page-width&quot;)) {</span>
+<span class="nc" id="L787">              propValue = odfProps.get(&quot;fo:page-width&quot;);</span>
+<span class="nc" id="L788">              newProps.put(&quot;width&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="nc bnc" id="L789" title="All 2 branches missed.">            } else if (propName.equals(&quot;fo:page-height&quot;)) {</span>
+<span class="nc" id="L790">              propValue = odfProps.get(&quot;fo:page-height&quot;);</span>
+<span class="nc" id="L791">              newProps.put(&quot;height&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="nc bnc" id="L792" title="All 2 branches missed.">            } else if (propName.equals(&quot;style:print-orientation&quot;)) {</span>
+<span class="nc" id="L793">              propValue = odfProps.get(&quot;style:print-orientation&quot;);</span>
+<span class="nc" id="L794">              newProps.put(&quot;printOrientation&quot;, propValue);</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">            } else if (propName.equals(&quot;style:num-format&quot;)) {</span>
+<span class="nc" id="L796">              propValue = odfProps.get(&quot;style:num-format&quot;);</span>
+<span class="nc" id="L797">              newProps.put(&quot;numberFormat&quot;, propValue);</span>
+            }
+<span class="nc" id="L799">          } catch (JSONException ex) {</span>
+<span class="nc" id="L800">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L801">          }</span>
+<span class="nc" id="L802">        }</span>
+<span class="pc bpc" id="L803" title="1 of 2 branches missed.">      } else if (styleFamilyGroup.equals(&quot;drawing&quot;)) {</span>
+<span class="fc" id="L804">        boolean borderToBeDone = true;</span>
+<span class="fc" id="L805">        boolean paddingToBeDone = true;</span>
+<span class="fc" id="L806">        boolean marginToBeDone = true;</span>
+<span class="fc" id="L807">        shapeProps = new JSONObject();</span>
+<span class="fc" id="L808">        imageProps = new JSONObject();</span>
+<span class="fc" id="L809">        lineProps = new JSONObject();</span>
+<span class="fc" id="L810">        fillProps = new JSONObject();</span>
+<span class="fc bfc" id="L811" title="All 2 branches covered.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+<span class="fc bfc" id="L813" title="All 2 branches covered.">            if (propName.contains(&quot;margin&quot;)) {</span>
+<span class="fc bfc" id="L814" title="All 2 branches covered.">              if (marginToBeDone) {</span>
+<span class="fc" id="L815">                mapMargin(newProps, odfProps);</span>
+<span class="fc" id="L816">                marginToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L818" title="All 2 branches covered.">            } else if (propName.contains(&quot;padding&quot;)) {</span>
+<span class="fc bfc" id="L819" title="All 2 branches covered.">              if (paddingToBeDone) {</span>
+<span class="fc" id="L820">                mapPadding(shapeProps, odfProps);</span>
+<span class="fc" id="L821">                paddingToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L823" title="All 2 branches covered.">            } else if (propName.contains(&quot;border&quot;)) {</span>
+<span class="fc bfc" id="L824" title="All 2 branches covered.">              if (borderToBeDone) {</span>
+<span class="fc" id="L825">                mapBorder(newProps, odfProps);</span>
+<span class="fc" id="L826">                borderToBeDone = false;</span>
+              }
+<span class="fc bfc" id="L828" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="fc" id="L829">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="fc" id="L830">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L831">              fillProps.put(&quot;type&quot;, &quot;solid&quot;);</span>
+<span class="fc" id="L832">              fillProps.put(&quot;color&quot;, color);</span>
+              // http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#property-style_mirror
+<span class="fc bfc" id="L834" title="All 2 branches covered.">            } else if (propName.equals(&quot;draw:fill-color&quot;)) {</span>
+<span class="fc" id="L835">              propValue = odfProps.get(&quot;draw:fill-color&quot;);</span>
+<span class="fc" id="L836">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="fc" id="L837">              fillProps.put(&quot;type&quot;, &quot;solid&quot;);</span>
+<span class="fc" id="L838">              fillProps.put(&quot;color&quot;, color);</span>
+<span class="fc bfc" id="L839" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:mirror&quot;)) {</span>
+<span class="fc" id="L840">              String mirror = odfProps.get(&quot;style:mirror&quot;);</span>
+<span class="pc bpc" id="L841" title="1 of 4 branches missed.">              if (mirror.contains(&quot;horizontal&quot;) &amp;&amp; !mirror.contains(&quot;-on-&quot;)) {</span>
+<span class="fc" id="L842">                newProps.put(&quot;flipH&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L844" title="All 2 branches covered.">              if (mirror.contains(&quot;vertical&quot;)) {</span>
+<span class="fc" id="L845">                newProps.put(&quot;flipV&quot;, Boolean.TRUE);</span>
+              }
+<span class="fc bfc" id="L847" title="All 2 branches covered.">              if (mirror.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L848">                newProps.put(&quot;flipV&quot;, Boolean.FALSE);</span>
+<span class="fc" id="L849">                newProps.put(&quot;flipH&quot;, Boolean.FALSE);</span>
+              }
+              /*
+              @style:horizontal-rel:
+              The defined values for the style:horizontal-rel attribute are:
+              * char: horizontal position of a frame is positioned relative to a character.
+              * page: horizontal position of a frame is positioned relative to a page.
+              * page-content: horizontal position of a frame is positioned relative to page-content.
+              * page-start-margin: horizontal position of a frame is positioned relative to a page start margin.
+              * page-end-margin: horizontal position of a frame is positioned relative to a page end margin.
+              * frame: horizontal position of a frame is positioned relative to another frame.
+              * frame-content: horizontal position of a frame is positioned relative to frame content.
+              * frame-end-margin: horizontal position of a frame is positioned relative to a frame end margin.
+              * frame-start-margin: horizontal position of a frame is positioned relative to a frame start margin
+              * paragraph: horizontal position of a frame is positioned relative to a paragraph.
+              * paragraph-content: horizontal position of a frame is positioned relative to paragraph content.
+              * paragraph-end-margin: horizontal position of a frame is positioned relative to a paragraph end margin.
+              * paragraph-start-margin:horizontal position of a frame is positioned relative to a paragraph start margin.
+
+              @style:horizontal-pos:
+              The defined values for the style:horizontal-pos attribute are:
+              * center: horizontal alignment of a frame should be centered relative to the specified area.
+              * anchorHorAlign=center
+              * from-inside: on pages with an odd page number the left edge of the specific area is taken as the horizontal alignment of a frame. On pages with an even page number the right edge of the specified area is taken. Attribute svg:x associated with the frame element specifies the horizontal position of the frame from the edge which is taken.
+              * UNSUPPORTED
+              * from-left: the svg:x attribute associated with the frame element specifies the horizontal position of the frame from the left edge of the specified area.
+              * anchorHorAlign=offset
+              * inside: on pages with an odd page number the horizontal alignment of a frame is the same as for the attribute value left. On pages with an even page number the horizontal alignment of a frame is the same as for the attribute value right.
+              * anchorHorAlign=inside
+              * left: horizontal alignment of a frame should be left aligned relative to the specified area.
+              * anchorHorAlign=left
+              * outside: on pages with an odd page number the horizontal alignment of a frame is the same as for the attribute value right. On pages with an even page number the horizontal alignment of a frame is the same as for the attribute value left.
+              * anchorHorAlign=outside
+              * right: horizontal alignment of a frame should be right aligned relative to the specified area.
+              * anchorHorAlign=right
+              If the attribute value is not from-left and not from-inside, the svg:x attribute associated with the frame element is ignored for text documents.                       */
+              // Changes API:
+              // anchorHorAlign: Horizontal anchor position:  One of 'left', 'right', 'center',
+              // 'inside', 'outside', or 'offset'.
+              // anchorHorOffset: Horizontal position offset (only used if anchorHorAlign is set to
+              // 'offset')
+<span class="fc bfc" id="L890" title="All 2 branches covered.">            } else if (propName.contains(&quot;horizontal-pos&quot;)) {</span>
+<span class="fc" id="L891">              String horizontalPos = odfProps.get(&quot;style:horizontal-pos&quot;);</span>
+<span class="fc bfc" id="L892" title="All 2 branches covered.">              if (horizontalPos.equals(&quot;center&quot;)) {</span>
+<span class="fc" id="L893">                newProps.put(&quot;anchorHorAlign&quot;, &quot;center&quot;);</span>
+<span class="fc bfc" id="L894" title="All 2 branches covered.">              } else if (horizontalPos.equals(&quot;from-left&quot;)) {</span>
+<span class="fc" id="L895">                newProps.put(&quot;anchorHorAlign&quot;, &quot;offset&quot;);</span>
+<span class="fc bfc" id="L896" title="All 2 branches covered.">              } else if (horizontalPos.equals(&quot;left&quot;)) {</span>
+<span class="fc" id="L897">                newProps.put(&quot;anchorHorAlign&quot;, &quot;left&quot;);</span>
+<span class="pc bpc" id="L898" title="1 of 2 branches missed.">              } else if (horizontalPos.equals(&quot;right&quot;)) {</span>
+<span class="fc" id="L899">                newProps.put(&quot;anchorHorAlign&quot;, &quot;right&quot;);</span>
+<span class="nc bnc" id="L900" title="All 2 branches missed.">              } else if (horizontalPos.equals(&quot;inside&quot;)) {</span>
+<span class="nc" id="L901">                newProps.put(&quot;anchorHorAlign&quot;, &quot;inside&quot;);</span>
+<span class="nc bnc" id="L902" title="All 2 branches missed.">              } else if (horizontalPos.equals(&quot;outside&quot;)) {</span>
+<span class="nc" id="L903">                newProps.put(&quot;anchorHorAlign&quot;, &quot;outside&quot;);</span>
+              }
+              // anchorVertAlign   Vertical anchor position. One of 'top', 'bottom', 'center',
+              // 'inside', 'outside', 'offset'.
+<span class="fc bfc" id="L907" title="All 2 branches covered.">            } else if (propName.contains(&quot;vertical-pos&quot;)) {</span>
+<span class="fc" id="L908">              String verticalPos = odfProps.get(&quot;style:vertical-pos&quot;);</span>
+<span class="pc bpc" id="L909" title="1 of 2 branches missed.">              if (verticalPos.equals(&quot;center&quot;)) {</span>
+<span class="nc" id="L910">                newProps.put(&quot;anchorVertAlign&quot;, &quot;center&quot;);</span>
+<span class="fc bfc" id="L911" title="All 2 branches covered.">              } else if (verticalPos.equals(&quot;from-top&quot;)) {</span>
+<span class="fc" id="L912">                newProps.put(&quot;anchorVertAlign&quot;, &quot;offset&quot;);</span>
+<span class="fc bfc" id="L913" title="All 2 branches covered.">              } else if (verticalPos.equals(&quot;top&quot;)) {</span>
+<span class="fc" id="L914">                newProps.put(&quot;anchorVertAlign&quot;, &quot;top&quot;);</span>
+<span class="pc bpc" id="L915" title="1 of 2 branches missed.">              } else if (verticalPos.equals(&quot;bottom&quot;)) {</span>
+<span class="nc" id="L916">                newProps.put(&quot;anchorVertAlign&quot;, &quot;bottom&quot;);</span>
+<span class="pc bpc" id="L917" title="1 of 2 branches missed.">              } else if (verticalPos.equals(&quot;inside&quot;)) {</span>
+<span class="nc" id="L918">                newProps.put(&quot;anchorVertAlign&quot;, &quot;inside&quot;);</span>
+<span class="pc bpc" id="L919" title="1 of 2 branches missed.">              } else if (verticalPos.equals(&quot;outside&quot;)) {</span>
+<span class="nc" id="L920">                newProps.put(&quot;anchorVertAlign&quot;, &quot;outside&quot;);</span>
+              }
+<span class="fc bfc" id="L922" title="All 2 branches covered.">            } else if (propName.contains(&quot;horizontal-rel&quot;)) {</span>
+<span class="fc" id="L923">              String horiRel = odfProps.get(&quot;style:horizontal-rel&quot;);</span>
+
+<span class="fc bfc" id="L925" title="All 2 branches covered.">              if (horiRel.equals(&quot;char&quot;)) {</span>
+<span class="fc" id="L926">                newProps.put(&quot;anchorHorBase&quot;, &quot;character&quot;);</span>
+<span class="fc bfc" id="L927" title="All 2 branches covered.">              } else if (horiRel.equals(&quot;page-content&quot;)) {</span>
+<span class="fc" id="L928">                newProps.put(&quot;anchorHorBase&quot;, &quot;margin&quot;);</span>
+<span class="fc bfc" id="L929" title="All 2 branches covered.">              } else if (horiRel.equals(&quot;page-start-margin&quot;)) {</span>
+<span class="fc" id="L930">                newProps.put(&quot;anchorHorBase&quot;, &quot;leftMargin&quot;);</span>
+<span class="pc bpc" id="L931" title="1 of 2 branches missed.">              } else if (horiRel.equals(&quot;page-end-margin&quot;)) {</span>
+<span class="nc" id="L932">                newProps.put(&quot;anchorHorBase&quot;, &quot;rightMargin&quot;);</span>
+<span class="pc bpc" id="L933" title="1 of 2 branches missed.">              } else if (horiRel.equals(&quot;frame&quot;)) {</span>
+<span class="nc" id="L934">                newProps.put(&quot;anchorHorBase&quot;, &quot;column&quot;);</span>
+<span class="pc bpc" id="L935" title="1 of 2 branches missed.">              } else if (horiRel.equals(&quot;frame-content&quot;)</span>
+<span class="pc bpc" id="L936" title="1 of 2 branches missed.">                  || horiRel.equals(&quot;frame-end-margin&quot;)</span>
+<span class="pc bpc" id="L937" title="1 of 2 branches missed.">                  || horiRel.equals(&quot;frame-start-margin&quot;)) {</span>
+<span class="nc" id="L938">                newProps.put(&quot;anchorHorBase&quot;, &quot;column&quot;);</span>
+<span class="fc bfc" id="L939" title="All 4 branches covered.">              } else if (horiRel.equals(&quot;paragraph&quot;) || horiRel.equals(&quot;paragraph-content&quot;)) {</span>
+<span class="fc" id="L940">                newProps.put(&quot;anchorHorBase&quot;, &quot;column&quot;);</span>
+<span class="pc bpc" id="L941" title="1 of 2 branches missed.">              } else if (horiRel.equals(&quot;paragraph-end-margin&quot;)) {</span>
+<span class="nc" id="L942">                newProps.put(&quot;anchorHorBase&quot;, &quot;rightMargin&quot;);</span>
+<span class="pc bpc" id="L943" title="1 of 2 branches missed.">              } else if (horiRel.equals(&quot;paragraph-start-margin&quot;)) {</span>
+<span class="nc" id="L944">                newProps.put(&quot;anchorHorBase&quot;, &quot;leftMargin&quot;);</span>
+<span class="pc bpc" id="L945" title="1 of 2 branches missed.">              } else if (horiRel.equals(&quot;page&quot;)) {</span>
+<span class="fc" id="L946">                newProps.put(&quot;anchorHorBase&quot;, &quot;page&quot;);</span>
+              }
+<span class="fc bfc" id="L948" title="All 2 branches covered.">            } else if (propName.contains(&quot;vertical-rel&quot;)) {</span>
+              // char,
+              // frame, frame-content
+              // line
+              // page, page-content,
+              // paragraph-content, paragraph,
+              // text
+<span class="fc" id="L955">              String verticalRel = odfProps.get(&quot;style:vertical-rel&quot;);</span>
+<span class="pc bpc" id="L956" title="1 of 2 branches missed.">              if (verticalRel.equals(&quot;char&quot;)) {</span>
+<span class="nc" id="L957">                newProps.put(&quot;anchorVertBase&quot;, &quot;line&quot;);</span>
+<span class="pc bpc" id="L958" title="1 of 2 branches missed.">              } else if (verticalRel.equals(&quot;frame&quot;)) {</span>
+<span class="nc" id="L959">                newProps.put(&quot;anchorVertBase&quot;, &quot;paragraph&quot;);</span>
+<span class="pc bpc" id="L960" title="1 of 2 branches missed.">              } else if (verticalRel.equals(&quot;frame-content&quot;)) {</span>
+<span class="nc" id="L961">                newProps.put(&quot;anchorVertBase&quot;, &quot;paragraph&quot;);</span>
+<span class="fc bfc" id="L962" title="All 2 branches covered.">              } else if (verticalRel.equals(&quot;line&quot;)) {</span>
+<span class="fc" id="L963">                newProps.put(&quot;anchorVertBase&quot;, &quot;line&quot;);</span>
+<span class="fc bfc" id="L964" title="All 2 branches covered.">              } else if (verticalRel.equals(&quot;page&quot;)) {</span>
+<span class="fc" id="L965">                newProps.put(&quot;anchorVertBase&quot;, &quot;page&quot;);</span>
+<span class="fc bfc" id="L966" title="All 2 branches covered.">              } else if (verticalRel.equals(&quot;page-content&quot;)) {</span>
+<span class="fc" id="L967">                newProps.put(&quot;anchorVertBase&quot;, &quot;margin&quot;);</span>
+<span class="fc bfc" id="L968" title="All 2 branches covered.">              } else if (verticalRel.equals(&quot;paragraph&quot;)) {</span>
+<span class="fc" id="L969">                newProps.put(&quot;anchorVertBase&quot;, &quot;paragraph&quot;);</span>
+<span class="fc bfc" id="L970" title="All 2 branches covered.">              } else if (verticalRel.equals(&quot;paragraph-content&quot;)) {</span>
+<span class="fc" id="L971">                newProps.put(&quot;anchorVertBase&quot;, &quot;paragraph&quot;);</span>
+<span class="fc bfc" id="L972" title="All 2 branches covered.">              } else if (verticalRel.equals(&quot;text&quot;)) {</span>
+<span class="fc" id="L973">                newProps.put(&quot;anchorVertBase&quot;, &quot;line&quot;);</span>
+              }
+<span class="fc bfc" id="L975" title="All 2 branches covered.">            } else if (propName.equals(&quot;svg:x&quot;)) {</span>
+<span class="fc" id="L976">              int x = MapHelper.normalizeLength(odfProps.get(&quot;svg:x&quot;));</span>
+<span class="fc bfc" id="L977" title="All 2 branches covered.">              if (x != 0) {</span>
+<span class="fc" id="L978">                newProps.put(&quot;anchorHorOffset&quot;, x);</span>
+<span class="fc" id="L979">                newProps.put(&quot;left&quot;, x);</span>
+              }
+<span class="fc bfc" id="L981" title="All 2 branches covered.">            } else if (propName.equals(&quot;svg:y&quot;)) {</span>
+<span class="fc" id="L982">              int y = MapHelper.normalizeLength(odfProps.get(&quot;svg:y&quot;));</span>
+<span class="fc bfc" id="L983" title="All 2 branches covered.">              if (y != 0) {</span>
+<span class="fc" id="L984">                newProps.put(&quot;anchorVertOffset&quot;, y);</span>
+<span class="fc" id="L985">                newProps.put(&quot;top&quot;, y);</span>
+              }
+
+              /*
+              Changes API:
+              cropLeft   Left cropping in percent
+              cropRight  Right cropping in percent
+              cropTop        Top cropping in percent
+              cropBottom Bottom cropping in percent
+              http://www.w3.org/TR/CSS2/visufx.html#propdef-clip */
+              // &lt;top&gt;, &lt;right&gt;, &lt;bottom&gt;, &lt;left&gt;
+              // Value length or &quot;auto&quot;
+              // e.g. @fo:clip=&quot;rect(0in, 0.07874in, 0in, 0.07874in)&quot;
+              // PROBLEM: The width &amp; height is not accessible
+<span class="fc bfc" id="L999" title="All 2 branches covered.">            } else if (propName.equals(&quot;fo:clip&quot;)) {</span>
+<span class="fc" id="L1000">              String clipping = odfProps.get(&quot;fo:clip&quot;);</span>
+<span class="fc" id="L1001">              int start = clipping.indexOf(&quot;rect(&quot;);</span>
+<span class="fc" id="L1002">              int end = clipping.indexOf(&quot;)&quot;);</span>
+<span class="pc bpc" id="L1003" title="2 of 4 branches missed.">              if (start &gt; -1 &amp;&amp; end &gt; -1) {</span>
+<span class="fc" id="L1004">                clipping = clipping.substring(start + 5, end);</span>
+              }
+<span class="fc" id="L1006">              String clips[] = clipping.split(&quot;, &quot;);</span>
+<span class="fc bfc" id="L1007" title="All 2 branches covered.">              if (clips.length != 4) {</span>
+                // fallback as some documents to not behave as the standard explains
+<span class="fc" id="L1009">                clips = clipping.split(&quot; &quot;);</span>
+              }
+<span class="fc" id="L1011">              int clipTop = MapHelper.normalizeLength(clips[0]);</span>
+<span class="fc" id="L1012">              imageProps.put(&quot;cropTop&quot;, clipTop);</span>
+<span class="fc" id="L1013">              int clipRight = MapHelper.normalizeLength(clips[1]);</span>
+<span class="fc" id="L1014">              imageProps.put(&quot;cropRight&quot;, clipRight);</span>
+<span class="fc" id="L1015">              int clipBottom = MapHelper.normalizeLength(clips[2]);</span>
+<span class="fc" id="L1016">              imageProps.put(&quot;cropBottom&quot;, clipBottom);</span>
+<span class="fc" id="L1017">              int clipLeft = MapHelper.normalizeLength(clips[3]);</span>
+<span class="fc" id="L1018">              imageProps.put(&quot;cropLeft&quot;, clipLeft);</span>
+
+              /* http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#property-style_wrap
+              The style:wrap attribute specifies how text is displayed around a frame or graphic object.
+              The defined values for the style:wrap attribute are:
+              * biggest: text may wrap around the shape where the difference to the left or right page or column border is largest.
+              * Mode=square Side=largest
+              * dynamic: text may wrap around both sides of the shape. The space for wrapping is set by the style:wrap-dynamic-threshold attribute. 20.393
+              * UNSUPPORTED
+              * left: text wraps around the left side of the shape.
+              * Mode=square  Side=left
+              * none: text does not wrap around the shape.
+              * Mode=topAndBottom
+              * parallel: text wraps around both sides of the shape.
+              * Mode=square  Side=both
+              * right: text wraps around the right side of the shape.
+              * Mode=square  Side=right
+              * run-through: text runs through the shape.
+              * Mode=through Side=both   */
+              /*
+              Changes API: textWrapMode   One of 'none', 'square', 'tight', 'through', or 'topAndBottom'. (IMHO 'none' == 'topAndBottom', but the latter is implemented)
+              Changes API: textWrapSide   Sides where text wraps around the image (only used if textWrapMode is set to 'square', 'tight', or 'through') (1). One of ['both', 'left', 'right', 'largest'   */
+<span class="fc bfc" id="L1040" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:wrap&quot;)) {</span>
+<span class="fc" id="L1041">              String wrap = odfProps.get(&quot;style:wrap&quot;);</span>
+
+<span class="fc bfc" id="L1043" title="All 2 branches covered.">              if (wrap.equals(&quot;biggest&quot;)) {</span>
+<span class="fc" id="L1044">                newProps.put(&quot;textWrapMode&quot;, &quot;square&quot;);</span>
+<span class="fc" id="L1045">                newProps.put(&quot;textWrapSide&quot;, &quot;largest&quot;);</span>
+<span class="fc bfc" id="L1046" title="All 2 branches covered.">              } else if (wrap.equals(&quot;left&quot;)) {</span>
+<span class="fc" id="L1047">                newProps.put(&quot;textWrapMode&quot;, &quot;square&quot;);</span>
+<span class="fc" id="L1048">                newProps.put(&quot;textWrapSide&quot;, &quot;left&quot;);</span>
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">              } else if (wrap.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L1050">                newProps.put(&quot;textWrapMode&quot;, &quot;topAndBottom&quot;);</span>
+<span class="fc bfc" id="L1051" title="All 2 branches covered.">              } else if (wrap.equals(&quot;parallel&quot;)) {</span>
+<span class="fc" id="L1052">                newProps.put(&quot;textWrapMode&quot;, &quot;square&quot;);</span>
+<span class="fc" id="L1053">                newProps.put(&quot;textWrapSide&quot;, &quot;both&quot;);</span>
+<span class="fc bfc" id="L1054" title="All 2 branches covered.">              } else if (wrap.equals(&quot;right&quot;)) {</span>
+<span class="fc" id="L1055">                newProps.put(&quot;textWrapMode&quot;, &quot;square&quot;);</span>
+<span class="fc" id="L1056">                newProps.put(&quot;textWrapSide&quot;, &quot;right&quot;);</span>
+<span class="fc bfc" id="L1057" title="All 2 branches covered.">              } else if (wrap.equals(&quot;run-through&quot;)) {</span>
+<span class="fc" id="L1058">                newProps.put(&quot;textWrapMode&quot;, &quot;through&quot;);</span>
+<span class="fc" id="L1059">                newProps.put(&quot;textWrapSide&quot;, &quot;both&quot;);</span>
+              }
+<span class="fc bfc" id="L1061" title="All 2 branches covered.">            } else if (propName.equals(&quot;draw:stroke&quot;)) {</span>
+<span class="fc" id="L1062">              String stroke = odfProps.get(&quot;draw:stroke&quot;);</span>
+<span class="fc bfc" id="L1063" title="All 2 branches covered.">              if (stroke.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L1064">                lineProps.put(&quot;style&quot;, &quot;none&quot;);</span>
+              } else {
+<span class="fc bfc" id="L1066" title="All 2 branches covered.">                lineProps.put(&quot;style&quot;, stroke.equals(&quot;solid&quot;) ? &quot;solid&quot; : &quot;dashed&quot;);</span>
+                // TODO: map draw:stroke-dash into the line type
+<span class="fc bfc" id="L1068" title="All 2 branches covered.">                if (!lineProps.has(&quot;width&quot;)) {</span>
+<span class="fc" id="L1069">                  lineProps.put(&quot;width&quot;, 1);</span>
+                }
+<span class="pc bpc" id="L1071" title="1 of 2 branches missed.">                if (!lineProps.has(&quot;type&quot;)) {</span>
+<span class="fc" id="L1072">                  lineProps.put(&quot;type&quot;, &quot;solid&quot;);</span>
+                }
+              }
+<span class="fc bfc" id="L1075" title="All 2 branches covered.">            } else if (propName.equals(&quot;svg:stroke-color&quot;)) {</span>
+<span class="fc" id="L1076">              String color = odfProps.get(&quot;svg:stroke-color&quot;);</span>
+<span class="fc" id="L1077">              lineProps.put(&quot;color&quot;, MapHelper.createColorMap(color));</span>
+<span class="fc bfc" id="L1078" title="All 2 branches covered.">            } else if (propName.equals(&quot;svg:stroke-width&quot;)) {</span>
+<span class="fc" id="L1079">              lineProps.put(&quot;width&quot;, MapHelper.normalizeLength(odfProps.get(&quot;svg:stroke-width&quot;)));</span>
+<span class="fc bfc" id="L1080" title="All 2 branches covered.">            } else if (propName.equals(&quot;style:run-through&quot;)) {</span>
+<span class="fc" id="L1081">              String runThrough = odfProps.get(propName);</span>
+<span class="fc bfc" id="L1082" title="All 2 branches covered.">              if (&quot;background&quot;.equals(runThrough)) {</span>
+<span class="fc" id="L1083">                newProps.put(&quot;anchorBehindDoc&quot;, true);</span>
+              }
+            }
+<span class="nc" id="L1086">          } catch (JSONException ex) {</span>
+<span class="nc" id="L1087">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L1088">          }</span>
+<span class="fc" id="L1089">        }</span>
+        // border handling: text frames have a border attribute, shapes _can_ have stroke
+        try {
+<span class="pc bpc" id="L1092" title="1 of 4 branches missed.">          if (newProps.has(&quot;border&quot;) || newProps.has(&quot;borderTop&quot;)) {</span>
+            // convert to &quot;line&quot;
+            JSONObject currentBorder =
+<span class="pc bpc" id="L1095" title="1 of 2 branches missed.">                newProps.has(&quot;border&quot;)</span>
+<span class="nc" id="L1096">                    ? newProps.getJSONObject(&quot;border&quot;)</span>
+<span class="fc" id="L1097">                    : newProps.getJSONObject(&quot;borderTop&quot;);</span>
+<span class="fc bfc" id="L1098" title="All 2 branches covered.">            if (currentBorder.has(&quot;style&quot;)) {</span>
+<span class="fc" id="L1099">              String style = currentBorder.getString(&quot;style&quot;);</span>
+<span class="fc bfc" id="L1100" title="All 2 branches covered.">              if (style.equals(&quot;none&quot;)) {</span>
+<span class="fc" id="L1101">                lineProps.put(&quot;type&quot;, &quot;none&quot;);</span>
+              } else {
+<span class="pc bpc" id="L1103" title="1 of 2 branches missed.">                if (style.equals(&quot;dashed&quot;)) {</span>
+<span class="nc" id="L1104">                  lineProps.put(&quot;style&quot;, &quot;dashed&quot;);</span>
+<span class="pc bpc" id="L1105" title="1 of 2 branches missed.">                } else if (style.equals(&quot;dotted&quot;)) {</span>
+<span class="nc" id="L1106">                  lineProps.put(&quot;style&quot;, &quot;dotted&quot;);</span>
+                } else {
+<span class="fc" id="L1108">                  lineProps.put(&quot;style&quot;, &quot;solid&quot;);</span>
+                }
+<span class="fc" id="L1110">                lineProps.put(&quot;type&quot;, &quot;solid&quot;);</span>
+              }
+            }
+<span class="fc bfc" id="L1113" title="All 2 branches covered.">            if (currentBorder.has(&quot;width&quot;)) {</span>
+<span class="fc" id="L1114">              lineProps.put(&quot;width&quot;, currentBorder.get(&quot;width&quot;));</span>
+            }
+<span class="fc bfc" id="L1116" title="All 2 branches covered.">            if (currentBorder.has(&quot;color&quot;)) {</span>
+<span class="fc" id="L1117">              lineProps.put(&quot;color&quot;, currentBorder.get(&quot;color&quot;));</span>
+            }
+          }
+<span class="fc bfc" id="L1120" title="All 2 branches covered.">          if (newProps.has(&quot;borderTop&quot;)) {</span>
+<span class="fc" id="L1121">            newProps.remove(&quot;borderTop&quot;);</span>
+          }
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">          if (newProps.has(&quot;borderBottom&quot;)) {</span>
+<span class="fc" id="L1124">            newProps.remove(&quot;borderBottom&quot;);</span>
+          }
+<span class="fc bfc" id="L1126" title="All 2 branches covered.">          if (newProps.has(&quot;borderLeft&quot;)) {</span>
+<span class="fc" id="L1127">            newProps.remove(&quot;borderLeft&quot;);</span>
+          }
+<span class="fc bfc" id="L1129" title="All 2 branches covered.">          if (newProps.has(&quot;borderRight&quot;)) {</span>
+<span class="fc" id="L1130">            newProps.remove(&quot;borderRight&quot;);</span>
+          }
+<span class="pc bpc" id="L1132" title="1 of 2 branches missed.">          if (newProps.has(&quot;border&quot;)) {</span>
+<span class="nc" id="L1133">            newProps.remove(&quot;border&quot;);</span>
+          }
+<span class="nc" id="L1135">        } catch (JSONException e) {</span>
+          // no handline required
+<span class="fc" id="L1137">        }</span>
+<span class="fc" id="L1138">      } // NOTE: HEADER FOOTER ARE SOMEHOW (ASYMETRIC) NESTED AMONG PAGE PROPERTIES.. (ToDo: Unused</span>
+      // yet!)
+<span class="nc bnc" id="L1140" title="All 2 branches missed.">      else if (styleFamilyGroup.equals(&quot;headerFooter&quot;)) {</span>
+<span class="nc" id="L1141">        boolean borderToBeDone = true;</span>
+<span class="nc" id="L1142">        boolean paddingToBeDone = true;</span>
+<span class="nc" id="L1143">        boolean marginToBeDone = true;</span>
+<span class="nc bnc" id="L1144" title="All 2 branches missed.">        for (String propName : odfProps.keySet()) {</span>
+          try {
+<span class="nc bnc" id="L1146" title="All 2 branches missed.">            if (propName.contains(&quot;margin&quot;)) {</span>
+<span class="nc bnc" id="L1147" title="All 2 branches missed.">              if (marginToBeDone) {</span>
+<span class="nc" id="L1148">                mapMargin(newProps, odfProps);</span>
+<span class="nc" id="L1149">                marginToBeDone = false;</span>
+              }
+<span class="nc bnc" id="L1151" title="All 2 branches missed.">            } else if (propName.contains(&quot;padding&quot;)) {</span>
+<span class="nc bnc" id="L1152" title="All 2 branches missed.">              if (paddingToBeDone) {</span>
+<span class="nc" id="L1153">                mapPadding(newProps, odfProps);</span>
+<span class="nc" id="L1154">                paddingToBeDone = false;</span>
+              }
+<span class="nc bnc" id="L1156" title="All 2 branches missed.">            } else if (propName.contains(&quot;border&quot;)) {</span>
+<span class="nc bnc" id="L1157" title="All 2 branches missed.">              if (borderToBeDone) {</span>
+<span class="nc" id="L1158">                mapBorder(newProps, odfProps);</span>
+<span class="nc" id="L1159">                borderToBeDone = false;</span>
+              }
+<span class="nc bnc" id="L1161" title="All 2 branches missed.">            } else if (propName.equals(&quot;fo:background-color&quot;)) {</span>
+<span class="nc" id="L1162">              propValue = odfProps.get(&quot;fo:background-color&quot;);</span>
+<span class="nc" id="L1163">              Map&lt;String, String&gt; color = MapHelper.createColorMap(propValue);</span>
+<span class="nc" id="L1164">              newProps.put(&quot;fillColor&quot;, color);</span>
+            }
+<span class="nc" id="L1166">          } catch (JSONException ex) {</span>
+<span class="nc" id="L1167">            Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1168">          }</span>
+<span class="nc" id="L1169">        }</span>
+      }
+    }
+<span class="fc" id="L1172">    JSONObject retObject = new JSONObject();</span>
+    try {
+<span class="fc" id="L1174">      retObject.put(styleFamilyGroup, newProps);</span>
+<span class="fc bfc" id="L1175" title="All 4 branches covered.">      if (shapeProps != null &amp;&amp; shapeProps.length() &gt; 0) {</span>
+<span class="fc" id="L1176">        retObject.put(&quot;shape&quot;, shapeProps);</span>
+      }
+<span class="fc bfc" id="L1178" title="All 4 branches covered.">      if (imageProps != null &amp;&amp; imageProps.length() &gt; 0) {</span>
+<span class="fc" id="L1179">        retObject.put(&quot;image&quot;, imageProps);</span>
+      }
+<span class="fc bfc" id="L1181" title="All 2 branches covered.">      if (lineProps != null) {</span>
+<span class="fc" id="L1182">        retObject.put(&quot;line&quot;, lineProps);</span>
+      }
+<span class="fc bfc" id="L1184" title="All 4 branches covered.">      if (fillProps != null &amp;&amp; fillProps.length() &gt; 0) {</span>
+<span class="fc" id="L1185">        retObject.put(&quot;fill&quot;, fillProps);</span>
+      }
+<span class="nc" id="L1187">    } catch (JSONException e) {</span>
+      // no handling required
+<span class="fc" id="L1189">    }</span>
+<span class="fc" id="L1190">    return retObject;</span>
+  }
+
+  /** see Changes API LineHeight */
+  private static JSONObject createLineHeightMap(String lineHeightValue) {
+<span class="fc" id="L1195">    JSONObject lineHeight = new JSONObject();</span>
+    try {
+      /**
+       * Usually normal is given by the font and 110% to 120% of the font-size (see
+       * http://www.w3.org/TR/CSS2/visudet.html#line-height), browser even show 1.1 to 1.3, but in
+       * office applications normal is ALWAYS 100%, therefore it will be mapped see as well
+       * http://www.w3.org/TR/xsl/#line-height
+       */
+<span class="pc bpc" id="L1203" title="1 of 2 branches missed.">      if (lineHeightValue.equals(&quot;normal&quot;)) {</span>
+<span class="nc" id="L1204">        lineHeight.put(&quot;type&quot;, &quot;percent&quot;);</span>
+<span class="nc" id="L1205">        lineHeight.put(&quot;value&quot;, &quot;100&quot;);</span>
+<span class="fc bfc" id="L1206" title="All 2 branches covered.">      } else if (lineHeightValue.contains(&quot;%&quot;)) {</span>
+<span class="fc" id="L1207">        lineHeight.put(&quot;type&quot;, &quot;percent&quot;);</span>
+<span class="fc" id="L1208">        lineHeight.put(</span>
+            &quot;value&quot;,
+<span class="fc" id="L1210">            Integer.parseInt(</span>
+<span class="fc" id="L1211">                lineHeightValue.subSequence(0, lineHeightValue.indexOf('%')).toString()));</span>
+      } else {
+<span class="fc" id="L1213">        lineHeight.put(&quot;type&quot;, &quot;fixed&quot;);</span>
+<span class="fc" id="L1214">        lineHeight.put(&quot;value&quot;, MapHelper.normalizeLength(lineHeightValue));</span>
+      }
+<span class="nc" id="L1216">    } catch (JSONException ex) {</span>
+<span class="nc" id="L1217">      Logger.getLogger(JsonOperationProducer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L1218">    }</span>
+<span class="fc" id="L1219">    return lineHeight;</span>
+  }
+
+  private static void mapBorder(JSONObject newProps, Map&lt;String, String&gt; odfProps)
+      throws JSONException {
+    String propValue;
+<span class="fc" id="L1225">    JSONObject defaultBorder = null;</span>
+<span class="fc" id="L1226">    Integer defaultSpace = null;</span>
+    // fo:border=&quot;0.5pt solid #000000&quot;
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:border&quot;)) {</span>
+<span class="fc" id="L1229">      propValue = odfProps.get(&quot;fo:border&quot;);</span>
+<span class="fc" id="L1230">      defaultBorder = MapHelper.createBorderMap(propValue);</span>
+<span class="fc bfc" id="L1231" title="All 2 branches covered.">      if (odfProps.containsKey(&quot;fo:padding&quot;)) {</span>
+<span class="fc" id="L1232">        propValue = odfProps.get(&quot;fo:padding&quot;);</span>
+<span class="pc bpc" id="L1233" title="1 of 2 branches missed.">        if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1234">          defaultSpace = MapHelper.normalizeLength(propValue);</span>
+        }
+<span class="fc" id="L1236">        defaultBorder.put(&quot;space&quot;, defaultSpace);</span>
+      }
+    }
+<span class="fc bfc" id="L1239" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:border-left&quot;)) {</span>
+<span class="fc" id="L1240">      propValue = odfProps.get(&quot;fo:border-left&quot;);</span>
+<span class="fc" id="L1241">      JSONObject border = MapHelper.createBorderMap(propValue);</span>
+<span class="fc bfc" id="L1242" title="All 2 branches covered.">      if (odfProps.containsKey(&quot;fo:padding-left&quot;)) {</span>
+<span class="fc" id="L1243">        propValue = odfProps.get(&quot;fo:padding-left&quot;);</span>
+<span class="pc bpc" id="L1244" title="1 of 2 branches missed.">        if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1245">          border.put(&quot;space&quot;, MapHelper.normalizeLength(propValue));</span>
+        }
+<span class="fc bfc" id="L1247" title="All 2 branches covered.">      } else if (defaultSpace != null) {</span>
+<span class="fc" id="L1248">        border.put(&quot;space&quot;, defaultSpace);</span>
+      }
+<span class="fc" id="L1250">      newProps.put(&quot;borderLeft&quot;, border);</span>
+<span class="fc" id="L1251">    } else {</span>
+<span class="fc" id="L1252">      newProps.put(&quot;borderLeft&quot;, defaultBorder);</span>
+    }
+<span class="fc bfc" id="L1254" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:border-top&quot;)) {</span>
+<span class="fc" id="L1255">      propValue = odfProps.get(&quot;fo:border-top&quot;);</span>
+<span class="fc" id="L1256">      JSONObject border = MapHelper.createBorderMap(propValue);</span>
+<span class="fc bfc" id="L1257" title="All 2 branches covered.">      if (odfProps.containsKey(&quot;fo:padding-top&quot;)) {</span>
+<span class="fc" id="L1258">        propValue = odfProps.get(&quot;fo:padding-top&quot;);</span>
+<span class="pc bpc" id="L1259" title="1 of 2 branches missed.">        if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1260">          border.put(&quot;space&quot;, MapHelper.normalizeLength(propValue));</span>
+        }
+<span class="fc bfc" id="L1262" title="All 2 branches covered.">      } else if (defaultSpace != null) {</span>
+<span class="fc" id="L1263">        border.put(&quot;space&quot;, defaultSpace);</span>
+      }
+<span class="fc" id="L1265">      newProps.put(&quot;borderTop&quot;, border);</span>
+<span class="fc" id="L1266">    } else {</span>
+<span class="fc" id="L1267">      newProps.put(&quot;borderTop&quot;, defaultBorder);</span>
+    }
+<span class="fc bfc" id="L1269" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:border-right&quot;)) {</span>
+<span class="fc" id="L1270">      propValue = odfProps.get(&quot;fo:border-right&quot;);</span>
+<span class="fc" id="L1271">      JSONObject border = MapHelper.createBorderMap(propValue);</span>
+<span class="fc bfc" id="L1272" title="All 2 branches covered.">      if (odfProps.containsKey(&quot;fo:padding-right&quot;)) {</span>
+<span class="fc" id="L1273">        propValue = odfProps.get(&quot;fo:padding-right&quot;);</span>
+<span class="pc bpc" id="L1274" title="1 of 2 branches missed.">        if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1275">          border.put(&quot;space&quot;, MapHelper.normalizeLength(propValue));</span>
+        }
+<span class="fc bfc" id="L1277" title="All 2 branches covered.">      } else if (defaultSpace != null) {</span>
+<span class="fc" id="L1278">        border.put(&quot;space&quot;, defaultSpace);</span>
+      }
+<span class="fc" id="L1280">      newProps.put(&quot;borderRight&quot;, border);</span>
+<span class="fc" id="L1281">    } else {</span>
+<span class="fc" id="L1282">      newProps.put(&quot;borderRight&quot;, defaultBorder);</span>
+    }
+<span class="fc bfc" id="L1284" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:border-bottom&quot;)) {</span>
+<span class="fc" id="L1285">      propValue = odfProps.get(&quot;fo:border-bottom&quot;);</span>
+<span class="fc" id="L1286">      JSONObject border = MapHelper.createBorderMap(propValue);</span>
+<span class="fc bfc" id="L1287" title="All 2 branches covered.">      if (odfProps.containsKey(&quot;fo:padding-bottom&quot;)) {</span>
+<span class="fc" id="L1288">        propValue = odfProps.get(&quot;fo:padding-bottom&quot;);</span>
+<span class="pc bpc" id="L1289" title="1 of 2 branches missed.">        if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1290">          border.put(&quot;space&quot;, MapHelper.normalizeLength(propValue));</span>
+        }
+<span class="fc bfc" id="L1292" title="All 2 branches covered.">      } else if (defaultSpace != null) {</span>
+<span class="fc" id="L1293">        border.put(&quot;space&quot;, defaultSpace);</span>
+      }
+<span class="fc" id="L1295">      newProps.put(&quot;borderBottom&quot;, border);</span>
+<span class="fc" id="L1296">    } else {</span>
+<span class="fc" id="L1297">      newProps.put(&quot;borderBottom&quot;, defaultBorder);</span>
+    }
+<span class="fc" id="L1299">  }</span>
+
+  public static String mapFoTextAlign(String propValue) {
+<span class="fc bfc" id="L1302" title="All 4 branches covered.">    if (propValue.equals(&quot;start&quot;) || propValue.equals(&quot;left&quot;)) {</span>
+      // ToDo: I8N requires a correspondonce to the writing direction
+<span class="fc" id="L1304">      propValue = &quot;left&quot;;</span>
+<span class="fc bfc" id="L1305" title="All 4 branches covered.">    } else if (propValue.equals(&quot;end&quot;) || propValue.equals(&quot;right&quot;)) {</span>
+      // ToDo: I8N requires a correspondonce to the writing direction
+<span class="fc" id="L1307">      propValue = &quot;right&quot;;</span>
+    }
+<span class="fc" id="L1309">    return propValue;</span>
+  }
+
+  /** To do, we should add the String directly for mapping instead adding the Map */
+  private static void mapMargin(JSONObject newProps, Map&lt;String, String&gt; odfProps)
+      throws JSONException {
+    String propValue;
+<span class="fc" id="L1316">    Integer defaultLength = null;</span>
+<span class="fc bfc" id="L1317" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:margin&quot;)) {</span>
+<span class="fc" id="L1318">      propValue = odfProps.get(&quot;fo:margin&quot;);</span>
+<span class="pc bpc" id="L1319" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="nc" id="L1320">        defaultLength = MapHelper.normalizeLength(propValue);</span>
+      }
+    }
+<span class="fc bfc" id="L1323" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:margin-left&quot;)) {</span>
+<span class="fc" id="L1324">      propValue = odfProps.get(&quot;fo:margin-left&quot;);</span>
+<span class="pc bpc" id="L1325" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1326">        newProps.put(&quot;marginLeft&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="fc" id="L1327">        newProps.put(&quot;indentLeft&quot;, MapHelper.normalizeLength(propValue)); // FIX API</span>
+      }
+    } else {
+<span class="pc bpc" id="L1330" title="1 of 2 branches missed.">      if (defaultLength != null) {</span>
+<span class="nc" id="L1331">        newProps.put(&quot;marginLeft&quot;, defaultLength);</span>
+<span class="nc" id="L1332">        newProps.put(&quot;indentLeft&quot;, defaultLength); // FIX API</span>
+      }
+    }
+<span class="fc bfc" id="L1335" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:margin-top&quot;)) {</span>
+<span class="fc" id="L1336">      propValue = odfProps.get(&quot;fo:margin-top&quot;);</span>
+<span class="pc bpc" id="L1337" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1338">        newProps.put(&quot;marginTop&quot;, MapHelper.normalizeLength(propValue));</span>
+      }
+    } else {
+<span class="pc bpc" id="L1341" title="1 of 2 branches missed.">      if (defaultLength != null) {</span>
+<span class="nc" id="L1342">        newProps.put(&quot;marginTop&quot;, defaultLength);</span>
+      }
+    }
+<span class="fc bfc" id="L1345" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:margin-right&quot;)) {</span>
+<span class="fc" id="L1346">      propValue = odfProps.get(&quot;fo:margin-right&quot;);</span>
+
+<span class="pc bpc" id="L1348" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1349">        newProps.put(&quot;marginRight&quot;, MapHelper.normalizeLength(propValue));</span>
+<span class="fc" id="L1350">        newProps.put(&quot;indentRight&quot;, MapHelper.normalizeLength(propValue)); // FIX API</span>
+      }
+    } else {
+<span class="pc bpc" id="L1353" title="1 of 2 branches missed.">      if (defaultLength != null) {</span>
+<span class="nc" id="L1354">        newProps.put(&quot;marginRight&quot;, defaultLength);</span>
+<span class="nc" id="L1355">        newProps.put(&quot;indentRight&quot;, defaultLength); // FIX API</span>
+      }
+    }
+<span class="fc bfc" id="L1358" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:margin-bottom&quot;)) {</span>
+<span class="fc" id="L1359">      propValue = odfProps.get(&quot;fo:margin-bottom&quot;);</span>
+<span class="pc bpc" id="L1360" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1361">        newProps.put(&quot;marginBottom&quot;, MapHelper.normalizeLength(propValue));</span>
+      }
+    } else {
+<span class="pc bpc" id="L1364" title="1 of 2 branches missed.">      if (defaultLength != null) {</span>
+<span class="nc" id="L1365">        newProps.put(&quot;marginBottom&quot;, defaultLength);</span>
+      }
+    }
+<span class="fc" id="L1368">  }</span>
+
+  private static void mapPadding(JSONObject newProps, Map&lt;String, String&gt; odfProps)
+      throws JSONException {
+    String propValue;
+<span class="fc" id="L1373">    Integer defaultLength = null;</span>
+<span class="fc bfc" id="L1374" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:padding&quot;)) {</span>
+<span class="fc" id="L1375">      propValue = odfProps.get(&quot;fo:padding&quot;);</span>
+<span class="pc bpc" id="L1376" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1377">        defaultLength = MapHelper.normalizeLength(propValue);</span>
+      }
+    }
+<span class="fc bfc" id="L1380" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:padding-left&quot;)) {</span>
+<span class="fc" id="L1381">      propValue = odfProps.get(&quot;fo:padding-left&quot;);</span>
+<span class="pc bpc" id="L1382" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1383">        newProps.put(&quot;paddingLeft&quot;, MapHelper.normalizeLength(propValue));</span>
+      }
+    } else {
+<span class="pc bpc" id="L1386" title="1 of 2 branches missed.">      if (defaultLength != null) {</span>
+<span class="fc" id="L1387">        newProps.put(&quot;paddingLeft&quot;, defaultLength);</span>
+      }
+    }
+<span class="fc bfc" id="L1390" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:padding-top&quot;)) {</span>
+<span class="fc" id="L1391">      propValue = odfProps.get(&quot;fo:padding-top&quot;);</span>
+<span class="pc bpc" id="L1392" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1393">        newProps.put(&quot;paddingTop&quot;, MapHelper.normalizeLength(propValue));</span>
+      }
+    } else {
+<span class="fc bfc" id="L1396" title="All 2 branches covered.">      if (defaultLength != null) {</span>
+<span class="fc" id="L1397">        newProps.put(&quot;paddingTop&quot;, defaultLength);</span>
+      }
+    }
+<span class="fc bfc" id="L1400" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:padding-right&quot;)) {</span>
+<span class="fc" id="L1401">      propValue = odfProps.get(&quot;fo:padding-right&quot;);</span>
+
+<span class="pc bpc" id="L1403" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1404">        newProps.put(&quot;paddingRight&quot;, MapHelper.normalizeLength(propValue));</span>
+      }
+    } else {
+<span class="pc bpc" id="L1407" title="1 of 2 branches missed.">      if (defaultLength != null) {</span>
+<span class="fc" id="L1408">        newProps.put(&quot;paddingRight&quot;, defaultLength);</span>
+      }
+    }
+<span class="fc bfc" id="L1411" title="All 2 branches covered.">    if (odfProps.containsKey(&quot;fo:padding-bottom&quot;)) {</span>
+<span class="fc" id="L1412">      propValue = odfProps.get(&quot;fo:padding-bottom&quot;);</span>
+<span class="pc bpc" id="L1413" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1414">        newProps.put(&quot;paddingBottom&quot;, MapHelper.normalizeLength(propValue));</span>
+      }
+    } else {
+<span class="fc bfc" id="L1417" title="All 2 branches covered.">      if (defaultLength != null) {</span>
+<span class="fc" id="L1418">        newProps.put(&quot;paddingBottom&quot;, defaultLength);</span>
+      }
+    }
+<span class="fc" id="L1421">  }</span>
+
+  public static Map&lt;String, Object&gt; mapStyleProperties(
+      OdfStylableElement styleElement, Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps) {
+    // returns the set of allowed properties, e.g. cell, paragraph, text for a cell with properties
+<span class="fc" id="L1426">    Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups =</span>
+<span class="fc" id="L1427">        Component.getAllStyleGroupingIdProperties(styleElement);</span>
+<span class="fc" id="L1428">    return mapStyleProperties(familyPropertyGroups, allOdfProps);</span>
+  }
+
+  public static Map&lt;String, Object&gt; mapStyleProperties(
+      Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups,
+      Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps) {
+
+<span class="fc" id="L1435">    Map&lt;String, Object&gt; allProps = new HashMap&lt;String, Object&gt;();</span>
+<span class="fc bfc" id="L1436" title="All 2 branches covered.">    for (String styleFamilyKey : familyPropertyGroups.keySet()) {</span>
+      // NOTE: Perhaps we should first inherit everything from the parents and map afterwards
+      // the ODF properties of one family group
+<span class="fc" id="L1439">      JSONObject mappedProps =</span>
+<span class="fc" id="L1440">          MapHelper.mapProperties(styleFamilyKey, allOdfProps.get(styleFamilyKey));</span>
+      try {
+<span class="pc bpc" id="L1442" title="1 of 2 branches missed.">        if (mappedProps != null) {</span>
+<span class="fc bfc" id="L1443" title="All 2 branches covered.">          if (mappedProps.has(styleFamilyKey)</span>
+<span class="fc bfc" id="L1444" title="All 2 branches covered.">              &amp;&amp; mappedProps.getJSONObject(styleFamilyKey).length() != 0) {</span>
+<span class="fc" id="L1445">            allProps.put(styleFamilyKey, mappedProps.getJSONObject(styleFamilyKey));</span>
+          }
+<span class="fc bfc" id="L1447" title="All 2 branches covered.">          if (styleFamilyKey.equals(&quot;drawing&quot;)) {</span>
+<span class="pc bpc" id="L1448" title="1 of 4 branches missed.">            if (mappedProps.has(&quot;shape&quot;) &amp;&amp; mappedProps.getJSONObject(&quot;shape&quot;).length() != 0) {</span>
+<span class="fc" id="L1449">              allProps.put(&quot;shape&quot;, mappedProps.getJSONObject(&quot;shape&quot;));</span>
+            }
+<span class="pc bpc" id="L1451" title="1 of 4 branches missed.">            if (mappedProps.has(&quot;image&quot;) &amp;&amp; mappedProps.getJSONObject(&quot;image&quot;).length() != 0) {</span>
+<span class="fc" id="L1452">              allProps.put(&quot;image&quot;, mappedProps.getJSONObject(&quot;image&quot;));</span>
+            }
+<span class="fc bfc" id="L1454" title="All 4 branches covered.">            if (mappedProps.has(&quot;line&quot;) &amp;&amp; mappedProps.getJSONObject(&quot;line&quot;).length() != 0) {</span>
+<span class="fc" id="L1455">              allProps.put(&quot;line&quot;, mappedProps.getJSONObject(&quot;line&quot;));</span>
+            }
+<span class="pc bpc" id="L1457" title="1 of 4 branches missed.">            if (mappedProps.has(&quot;fill&quot;) &amp;&amp; mappedProps.getJSONObject(&quot;fill&quot;).length() != 0) {</span>
+<span class="fc" id="L1458">              allProps.put(&quot;fill&quot;, mappedProps.getJSONObject(&quot;fill&quot;));</span>
+            }
+          }
+        }
+
+<span class="nc" id="L1463">      } catch (JSONException e) {</span>
+        // no handling required
+<span class="fc" id="L1465">      }</span>
+<span class="fc" id="L1466">    }</span>
+<span class="fc" id="L1467">    return allProps;</span>
+  }
+
+  public static Map&lt;String, Object&gt; getMappedStyleProperties(OdfStyle style) {
+    // Mapped properties
+<span class="nc" id="L1472">    Map&lt;String, Object&gt; mappedFormatting = null;</span>
+<span class="nc bnc" id="L1473" title="All 2 branches missed.">    if (style != null) {</span>
+      // Intermediate ODF properties
+<span class="nc" id="L1475">      Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps = new HashMap&lt;String, Map&lt;String, String&gt;&gt;();</span>
+      // The property groups for this component, e.g. cell, paragraph, text for a cell with
+      // properties
+<span class="nc" id="L1478">      Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups =</span>
+<span class="nc" id="L1479">          Component.getAllStyleGroupingIdProperties(style.getFamily());</span>
+      // get all ODF properties from this style
+<span class="nc" id="L1481">      getStyleProperties(style, familyPropertyGroups, allOdfProps);</span>
+      // mapping the ODF attribute style props to our component properties
+<span class="nc" id="L1483">      mappedFormatting = mapStyleProperties(familyPropertyGroups, allOdfProps);</span>
+    }
+<span class="nc" id="L1485">    return mappedFormatting;</span>
+  }
+
+  public static void getStyleProperties(
+      OdfStyleBase style,
+      OdfStylableElement styleElement,
+      Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps) {
+    // returns the set of allowed properties, e.g. cell, paragraph, text for a cell with properties
+<span class="fc" id="L1493">    Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups =</span>
+<span class="fc" id="L1494">        Component.getAllStyleGroupingIdProperties(styleElement);</span>
+<span class="fc" id="L1495">    getStyleProperties(style, familyPropertyGroups, allOdfProps);</span>
+<span class="fc" id="L1496">  }</span>
+
+  public static void getStyleProperties(
+      OdfStyleBase style,
+      Map&lt;String, OdfStylePropertiesSet&gt; familyPropertyGroups,
+      Map&lt;String, Map&lt;String, String&gt;&gt; allOdfProps) {
+<span class="pc bpc" id="L1502" title="1 of 2 branches missed.">    if (style != null) {</span>
+<span class="fc bfc" id="L1503" title="All 2 branches covered.">      for (String styleFamilyKey : familyPropertyGroups.keySet()) {</span>
+        // the ODF properties of one family group
+<span class="fc" id="L1505">        Map&lt;String, String&gt; odfProps = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L1506">        OdfStylePropertiesSet key = familyPropertyGroups.get(styleFamilyKey);</span>
+<span class="fc" id="L1507">        OdfStylePropertiesBase propsElement = style.getPropertiesElement(key);</span>
+<span class="fc bfc" id="L1508" title="All 2 branches covered.">        if (propsElement != null) {</span>
+<span class="fc" id="L1509">          NamedNodeMap attrs = propsElement.getAttributes();</span>
+<span class="fc" id="L1510">          String name = null;</span>
+<span class="fc bfc" id="L1511" title="All 2 branches covered.">          for (int i = 0; i &lt; attrs.getLength(); i++) {</span>
+<span class="fc" id="L1512">            name = null;</span>
+<span class="fc" id="L1513">            Attr prop = (Attr) attrs.item(i);</span>
+
+            // normalize XML prefix of ODF attributes to the prefixes used in the specification
+<span class="fc" id="L1516">            name = OdfNamespace.getNamespace(prop.getNamespaceURI()).getPrefix();</span>
+<span class="pc bpc" id="L1517" title="1 of 2 branches missed.">            if (name == null) {</span>
+<span class="nc" id="L1518">              name = prop.getPrefix();</span>
+            }
+<span class="pc bpc" id="L1520" title="1 of 2 branches missed.">            if (name != null) {</span>
+<span class="fc" id="L1521">              name = name + &quot;:&quot; + prop.getName();</span>
+            } else {
+<span class="nc" id="L1523">              name = prop.getName();</span>
+            }
+<span class="fc" id="L1525">            odfProps.put(name, prop.getValue());</span>
+          }
+<span class="fc bfc" id="L1527" title="All 2 branches covered.">          if (propsElement instanceof StyleParagraphPropertiesElement) {</span>
+<span class="fc" id="L1528">            StyleParagraphPropertiesElement paraPropsElement =</span>
+                (StyleParagraphPropertiesElement) propsElement;
+<span class="fc" id="L1530">            NodeList tabStops =</span>
+<span class="fc" id="L1531">                paraPropsElement.getElementsByTagNameNS(</span>
+<span class="fc" id="L1532">                    OdfDocumentNamespace.STYLE.getUri(), &quot;tab-stops&quot;);</span>
+<span class="fc bfc" id="L1533" title="All 2 branches covered.">            if (tabStops.getLength() &gt; 0) {</span>
+<span class="fc" id="L1534">              StyleTabStopsElement tabStopsElement = (StyleTabStopsElement) tabStops.item(0);</span>
+<span class="fc" id="L1535">              NodeList tabStopList =</span>
+<span class="fc" id="L1536">                  tabStopsElement.getElementsByTagNameNS(</span>
+<span class="fc" id="L1537">                      OdfDocumentNamespace.STYLE.getUri(), &quot;tab-stop&quot;);</span>
+<span class="fc" id="L1538">              int size = tabStopList.getLength();</span>
+<span class="fc" id="L1539">              int tabNumber = -1;</span>
+<span class="fc bfc" id="L1540" title="All 2 branches covered.">              for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L1541">                Node child = tabStopList.item(i);</span>
+<span class="pc bpc" id="L1542" title="1 of 2 branches missed.">                if (!(child instanceof Element)) {</span>
+                  // avoid line breaks, when XML is indented
+<span class="nc" id="L1544">                  continue;</span>
+                } else {
+<span class="fc" id="L1546">                  tabNumber++;</span>
+<span class="fc" id="L1547">                  extractTabulatorLeaderText((StyleTabStopElement) child, odfProps, tabNumber);</span>
+<span class="fc" id="L1548">                  extractTabulatorPosition((StyleTabStopElement) child, odfProps, tabNumber);</span>
+<span class="fc" id="L1549">                  extractTabulatorType((StyleTabStopElement) child, odfProps, tabNumber);</span>
+                }
+              }
+            }
+          }
+        }
+<span class="fc bfc" id="L1555" title="All 2 branches covered.">        if (!odfProps.isEmpty()) {</span>
+<span class="fc" id="L1556">          allOdfProps.put(styleFamilyKey, odfProps);</span>
+        }
+<span class="fc" id="L1558">      }</span>
+    }
+<span class="fc" id="L1560">  }</span>
+
+  /**
+   * style:type fillChar String Type of fill character. 'dot' Tab will be filled with dot chars: . .
+   * . . . . . . . . . 'hyphen' Tab will be filled with hyphen chars: - - - - - - - - - 'underscore'
+   * Tab will be filled with underscore chars _ _ _ _ _ _ _ none Tab is just empty space.
+   */
+  private static void extractTabulatorType(
+      StyleTabStopElement tabStopElement, Map&lt;String, String&gt; odfProps, int tabNumber) {
+<span class="fc" id="L1569">    String tabType = tabStopElement.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;type&quot;);</span>
+
+<span class="pc bpc" id="L1571" title="1 of 4 branches missed.">    if (tabType != null &amp;&amp; !tabType.isEmpty()) {</span>
+<span class="fc bfc" id="L1572" title="All 2 branches covered.">      if (tabType.equals(&quot;char&quot;)) {</span>
+<span class="fc" id="L1573">        tabType = &quot;decimal&quot;;</span>
+      }
+<span class="fc" id="L1575">      odfProps.put(&quot;tab_Type&quot; + tabNumber, tabType);</span>
+    }
+<span class="fc" id="L1577">  }</span>
+
+  /**
+   * style:char fillChar String Type of fill character. 'dot' Tab will be filled with dot chars: . .
+   * . . . . . . . . . 'hyphen' Tab will be filled with hyphen chars: - - - - - - - - - 'underscore'
+   * Tab will be filled with underscore chars _ _ _ _ _ _ _ none Tab is just empty space.
+   */
+  private static void extractTabulatorLeaderText(
+      StyleTabStopElement tabStopElement, Map&lt;String, String&gt; odfProps, int tabNumber) {
+<span class="fc" id="L1586">    String tabLeaderText =</span>
+<span class="fc" id="L1587">        tabStopElement.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;leader-text&quot;);</span>
+
+<span class="pc bpc" id="L1589" title="1 of 6 branches missed.">    if (tabLeaderText != null &amp; !tabLeaderText.isEmpty()) {</span>
+<span class="fc bfc" id="L1590" title="All 2 branches covered.">      if (tabLeaderText.equals(Constants.DOT_CHAR)) {</span>
+<span class="fc" id="L1591">        odfProps.put(&quot;tab_LeaderText&quot; + tabNumber, Constants.DOT);</span>
+<span class="fc bfc" id="L1592" title="All 2 branches covered.">      } else if (tabLeaderText.equals(Constants.HYPHEN_CHAR)) {</span>
+<span class="fc" id="L1593">        odfProps.put(&quot;tab_LeaderText&quot; + tabNumber, Constants.HYPHEN);</span>
+<span class="pc bpc" id="L1594" title="1 of 2 branches missed.">      } else if (tabLeaderText.equals(Constants.UNDERSCORE_CHAR)) {</span>
+<span class="fc" id="L1595">        odfProps.put(&quot;tab_LeaderText&quot; + tabNumber, Constants.UNDERSCORE);</span>
+<span class="nc bnc" id="L1596" title="All 2 branches missed.">      } else if (tabLeaderText.equals(Constants.SPACE_CHAR)) {</span>
+<span class="nc" id="L1597">        odfProps.put(&quot;tab_LeaderText&quot; + tabNumber, Constants.NONE);</span>
+      }
+    }
+<span class="fc" id="L1600">  }</span>
+
+  /**
+   * In LO/AO Tabs are counted from the start of text and the fo:left-margin have to be added.
+   * Microsoft Office does not behave this way. For the filter a compatibility flag was added to the
+   * settings.xml &lt;config:config-item config:name=&quot;TabsRelativeToIndent&quot;
+   * config:type=&quot;boolean&quot;&gt;false&lt;/config:config-item&gt;
+   */
+  private static boolean hasTabsRelativeToIndent(OdfElement element) {
+<span class="fc" id="L1609">    boolean isTabsRelativeToIndent = false;</span>
+<span class="fc" id="L1610">    OdfSchemaDocument schemaDoc =</span>
+<span class="fc" id="L1611">        (OdfSchemaDocument) ((OdfFileDom) element.getOwnerDocument()).getDocument();</span>
+<span class="pc bpc" id="L1612" title="1 of 2 branches missed.">    if (schemaDoc instanceof OdfTextDocument) {</span>
+<span class="fc" id="L1613">      isTabsRelativeToIndent = ((OdfTextDocument) schemaDoc).hasTabsRelativeToIndent();</span>
+    }
+<span class="fc" id="L1615">    return isTabsRelativeToIndent;</span>
+  }
+
+  /** style:position pos Integer 0 Tab stop position in 1/100th mm. */
+  private static void extractTabulatorPosition(
+      StyleTabStopElement tabStopElement, Map&lt;String, String&gt; odfProps, int tabNumber) {
+<span class="fc" id="L1621">    String tabPos = tabStopElement.getAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;position&quot;);</span>
+<span class="fc" id="L1622">    int tabIndent = 0;</span>
+    /**
+     * &gt;20 years ago someone in the StarOffice Writer team thought it was a brilliant idea to align
+     * tabs from the real text start. Therefore to ODF from LO/AO we need to addChild the
+     * left-margin to the tab-position, to get the REAL tab-position. If the tabs are relative to
+     * indent (margin) we need to addChild the left margin. But there is a compatibility mode for
+     * the MS Office formats filter, where this can be disabled: &lt;config:config-item
+     * config:name=&quot;TabsRelativeToIndent&quot; config:type=&quot;boolean&quot;&gt;false&lt;/config:config-item&gt;
+     */
+<span class="fc bfc" id="L1631" title="All 4 branches covered.">    if (odfProps.containsKey(&quot;fo:margin-left&quot;) &amp;&amp; hasTabsRelativeToIndent(tabStopElement)) {</span>
+      // get the variable from the text document
+<span class="fc" id="L1633">      String propValue = odfProps.get(&quot;fo:margin-left&quot;);</span>
+<span class="pc bpc" id="L1634" title="1 of 2 branches missed.">      if (!propValue.contains(PERCENT)) {</span>
+<span class="fc" id="L1635">        tabIndent = MapHelper.normalizeLength(propValue);</span>
+      }
+    }
+<span class="pc bpc" id="L1638" title="1 of 2 branches missed.">    if (tabPos.isEmpty()) {</span>
+<span class="nc" id="L1639">      LOG.severe(&quot;There should be only be a length, but it has been: '&quot; + tabPos + &quot;'&quot;);</span>
+    } else {
+<span class="fc" id="L1641">      odfProps.put(</span>
+<span class="fc" id="L1642">          &quot;tab_Pos&quot; + tabNumber, Integer.toString(MapHelper.normalizeLength(tabPos) + tabIndent));</span>
+    }
+<span class="fc" id="L1644">  }</span>
+
+  // convert xmlschema-2 date to double
+  public static Double dateToDouble(Object value) {
+<span class="nc" id="L1648">    Double ret = new Double(0.);</span>
+<span class="nc bnc" id="L1649" title="All 4 branches missed.">    if (value != null &amp;&amp; value instanceof String) {</span>
+      // ISO 8601 formatter for date-time without time zone.
+<span class="nc" id="L1651">      FastDateFormat fdf = DateFormatUtils.ISO_8601_EXTENDED_DATETIME_FORMAT;</span>
+<span class="nc" id="L1652">      Date date = null;</span>
+      try {
+<span class="nc" id="L1654">        date = fdf.parse((String) value);</span>
+<span class="nc" id="L1655">        Calendar cal = Calendar.getInstance();</span>
+<span class="nc" id="L1656">        cal.setTime(date);</span>
+<span class="nc" id="L1657">        long diff = cal.getTimeInMillis() + 2209161600000l; // 30.12.1899</span>
+<span class="nc" id="L1658">        ret = diff / 86400000.;</span>
+<span class="nc" id="L1659">      } catch (ParseException ex) {</span>
+<span class="nc" id="L1660">        Logger.getLogger(MapHelper.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1661">      }</span>
+    }
+<span class="nc" id="L1663">    return ret;</span>
+  }
+  // convert xmlschema-2 duration to double
+
+  public static Double timeToDouble(Object value) {
+<span class="nc" id="L1668">    Double ret = new Double(0.);</span>
+<span class="nc bnc" id="L1669" title="All 4 branches missed.">    if (value != null &amp;&amp; value instanceof String) {</span>
+      // PThhHmmMss.sssS
+      try {
+<span class="nc" id="L1672">        String duration = (String) value;</span>
+<span class="nc" id="L1673">        int length = duration.length();</span>
+<span class="nc" id="L1674">        double hours = 0;</span>
+<span class="nc" id="L1675">        double mins = 0;</span>
+<span class="nc" id="L1676">        double millisecs = 0.;</span>
+<span class="nc bnc" id="L1677" title="All 2 branches missed.">        if (length &gt;= 11) {</span>
+<span class="nc" id="L1678">          int hPos = duration.indexOf('H');</span>
+<span class="nc" id="L1679">          int mPos = duration.indexOf('M');</span>
+
+<span class="nc" id="L1681">          hours = Integer.parseInt(duration.substring(2, hPos));</span>
+<span class="nc" id="L1682">          mins = Integer.parseInt(duration.substring(hPos + 1, mPos));</span>
+<span class="nc" id="L1683">          millisecs = Double.parseDouble(duration.substring(mPos + 1, length - 1));</span>
+<span class="nc" id="L1684">          ret = hours / 24. + mins / 1440. + millisecs / 86400.;</span>
+        }
+<span class="nc" id="L1686">      } catch (IllegalArgumentException e) {</span>
+
+<span class="nc" id="L1688">      }</span>
+    }
+<span class="nc" id="L1690">    return ret;</span>
+  }
+
+  /**
+   * get number format attribute via data-style-name attribute from one of the different number
+   * format style elements either from office styles or automatic styles names are (implicitly!)
+   * unique so it can only be found in one of the two containers
+   *
+   * @param jsonStyleProperties
+   * @param stringProperties
+   * @param autoStyle
+   * @param autoStyles auto style interface, is allowed to b null
+   * @param officeStyles should always be set
+   * @return
+   */
+  public static boolean putNumberFormat(
+      Map&lt;String, Object&gt; jsonStyleProperties,
+      Map&lt;String, Map&lt;String, String&gt;&gt; stringProperties,
+      OdfStyle autoStyle,
+      OdfStylesBase autoStyles,
+      OdfStylesBase officeStyles) {
+<span class="fc" id="L1711">    boolean ret = false;</span>
+<span class="pc bpc" id="L1712" title="1 of 4 branches missed.">    if (autoStyle != null &amp;&amp; autoStyle.hasAttribute(&quot;style:data-style-name&quot;)) {</span>
+<span class="fc" id="L1713">      String dataStyleName = autoStyle.getAttribute(&quot;style:data-style-name&quot;);</span>
+<span class="fc" id="L1714">      String formatCode = &quot;&quot;;</span>
+<span class="fc" id="L1715">      DataStyleElement dataStyleBase = null;</span>
+<span class="fc" id="L1716">      dataStyleBase = officeStyles.getAllDataStyles().get(dataStyleName);</span>
+<span class="pc bpc" id="L1717" title="2 of 4 branches missed.">      if (dataStyleBase == null &amp;&amp; autoStyles != null) {</span>
+<span class="fc" id="L1718">        dataStyleBase = autoStyles.getAllDataStyles().get(dataStyleName);</span>
+      }
+<span class="pc bpc" id="L1720" title="1 of 2 branches missed.">      if (dataStyleBase != null) {</span>
+<span class="fc" id="L1721">        formatCode = dataStyleBase.getFormat(true);</span>
+      }
+<span class="pc bpc" id="L1723" title="1 of 2 branches missed.">      if (!formatCode.isEmpty()) {</span>
+<span class="fc" id="L1724">        ret = true;</span>
+<span class="fc" id="L1725">        JSONObject jsonCellProps = new JSONObject();</span>
+<span class="pc bpc" id="L1726" title="1 of 2 branches missed.">        if (jsonStyleProperties != null) {</span>
+<span class="nc bnc" id="L1727" title="All 2 branches missed.">          if (jsonStyleProperties.containsKey(&quot;cell&quot;)) {</span>
+<span class="nc" id="L1728">            jsonCellProps = (JSONObject) jsonStyleProperties.get(&quot;cell&quot;);</span>
+          }
+          try {
+<span class="nc" id="L1731">            jsonCellProps.put(&quot;formatCode&quot;, formatCode);</span>
+<span class="nc" id="L1732">          } catch (JSONException e) {</span>
+<span class="nc" id="L1733">          }</span>
+<span class="nc" id="L1734">          jsonStyleProperties.put(&quot;cell&quot;, jsonCellProps);</span>
+        } else {
+<span class="fc" id="L1736">          Map&lt;String, String&gt; stringCellProps = new HashMap&lt;String, String&gt;();</span>
+<span class="pc bpc" id="L1737" title="1 of 2 branches missed.">          if (stringProperties.containsKey(&quot;cell&quot;)) {</span>
+<span class="fc" id="L1738">            stringCellProps = stringProperties.get(&quot;cell&quot;);</span>
+          }
+<span class="fc" id="L1740">          stringCellProps.put(&quot;numberformat_code&quot;, formatCode);</span>
+<span class="fc" id="L1741">          stringProperties.put(&quot;cell&quot;, stringCellProps);</span>
+        }
+      }
+    }
+<span class="fc" id="L1745">    return ret;</span>
+  }
+
+  public static String removeQuotedAndColor(String compareCode) {
+<span class="pc bpc" id="L1749" title="1 of 2 branches missed.">    while (compareCode.contains(&quot;\&quot;&quot;)) {</span>
+<span class="nc" id="L1750">      int firstQuote = compareCode.indexOf(&quot;\&quot;&quot;);</span>
+<span class="nc bnc" id="L1751" title="All 2 branches missed.">      if (firstQuote == compareCode.length() - 1) {</span>
+<span class="nc" id="L1752">        break;</span>
+      }
+<span class="nc" id="L1754">      int secondQuote = compareCode.indexOf(&quot;\&quot;&quot;, firstQuote + 1);</span>
+<span class="nc bnc" id="L1755" title="All 2 branches missed.">      if (secondQuote &lt; 0) {</span>
+<span class="nc" id="L1756">        break;</span>
+      }
+<span class="nc" id="L1758">      String tmp = compareCode.substring(0, firstQuote);</span>
+<span class="nc" id="L1759">      tmp += compareCode.substring(secondQuote + 1);</span>
+<span class="nc" id="L1760">      compareCode = tmp;</span>
+<span class="nc" id="L1761">    }</span>
+<span class="fc" id="L1762">    int openBracket = compareCode.indexOf(&quot;[&quot;);</span>
+<span class="fc" id="L1763">    boolean hasCurrency = false;</span>
+<span class="fc bfc" id="L1764" title="All 2 branches covered.">    while (openBracket &gt;= 0) {</span>
+<span class="fc" id="L1765">      int closeBracket = compareCode.indexOf(&quot;]&quot;, openBracket);</span>
+<span class="pc bpc" id="L1766" title="1 of 2 branches missed.">      if (closeBracket &gt; openBracket) {</span>
+<span class="fc" id="L1767">        String innerText = compareCode.substring(openBracket + 1, closeBracket);</span>
+<span class="pc bpc" id="L1768" title="1 of 4 branches missed.">        if (innerText.startsWith(&quot;$&quot;) &amp;&amp; innerText.length() &gt; 1) {</span>
+<span class="fc" id="L1769">          hasCurrency = true;</span>
+        }
+<span class="fc" id="L1771">        compareCode =</span>
+<span class="fc" id="L1772">            compareCode.substring(0, openBracket) + compareCode.substring(closeBracket + 1);</span>
+      }
+<span class="fc" id="L1774">      openBracket = compareCode.indexOf(&quot;[&quot;);</span>
+<span class="fc" id="L1775">    }</span>
+<span class="fc bfc" id="L1776" title="All 2 branches covered.">    if (hasCurrency) {</span>
+<span class="fc" id="L1777">      compareCode += &quot;[$]&quot;; // reinsert currency marker</span>
+    }
+<span class="fc" id="L1779">    return compareCode;</span>
+  }
+
+  public static Value detectFormatType(String code) {
+<span class="fc" id="L1783">    String compareCode = code.replaceAll(&quot;AM&quot;, &quot;xx9999xx&quot;);</span>
+<span class="fc" id="L1784">    compareCode = compareCode.replaceAll(&quot;PM&quot;, &quot;xx9999xx&quot;);</span>
+    // remove quoted parts
+<span class="fc" id="L1786">    compareCode = MapHelper.removeQuotedAndColor(compareCode);</span>
+<span class="fc" id="L1787">    Value type = OfficeValueTypeAttribute.Value.VOID;</span>
+<span class="fc bfc" id="L1788" title="All 2 branches covered.">    if (compareCode.contains(&quot;@&quot;)) {</span>
+<span class="fc" id="L1789">      type = OfficeValueTypeAttribute.Value.STRING;</span>
+<span class="pc bpc" id="L1790" title="1 of 2 branches missed.">    } else if (compareCode.equals(&quot;BOOLEAN&quot;)) {</span>
+<span class="nc" id="L1791">      type = OfficeValueTypeAttribute.Value.BOOLEAN;</span>
+<span class="fc bfc" id="L1792" title="All 2 branches covered.">    } else if (compareCode.contains(&quot;[$&quot;)) {</span>
+<span class="fc" id="L1793">      type = OfficeValueTypeAttribute.Value.CURRENCY;</span>
+<span class="pc bpc" id="L1794" title="1 of 2 branches missed.">    } else if (compareCode.contains(&quot;%&quot;)) {</span>
+<span class="nc" id="L1795">      type = OfficeValueTypeAttribute.Value.PERCENTAGE;</span>
+<span class="fc bfc" id="L1796" title="All 2 branches covered.">    } else if (compareCode.contains(&quot;D&quot;)</span>
+<span class="pc bpc" id="L1797" title="1 of 2 branches missed.">        || compareCode.contains(&quot;d&quot;)</span>
+<span class="pc bpc" id="L1798" title="1 of 2 branches missed.">        || compareCode.contains(&quot;M&quot;)</span>
+<span class="pc bpc" id="L1799" title="1 of 2 branches missed.">        || compareCode.contains(&quot;Y&quot;)</span>
+<span class="pc bpc" id="L1800" title="1 of 2 branches missed.">        || compareCode.contains(&quot;y&quot;)</span>
+<span class="pc bpc" id="L1801" title="1 of 2 branches missed.">        || compareCode.contains(&quot;WW&quot;)</span>
+<span class="pc bpc" id="L1802" title="1 of 2 branches missed.">        || compareCode.contains(&quot;ww&quot;)) {</span>
+<span class="fc" id="L1803">      type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="pc bpc" id="L1804" title="1 of 2 branches missed.">    } else if (compareCode.contains(&quot;h&quot;)</span>
+<span class="pc bpc" id="L1805" title="1 of 2 branches missed.">        || compareCode.contains(&quot;H&quot;)</span>
+<span class="pc bpc" id="L1806" title="1 of 2 branches missed.">        || compareCode.contains(&quot;m&quot;)</span>
+<span class="pc bpc" id="L1807" title="1 of 2 branches missed.">        || compareCode.contains(&quot;s&quot;)</span>
+<span class="pc bpc" id="L1808" title="1 of 2 branches missed.">        || compareCode.contains(&quot;S&quot;)</span>
+<span class="pc bpc" id="L1809" title="1 of 2 branches missed.">        || compareCode.contains(&quot;xx9999xx&quot;)) {</span>
+<span class="nc" id="L1810">      type = OfficeValueTypeAttribute.Value.TIME;</span>
+    } else {
+<span class="fc" id="L1812">      type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+    }
+<span class="fc" id="L1814">    return type;</span>
+  }
+
+  public static String findOrCreateDataStyle(String code, long id, OdfFileDom fileDom) {
+<span class="fc" id="L1818">    OdfDocument odfDocument = (OdfDocument) fileDom.getDocument();</span>
+<span class="fc" id="L1819">    String ret = &quot;&quot;;</span>
+    try {
+<span class="fc" id="L1821">      OdfContentDom contentDom = odfDocument.getContentDom();</span>
+<span class="fc" id="L1822">      OdfOfficeStyles officeStyles = odfDocument.getStylesDom().getOfficeStyles();</span>
+<span class="fc" id="L1823">      OdfOfficeAutomaticStyles autoStyles = contentDom.getAutomaticStyles();</span>
+<span class="fc" id="L1824">      Value type =</span>
+          OfficeValueTypeAttribute.Value
+              .VOID; // .BOOLEAN CURRENCY DATE FLOAT PERCENTAGE STRING TIME
+      // if id &gt; -1 then assign an appropriate format and type
+<span class="pc bpc" id="L1828" title="3 of 4 branches missed.">      if (id &gt; 0 &amp;&amp; id &lt; 164) {</span>
+<span class="nc bnc" id="L1829" title="All 64 branches missed.">        switch ((int) id) {</span>
+          case 1:
+<span class="nc" id="L1831">            code = &quot;0&quot;;</span>
+<span class="nc" id="L1832">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1833">            break;</span>
+          case 2:
+<span class="nc" id="L1835">            code = &quot;0.00&quot;;</span>
+<span class="nc" id="L1836">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1837">            break;</span>
+          case 3:
+<span class="nc" id="L1839">            code = &quot;#,##0&quot;;</span>
+<span class="nc" id="L1840">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1841">            break;</span>
+          case 4:
+<span class="nc" id="L1843">            code = &quot;#,##0.00&quot;;</span>
+<span class="nc" id="L1844">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1845">            break;</span>
+          case 5:
+<span class="nc" id="L1847">            code = &quot;#,##0[$$-409]&quot;;</span>
+<span class="nc" id="L1848">            type = OfficeValueTypeAttribute.Value.CURRENCY;</span>
+<span class="nc" id="L1849">            break;</span>
+          case 6:
+<span class="nc" id="L1851">            code = &quot;#,##0[$$-409];[RED]-#,##0[$$-409]&quot;;</span>
+<span class="nc" id="L1852">            type = OfficeValueTypeAttribute.Value.CURRENCY;</span>
+<span class="nc" id="L1853">            break;</span>
+          case 7:
+<span class="nc" id="L1855">            code = &quot;#,##0.00[$$-409]&quot;;</span>
+<span class="nc" id="L1856">            type = OfficeValueTypeAttribute.Value.CURRENCY;</span>
+<span class="nc" id="L1857">            break;</span>
+          case 8:
+<span class="nc" id="L1859">            code = &quot;#,##0.00[$$-409];[RED]-#,##0.00[$$-409]&quot;;</span>
+<span class="nc" id="L1860">            type = OfficeValueTypeAttribute.Value.CURRENCY;</span>
+<span class="nc" id="L1861">            break;</span>
+          case 9:
+<span class="nc" id="L1863">            code = &quot;0%&quot;;</span>
+<span class="nc" id="L1864">            type = OfficeValueTypeAttribute.Value.PERCENTAGE;</span>
+<span class="nc" id="L1865">            break;</span>
+          case 10:
+<span class="nc" id="L1867">            code = &quot;0.00%&quot;;</span>
+<span class="nc" id="L1868">            type = OfficeValueTypeAttribute.Value.PERCENTAGE;</span>
+<span class="nc" id="L1869">            break;</span>
+          case 11:
+<span class="nc" id="L1871">            code = &quot;0.00E+00&quot;;</span>
+<span class="nc" id="L1872">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1873">            break;</span>
+          case 12:
+<span class="nc" id="L1875">            code = &quot;# ?/?&quot;;</span>
+<span class="nc" id="L1876">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1877">            break;</span>
+          case 13:
+<span class="nc" id="L1879">            code = &quot;# ??/??&quot;;</span>
+<span class="nc" id="L1880">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1881">            break;</span>
+          case 14:
+<span class="nc" id="L1883">            code = &quot;MM/DD/YYYY&quot;;</span>
+<span class="nc" id="L1884">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1885">            break;</span>
+          case 15:
+<span class="nc" id="L1887">            code = &quot;D-MMM-YY&quot;;</span>
+<span class="nc" id="L1888">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1889">            break;</span>
+          case 16:
+<span class="nc" id="L1891">            code = &quot;D-MMM&quot;;</span>
+<span class="nc" id="L1892">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1893">            break;</span>
+          case 17:
+<span class="nc" id="L1895">            code = &quot;MMM-YY&quot;;</span>
+<span class="nc" id="L1896">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1897">            break;</span>
+          case 18:
+<span class="nc" id="L1899">            code = &quot;H:MM AM/PM&quot;;</span>
+<span class="nc" id="L1900">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1901">            break;</span>
+          case 19:
+<span class="nc" id="L1903">            code = &quot;H:MM:SS AM/PM&quot;;</span>
+<span class="nc" id="L1904">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1905">            break;</span>
+          case 20:
+<span class="nc" id="L1907">            code = &quot;H:MM&quot;;</span>
+<span class="nc" id="L1908">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L1909">            break;</span>
+          case 21:
+<span class="nc" id="L1911">            code = &quot;H:MM:SS&quot;;</span>
+<span class="nc" id="L1912">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L1913">            break;</span>
+          case 22:
+<span class="nc" id="L1915">            code = &quot;M/D/YYYY H:MM&quot;;</span>
+<span class="nc" id="L1916">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1917">            break; // &quot;DATETIME_SYSTEM_SHORT_HHMM,</span>
+          case 23: // code = &quot;0&quot;;                                      type =
+            // OfficeValueTypeAttribute.Value.FLOAT; break;
+          case 24: // code = &quot;0&quot;;                                      type =
+            // OfficeValueTypeAttribute.Value.FLOAT; break;
+          case 25: // code = &quot;0&quot;;                                      type =
+            // OfficeValueTypeAttribute.Value.FLOAT; break;
+          case 26:
+<span class="nc" id="L1925">            code = &quot;0&quot;;</span>
+<span class="nc" id="L1926">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1927">            break;</span>
+          case 27:
+          case 28:
+          case 29:
+          case 30:
+          case 31:
+<span class="nc" id="L1933">            code = &quot;M/D/YYYY&quot;;</span>
+<span class="nc" id="L1934">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1935">            break;</span>
+          case 32:
+          case 33:
+          case 34:
+          case 35:
+<span class="nc" id="L1940">            code = &quot;HH:MM:SS&quot;;</span>
+<span class="nc" id="L1941">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L1942">            break;</span>
+          case 36:
+<span class="nc" id="L1944">            code = &quot;M/D/YYYY&quot;;</span>
+<span class="nc" id="L1945">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L1946">            break;</span>
+          case 37:
+<span class="nc" id="L1948">            code = &quot;#,##0_);(#,##0)&quot;;</span>
+<span class="nc" id="L1949">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1950">            break;</span>
+          case 38:
+<span class="nc" id="L1952">            code = &quot;#,##0_);[RED](#,##0)&quot;;</span>
+<span class="nc" id="L1953">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1954">            break;</span>
+          case 39:
+<span class="nc" id="L1956">            code = &quot;#,##0.00_);(#,##0.00)&quot;;</span>
+<span class="nc" id="L1957">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1958">            break;</span>
+          case 40:
+<span class="nc" id="L1960">            code = &quot;#,##0.00_);[RED](#,##0.00)&quot;;</span>
+<span class="nc" id="L1961">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1962">            break;</span>
+          case 41:
+<span class="nc" id="L1964">            code = &quot;_-* #,##0 _\u20ac_-;-* #,##0 _\u20ac_-;_-* \&quot;-\&quot; _\u20ac_-;_-@_-&quot;;</span>
+<span class="nc" id="L1965">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1966">            break;</span>
+          case 42:
+<span class="nc" id="L1968">            code = &quot;_-* #,##0 \&quot;\u20ac\&quot;_-;-* #,##0 \&quot;\u20ac\&quot;_-;_-* \&quot;-\&quot; \&quot;\u20ac\&quot;_-;_-@_-&quot;;</span>
+<span class="nc" id="L1969">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1970">            break;</span>
+          case 43:
+<span class="nc" id="L1972">            code = &quot;_-* #,##0.00 _\u20ac_-;-* #,##0.00 _\u20ac_-;_-* \&quot;-\&quot;?? _\u20ac_-;_-@_-&quot;;</span>
+<span class="nc" id="L1973">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1974">            break;</span>
+          case 44:
+<span class="nc" id="L1976">            code =</span>
+                &quot;_-* #,##0.00 \&quot;\u20ac\&quot;_-;-* #,##0.00 \&quot;\u20ac\&quot;_-;_-* \&quot;-\&quot;?? \&quot;\u20ac\&quot;_-;_-@_-&quot;;
+<span class="nc" id="L1978">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1979">            break;</span>
+          case 45:
+<span class="nc" id="L1981">            code = &quot;MM:SS&quot;;</span>
+<span class="nc" id="L1982">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L1983">            break;</span>
+          case 46:
+<span class="nc" id="L1985">            code = &quot;[h]:mm:ss&quot;;</span>
+<span class="nc" id="L1986">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L1987">            break;</span>
+          case 47:
+<span class="nc" id="L1989">            code = &quot;mm:ss.0&quot;;</span>
+<span class="nc" id="L1990">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L1991">            break;</span>
+          case 48:
+<span class="nc" id="L1993">            code = &quot;##0.0E+0&quot;;</span>
+<span class="nc" id="L1994">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L1995">            break;</span>
+          case 49:
+<span class="nc" id="L1997">            code = &quot;@&quot;;</span>
+<span class="nc" id="L1998">            type = OfficeValueTypeAttribute.Value.STRING;</span>
+<span class="nc" id="L1999">            break;</span>
+          case 50:
+<span class="nc" id="L2001">            code = &quot;M/D/YYYY&quot;;</span>
+<span class="nc" id="L2002">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L2003">            break;</span>
+          case 51:
+          case 52:
+          case 53:
+          case 54:
+          case 55:
+          case 56:
+          case 57:
+          case 58:
+<span class="nc" id="L2012">            code = &quot;M/D/YYYY&quot;;</span>
+<span class="nc" id="L2013">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L2014">            break;</span>
+          case 59:
+<span class="nc" id="L2016">            code = &quot;0&quot;;</span>
+<span class="nc" id="L2017">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2018">            break;</span>
+          case 60:
+<span class="nc" id="L2020">            code = &quot;0.00&quot;;</span>
+<span class="nc" id="L2021">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2022">            break;</span>
+          case 61:
+<span class="nc" id="L2024">            code = &quot;#,##0&quot;;</span>
+<span class="nc" id="L2025">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2026">            break;</span>
+          case 62:
+<span class="nc" id="L2028">            code = &quot;#,##0.00&quot;;</span>
+<span class="nc" id="L2029">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2030">            break;</span>
+          case 63:
+<span class="nc" id="L2032">            code = &quot;#,##0 \&quot;\u20ac\&quot;;-#,##0 \&quot;\u20ac\&quot;&quot;;</span>
+<span class="nc" id="L2033">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2034">            break;</span>
+          case 64:
+<span class="nc" id="L2036">            code = &quot;#,##0 \&quot;\u20ac\&quot;;[RED]-#,##0 \&quot;\u20ac\&quot;&quot;;</span>
+<span class="nc" id="L2037">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2038">            break;</span>
+          case 65:
+<span class="nc" id="L2040">            code = &quot;#,##0.00 \&quot;\u20ac\&quot;;-#,##0.00 \&quot;\u20ac\&quot;&quot;;</span>
+<span class="nc" id="L2041">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2042">            break;</span>
+          case 66:
+<span class="nc" id="L2044">            code = &quot;#,##0.00 \&quot;\u20ac\&quot;;[RED]-#,##0.00 \&quot;\u20ac\&quot;&quot;;</span>
+<span class="nc" id="L2045">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2046">            break;</span>
+          case 67:
+<span class="nc" id="L2048">            code = &quot;0%&quot;;</span>
+<span class="nc" id="L2049">            type = OfficeValueTypeAttribute.Value.PERCENTAGE;</span>
+<span class="nc" id="L2050">            break;</span>
+          case 68:
+<span class="nc" id="L2052">            code = &quot;0.00%&quot;;</span>
+<span class="nc" id="L2053">            type = OfficeValueTypeAttribute.Value.PERCENTAGE;</span>
+<span class="nc" id="L2054">            break;</span>
+          case 69:
+<span class="nc" id="L2056">            code = &quot;0.00E+00&quot;;</span>
+<span class="nc" id="L2057">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2058">            break;</span>
+          case 70:
+<span class="nc" id="L2060">            code = &quot;# ?/?&quot;;</span>
+<span class="nc" id="L2061">            type = OfficeValueTypeAttribute.Value.FLOAT;</span>
+<span class="nc" id="L2062">            break;</span>
+          case 71: // code = &quot;M/D/YYYY&quot;; type = OfficeValueTypeAttribute.Value.DATE; break;
+          case 72:
+<span class="nc" id="L2065">            code = &quot;M/D/YYYY&quot;;</span>
+<span class="nc" id="L2066">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L2067">            break;</span>
+          case 73:
+<span class="nc" id="L2069">            code = &quot;D-MMM-YY&quot;;</span>
+<span class="nc" id="L2070">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L2071">            break;</span>
+          case 74:
+<span class="nc" id="L2073">            code = &quot;D-MMM&quot;;</span>
+<span class="nc" id="L2074">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L2075">            break;</span>
+          case 75:
+<span class="nc" id="L2077">            code = &quot;MMM-YY&quot;;</span>
+<span class="nc" id="L2078">            type = OfficeValueTypeAttribute.Value.DATE;</span>
+<span class="nc" id="L2079">            break;</span>
+          case 76:
+<span class="nc" id="L2081">            code = &quot;HH:MM&quot;;</span>
+<span class="nc" id="L2082">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L2083">            break;</span>
+          case 77:
+<span class="nc" id="L2085">            code = &quot;HH:MM:SS&quot;;</span>
+<span class="nc" id="L2086">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L2087">            break;</span>
+          case 78:
+<span class="nc" id="L2089">            code = &quot;M/D/YYYY H:MM&quot;;</span>
+<span class="nc" id="L2090">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L2091">            break;</span>
+          case 79:
+<span class="nc" id="L2093">            code = &quot;mm:ss&quot;;</span>
+<span class="nc" id="L2094">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L2095">            break;</span>
+          case 80:
+<span class="nc" id="L2097">            code = &quot;[h]:mm:ss&quot;;</span>
+<span class="nc" id="L2098">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+<span class="nc" id="L2099">            break;</span>
+          case 81:
+<span class="nc" id="L2101">            code = &quot;mm:ss.0&quot;;</span>
+<span class="nc" id="L2102">            type = OfficeValueTypeAttribute.Value.TIME;</span>
+            break;
+        }
+      }
+<span class="pc bpc" id="L2106" title="2 of 4 branches missed.">      if (!code.isEmpty() &amp;&amp; (type == OfficeValueTypeAttribute.Value.VOID)) {</span>
+<span class="fc" id="L2107">        type = detectFormatType(code);</span>
+      }
+<span class="pc bpc" id="L2109" title="2 of 4 branches missed.">      if (!code.isEmpty() &amp;&amp; type != OfficeValueTypeAttribute.Value.VOID) {</span>
+<span class="fc" id="L2110">        String foundStyleName = null;</span>
+<span class="fc" id="L2111">        boolean foundInAutoStyles = false;</span>
+<span class="fc" id="L2112">        HashMap&lt;String, DataStyleElement&gt; officeDataStyles = officeStyles.getAllDataStyles();</span>
+<span class="fc" id="L2113">        HashMap&lt;String, DataStyleElement&gt; autoDataStyles = autoStyles.getAllDataStyles();</span>
+<span class="fc bfc" id="L2114" title="All 2 branches covered.">        for (Entry&lt;String, DataStyleElement&gt; autoNumberStyle : autoDataStyles.entrySet()) {</span>
+<span class="fc bfc" id="L2115" title="All 2 branches covered.">          if (autoNumberStyle.getValue().getFormat(true).equals(code)) {</span>
+<span class="fc" id="L2116">            foundStyleName = autoNumberStyle.getKey();</span>
+<span class="fc" id="L2117">            ret = foundStyleName;</span>
+<span class="fc" id="L2118">            foundInAutoStyles = true;</span>
+<span class="fc" id="L2119">            break;</span>
+          }
+<span class="fc" id="L2121">        }</span>
+<span class="fc bfc" id="L2122" title="All 2 branches covered.">        if (!foundInAutoStyles) {</span>
+<span class="pc bpc" id="L2123" title="1 of 2 branches missed.">          for (Entry&lt;String, DataStyleElement&gt; officeNumberStyle : officeDataStyles.entrySet()) {</span>
+<span class="nc bnc" id="L2124" title="All 2 branches missed.">            if (officeNumberStyle.getValue().getFormat(true).equals(code)) {</span>
+<span class="nc" id="L2125">              foundStyleName = officeNumberStyle.getKey();</span>
+<span class="nc" id="L2126">              ret = foundStyleName;</span>
+<span class="nc" id="L2127">              break;</span>
+            }
+<span class="nc" id="L2129">          }</span>
+        }
+<span class="fc bfc" id="L2131" title="All 2 branches covered.">        if (foundStyleName == null) {</span>
+          // find free name
+<span class="fc" id="L2133">          int newIndex = autoDataStyles.size() + officeDataStyles.size();</span>
+<span class="fc" id="L2134">          String newDataStyleName = &quot;N&quot; + newIndex;</span>
+<span class="fc bfc" id="L2135" title="All 2 branches covered.">          while (autoDataStyles.containsKey(newDataStyleName)</span>
+<span class="pc bpc" id="L2136" title="1 of 2 branches missed.">              || officeDataStyles.containsKey(newDataStyleName)) {</span>
+<span class="fc" id="L2137">            newDataStyleName = &quot;N&quot; + ++newIndex;</span>
+          }
+<span class="fc" id="L2139">          final DataStyleElement newStyle =</span>
+<span class="fc" id="L2140">              autoStyles.createDataStyle(type, code, newDataStyleName);</span>
+<span class="pc bpc" id="L2141" title="1 of 2 branches missed.">          if (id == 14) {</span>
+<span class="nc" id="L2142">            newStyle.setAttributeNS(</span>
+<span class="nc" id="L2143">                OdfDocumentNamespace.NUMBER.getUri(), &quot;number:automatic-order&quot;, &quot;true&quot;);</span>
+<span class="nc" id="L2144">            newStyle.removeAttributeNS(OdfDocumentNamespace.NUMBER.getUri(), &quot;format-source&quot;);</span>
+          }
+<span class="fc" id="L2146">          ret = newDataStyleName;</span>
+        }
+      }
+<span class="nc" id="L2149">    } catch (SAXException e) {</span>
+<span class="nc" id="L2150">      Logger.getLogger(MapHelper.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L2151">    } catch (IOException ex) {</span>
+<span class="nc" id="L2152">      Logger.getLogger(MapHelper.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="pc" id="L2153">    }</span>
+<span class="fc" id="L2154">    return ret;</span>
+  }
+
+  private static void fillLocaleMaps() {
+<span class="pc bpc" id="L2158" title="1 of 2 branches missed.">    if (localeToLanguageMap == null) {</span>
+<span class="fc" id="L2159">      localeToLanguageMap = new HashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L2160">      languageToLocaleMap = new HashMap&lt;Integer, String&gt;();</span>
+
+      class StringAndInt {
+
+        public String locale;
+        public int msValue;
+
+<span class="fc" id="L2167">        public StringAndInt(String s, int v) {</span>
+<span class="fc" id="L2168">          locale = s;</span>
+<span class="fc" id="L2169">          msValue = v;</span>
+<span class="fc" id="L2170">        }</span>
+      }
+
+<span class="fc" id="L2173">      StringAndInt mapping[] = {</span>
+        new StringAndInt(&quot;af-ZA&quot;, 0x436),
+        new StringAndInt(&quot;sq-AL&quot;, 0x41c),
+        new StringAndInt(&quot;gsw-FR&quot;, 0x484),
+        new StringAndInt(&quot;am-ET&quot;, 0x45e),
+        new StringAndInt(&quot;ar-DZ&quot;, 0x1401),
+        new StringAndInt(&quot;ar-BH&quot;, 0x3c01),
+        new StringAndInt(&quot;ar-EG&quot;, 0xc01),
+        new StringAndInt(&quot;ar-IQ&quot;, 0x801),
+        new StringAndInt(&quot;ar-JO&quot;, 0x2c01),
+        new StringAndInt(&quot;ar-KW&quot;, 0x3401),
+        new StringAndInt(&quot;ar-LB&quot;, 0x3001),
+        new StringAndInt(&quot;ar-LY&quot;, 0x1001),
+        new StringAndInt(&quot;ar-MA&quot;, 0x1801),
+        new StringAndInt(&quot;ar-OM&quot;, 0x2001),
+        new StringAndInt(&quot;ar-QA&quot;, 0x4001),
+        new StringAndInt(&quot;ar-SA&quot;, 0x401),
+        new StringAndInt(&quot;ar-SY&quot;, 0x2801),
+        new StringAndInt(&quot;ar-TN&quot;, 0x1c01),
+        new StringAndInt(&quot;ar-AE&quot;, 0x3801),
+        new StringAndInt(&quot;ar-YE&quot;, 0x2401),
+        new StringAndInt(&quot;ar&quot;, 0x1),
+        new StringAndInt(&quot;hy-AM&quot;, 0x42b),
+        new StringAndInt(&quot;as-IN&quot;, 0x44d),
+        new StringAndInt(&quot;az&quot;, 0x2c),
+        new StringAndInt(&quot;az-cyrillic&quot;, 0x82c),
+        new StringAndInt(&quot;az-AZ&quot;, 0x42c),
+        new StringAndInt(&quot;ba-RU&quot;, 0x46d),
+        new StringAndInt(&quot;eu&quot;, 0x42d),
+        new StringAndInt(&quot;be-BY&quot;, 0x423),
+        new StringAndInt(&quot;bn-IN&quot;, 0x445),
+        new StringAndInt(&quot;bn-BD&quot;, 0x845),
+        new StringAndInt(&quot;bs-BA&quot;, 0x141a),
+        //            new StringAndInt(&quot;&quot;, 0x201a),
+        new StringAndInt(&quot;br-FR&quot;, 0x47e),
+        new StringAndInt(&quot;bg-BG&quot;, 0x402),
+        new StringAndInt(&quot;my-MM&quot;, 0x455),
+        new StringAndInt(&quot;ca-ES&quot;, 0x403),
+        new StringAndInt(&quot;chr-US&quot;, 0x45c),
+        new StringAndInt(&quot;zh&quot;, 0x4),
+        new StringAndInt(&quot;zh-HK&quot;, 0xc04),
+        new StringAndInt(&quot;zh-MO&quot;, 0x1404),
+        new StringAndInt(&quot;zh-CN&quot;, 0x804),
+        new StringAndInt(&quot;zh-SG&quot;, 0x1004),
+        new StringAndInt(&quot;zh-TW&quot;, 0x404),
+        new StringAndInt(&quot;co-FR&quot;, 0x483),
+        new StringAndInt(&quot;hr-HR&quot;, 0x41a),
+        new StringAndInt(&quot;hr-BA&quot;, 0x101a),
+        new StringAndInt(&quot;cs-CZ&quot;, 0x405),
+        new StringAndInt(&quot;da-DK&quot;, 0x406),
+        new StringAndInt(&quot;gbz-AF&quot;, 0x48c),
+        new StringAndInt(&quot;dv-MV&quot;, 0x465),
+        new StringAndInt(&quot;nl-NL&quot;, 0x413),
+        new StringAndInt(&quot;nl-BE&quot;, 0x813),
+        new StringAndInt(&quot;bin-NG&quot;, 0x466),
+        new StringAndInt(&quot;en&quot;, 0x9),
+        new StringAndInt(&quot;en-AU&quot;, 0xc09),
+        new StringAndInt(&quot;en-BZ&quot;, 0x2809),
+        new StringAndInt(&quot;en-CA&quot;, 0x1009),
+        new StringAndInt(&quot;en-BS&quot;, 0x2409),
+        new StringAndInt(&quot;en-IE&quot;, 0x1809),
+        new StringAndInt(&quot;en-HK&quot;, 0x3c09),
+        new StringAndInt(&quot;en-IN&quot;, 0x4009),
+        new StringAndInt(&quot;en-ID&quot;, 0x3809),
+        new StringAndInt(&quot;en-JM&quot;, 0x2009),
+        new StringAndInt(&quot;en-MY&quot;, 0x4409),
+        new StringAndInt(&quot;en-NZ&quot;, 0x1409),
+        new StringAndInt(&quot;en-PH&quot;, 0x3409),
+        new StringAndInt(&quot;en-ZA&quot;, 0x1c09),
+        new StringAndInt(&quot;en-SG&quot;, 0x4809),
+        new StringAndInt(&quot;en-TT&quot;, 0x2c09),
+        new StringAndInt(&quot;en-GB&quot;, 0x809),
+        new StringAndInt(&quot;en-US&quot;, 0x409),
+        new StringAndInt(&quot;en-ZW&quot;, 0x3009),
+        new StringAndInt(&quot;et-EE&quot;, 0x425),
+        new StringAndInt(&quot;fo-FO&quot;, 0x438),
+        new StringAndInt(&quot;fa-IR&quot;, 0x429),
+        new StringAndInt(&quot;fil-PH&quot;, 0x464),
+        new StringAndInt(&quot;fi-FI&quot;, 0x40b),
+        new StringAndInt(&quot;fr-FR&quot;, 0x40c),
+        new StringAndInt(&quot;fr-BE&quot;, 0x80c),
+        new StringAndInt(&quot;fr-CM&quot;, 0x2c0c),
+        new StringAndInt(&quot;fr-CA&quot;, 0xc0c),
+        new StringAndInt(&quot;fr-CI&quot;, 0x300c),
+        new StringAndInt(&quot;fr-HT&quot;, 0x3c0c),
+        new StringAndInt(&quot;fr-LU&quot;, 0x140c),
+        new StringAndInt(&quot;fr-ML&quot;, 0x340c),
+        new StringAndInt(&quot;fr-MC&quot;, 0x180c),
+        new StringAndInt(&quot;fr-MA&quot;, 0x380c),
+        new StringAndInt(&quot;fr&quot;, 0xe40c),
+        new StringAndInt(&quot;fr-RE&quot;, 0x200c),
+        new StringAndInt(&quot;fr-SN&quot;, 0x280c),
+        new StringAndInt(&quot;fr-CH&quot;, 0x100c),
+        new StringAndInt(&quot;fr&quot;, 0x1c0c),
+        new StringAndInt(&quot;fr-CD&quot;, 0x240c),
+        new StringAndInt(&quot;fy-NL&quot;, 0x462),
+        new StringAndInt(&quot;ff-NG&quot;, 0x467),
+        new StringAndInt(&quot;ga-IE&quot;, 0x83c),
+        new StringAndInt(&quot;gd-GB&quot;, 0x43c),
+        new StringAndInt(&quot;gl-ES&quot;, 0x456),
+        new StringAndInt(&quot;ka-GE&quot;, 0x437),
+        new StringAndInt(&quot;de-DE&quot;, 0x407),
+        new StringAndInt(&quot;de-AT&quot;, 0xc07),
+        new StringAndInt(&quot;de-LI&quot;, 0x1407),
+        new StringAndInt(&quot;de-LU&quot;, 0x1007),
+        new StringAndInt(&quot;de-CH&quot;, 0x807),
+        new StringAndInt(&quot;el-GR&quot;, 0x408),
+        new StringAndInt(&quot;gug-PY&quot;, 0x474),
+        new StringAndInt(&quot;gu-IN&quot;, 0x447),
+        new StringAndInt(&quot;ha-NG&quot;, 0x468),
+        new StringAndInt(&quot;haw-US&quot;, 0x475),
+        new StringAndInt(&quot;he-IL&quot;, 0x40d),
+        new StringAndInt(&quot;hi-IN&quot;, 0x439),
+        new StringAndInt(&quot;hu-HU&quot;, 0x40e),
+        //            new StringAndInt(&quot;&quot;, 0x469),
+        new StringAndInt(&quot;is-IS&quot;, 0x40f),
+        new StringAndInt(&quot;ig-NG&quot;, 0x470),
+        new StringAndInt(&quot;id-ID&quot;, 0x421),
+        //            new StringAndInt(&quot;&quot;, 0x45d),
+        new StringAndInt(&quot;iu-CA&quot;, 0x85d),
+        new StringAndInt(&quot;it-IT&quot;, 0x410),
+        new StringAndInt(&quot;it-CH&quot;, 0x810),
+        new StringAndInt(&quot;ja-JP&quot;, 0x411),
+        new StringAndInt(&quot;kl-GL&quot;, 0x46f),
+        new StringAndInt(&quot;kn-IN&quot;, 0x44b),
+        new StringAndInt(&quot;kr-NG&quot;, 0x471),
+        new StringAndInt(&quot;ks&quot;, 0x460),
+        new StringAndInt(&quot;ks-IN&quot;, 0x860),
+        new StringAndInt(&quot;kk-KZ&quot;, 0x43f),
+        new StringAndInt(&quot;km-KH&quot;, 0x453),
+        new StringAndInt(&quot;qut-GT&quot;, 0x486),
+        new StringAndInt(&quot;rw-RW&quot;, 0x487),
+        new StringAndInt(&quot;ky-KG&quot;, 0x440),
+        new StringAndInt(&quot;kok-IN&quot;, 0x457),
+        new StringAndInt(&quot;ko-KR&quot;, 0x412),
+        new StringAndInt(&quot;ko-KR&quot;, 0x812),
+        new StringAndInt(&quot;lo-LA&quot;, 0x454),
+        new StringAndInt(&quot;la-VA&quot;, 0x476),
+        new StringAndInt(&quot;lv-LV&quot;, 0x426),
+        new StringAndInt(&quot;lt-LT&quot;, 0x427),
+        new StringAndInt(&quot;lt-LT&quot;, 0x827),
+        new StringAndInt(&quot;lb-LU&quot;, 0x46e),
+        new StringAndInt(&quot;mk-MK&quot;, 0x42f),
+        new StringAndInt(&quot;ms&quot;, 0x3e),
+        new StringAndInt(&quot;ml-IN&quot;, 0x44c),
+        new StringAndInt(&quot;ms-BN&quot;, 0x83e),
+        new StringAndInt(&quot;ms-MY&quot;, 0x43e),
+        new StringAndInt(&quot;mt-MT&quot;, 0x43a),
+        new StringAndInt(&quot;mni-IN&quot;, 0x458),
+        new StringAndInt(&quot;mi-NZ&quot;, 0x481),
+        new StringAndInt(&quot;arn-CL&quot;, 0x47a),
+        new StringAndInt(&quot;mr-IN&quot;, 0x44e),
+        new StringAndInt(&quot;moh-CA&quot;, 0x47c),
+        new StringAndInt(&quot;mn-MN&quot;, 0x450),
+        new StringAndInt(&quot;mn-MN&quot;, 0x850),
+        new StringAndInt(&quot;ne-NP&quot;, 0x461),
+        new StringAndInt(&quot;ne-IN&quot;, 0x861),
+        new StringAndInt(&quot;no-NO&quot;, 0x14),
+        new StringAndInt(&quot;nb-NO&quot;, 0x414),
+        new StringAndInt(&quot;nn-NO&quot;, 0x814),
+        new StringAndInt(&quot;oc-FR&quot;, 0x482),
+        new StringAndInt(&quot;or-IN&quot;, 0x448),
+        new StringAndInt(&quot;om-ET&quot;, 0x472),
+        new StringAndInt(&quot;pap-AN&quot;, 0x479),
+        new StringAndInt(&quot;ps-AF&quot;, 0x463),
+        new StringAndInt(&quot;pl-PL&quot;, 0x415),
+        new StringAndInt(&quot;pt-PT&quot;, 0x816),
+        new StringAndInt(&quot;pt-BR&quot;, 0x416),
+        new StringAndInt(&quot;pa-IN&quot;, 0x446),
+        new StringAndInt(&quot;lah-PK&quot;, 0x846),
+        new StringAndInt(&quot;qu-BO&quot;, 0x46b),
+        new StringAndInt(&quot;qu-EC&quot;, 0x86b),
+        new StringAndInt(&quot;qu-PE&quot;, 0xc6b),
+        new StringAndInt(&quot;rm-CH&quot;, 0x417),
+        new StringAndInt(&quot;ro-RO&quot;, 0x418),
+        new StringAndInt(&quot;ro-MD&quot;, 0x818),
+        new StringAndInt(&quot;ru-RU&quot;, 0x419),
+        new StringAndInt(&quot;mo-MD&quot;, 0x819),
+        new StringAndInt(&quot;se-NO&quot;, 0x43b),
+        new StringAndInt(&quot;smn-FI&quot;, 0x243b),
+        new StringAndInt(&quot;smj-NO&quot;, 0x103b),
+        new StringAndInt(&quot;smj-SE&quot;, 0x143b),
+        new StringAndInt(&quot;se-FI&quot;, 0xc3b),
+        new StringAndInt(&quot;se-SE&quot;, 0x83b),
+        new StringAndInt(&quot;sms-FI&quot;, 0x203b),
+        new StringAndInt(&quot;sma-NO&quot;, 0x183b),
+        new StringAndInt(&quot;sma-SE&quot;, 0x1c3b),
+        new StringAndInt(&quot;sa-IN&quot;, 0x44f),
+        new StringAndInt(&quot;nso-ZA&quot;, 0x46c),
+        new StringAndInt(&quot;sr&quot;, 0x1a),
+        new StringAndInt(&quot;sr-YU&quot;, 0xc1a),
+        new StringAndInt(&quot;sr-BA&quot;, 0x1c1a),
+        new StringAndInt(&quot;sh-YU&quot;, 0x81a),
+        new StringAndInt(&quot;sh-BA&quot;, 0x181a),
+        new StringAndInt(&quot;sh&quot;, 0x7c1a),
+        new StringAndInt(&quot;st-ZA&quot;, 0x430),
+        new StringAndInt(&quot;sd-IN&quot;, 0x459),
+        new StringAndInt(&quot;sd-PK&quot;, 0x859),
+        new StringAndInt(&quot;si-LK&quot;, 0x45b),
+        new StringAndInt(&quot;sk-SK&quot;, 0x41b),
+        new StringAndInt(&quot;sl-SI&quot;, 0x424),
+        new StringAndInt(&quot;so-SO&quot;, 0x477),
+        new StringAndInt(&quot;hsb-DE&quot;, 0x42e),
+        new StringAndInt(&quot;dsb-DE&quot;, 0x82e),
+        new StringAndInt(&quot;es-ES&quot;, 0x40a),
+        new StringAndInt(&quot;es-AR&quot;, 0x2c0a),
+        new StringAndInt(&quot;es-BO&quot;, 0x400a),
+        new StringAndInt(&quot;es-CL&quot;, 0x340a),
+        new StringAndInt(&quot;es-CO&quot;, 0x240a),
+        new StringAndInt(&quot;es-CR&quot;, 0x140a),
+        new StringAndInt(&quot;es-DO&quot;, 0x1c0a),
+        new StringAndInt(&quot;es-EC&quot;, 0x300a),
+        new StringAndInt(&quot;es-SV&quot;, 0x440a),
+        new StringAndInt(&quot;es-GT&quot;, 0x100a),
+        new StringAndInt(&quot;es-HN&quot;, 0x480a),
+        new StringAndInt(&quot;es&quot;, 0xe40a),
+        new StringAndInt(&quot;es-MX&quot;, 0x80a),
+        new StringAndInt(&quot;es-ES&quot;, 0xc0a),
+        new StringAndInt(&quot;es-NI&quot;, 0x4c0a),
+        new StringAndInt(&quot;es-PA&quot;, 0x180a),
+        new StringAndInt(&quot;es-PY&quot;, 0x3c0a),
+        new StringAndInt(&quot;es-PE&quot;, 0x280a),
+        new StringAndInt(&quot;es-PR&quot;, 0x500a),
+        new StringAndInt(&quot;es-US&quot;, 0x540a),
+        new StringAndInt(&quot;es-UY&quot;, 0x380a),
+        new StringAndInt(&quot;es-VE&quot;, 0x200a),
+        new StringAndInt(&quot;sw-KE&quot;, 0x441),
+        new StringAndInt(&quot;sv-SE&quot;, 0x41d),
+        new StringAndInt(&quot;sv-FI&quot;, 0x81d),
+        new StringAndInt(&quot;syr-TR&quot;, 0x45a),
+        new StringAndInt(&quot;tg-TJ&quot;, 0x428),
+        //            new StringAndInt(&quot;&quot;, 0x45f),
+        //            new StringAndInt(&quot;&quot;, 0x85f),
+        new StringAndInt(&quot;ta-IN&quot;, 0x449),
+        new StringAndInt(&quot;tt-RU&quot;, 0x444),
+        new StringAndInt(&quot;te-IN&quot;, 0x44a),
+        new StringAndInt(&quot;th-TH&quot;, 0x41e),
+        new StringAndInt(&quot;bo-CN&quot;, 0x451),
+        new StringAndInt(&quot;dz-BT&quot;, 0x851),
+        new StringAndInt(&quot;ti-ER&quot;, 0x873),
+        new StringAndInt(&quot;ti-ET&quot;, 0x473),
+        new StringAndInt(&quot;ts-ZA&quot;, 0x431),
+        new StringAndInt(&quot;tn-ZA&quot;, 0x432),
+        new StringAndInt(&quot;tr-TR&quot;, 0x41f),
+        new StringAndInt(&quot;tk-TM&quot;, 0x442),
+        new StringAndInt(&quot;ug-CN&quot;, 0x480),
+        new StringAndInt(&quot;uk-UA&quot;, 0x422),
+        new StringAndInt(&quot;ur&quot;, 0x20),
+        new StringAndInt(&quot;ur-IN&quot;, 0x820),
+        new StringAndInt(&quot;ur-PK&quot;, 0x420),
+        //            new StringAndInt(&quot;&quot;, 0x843),
+        new StringAndInt(&quot;uz-UZ&quot;, 0x443),
+        new StringAndInt(&quot;ve-ZA&quot;, 0x433),
+        new StringAndInt(&quot;vi-VN&quot;, 0x42a),
+        new StringAndInt(&quot;cy-GB&quot;, 0x452),
+        new StringAndInt(&quot;wo-SN&quot;, 0x488),
+        new StringAndInt(&quot;xh-ZA&quot;, 0x434),
+        new StringAndInt(&quot;sah-RU&quot;, 0x485),
+        new StringAndInt(&quot;ii-CN&quot;, 0x478),
+        new StringAndInt(&quot;yi-IL&quot;, 0x43d),
+        new StringAndInt(&quot;yo-NG&quot;, 0x46a),
+        new StringAndInt(&quot;zu-ZA&quot;, 0x435),
+        null
+      };
+<span class="fc" id="L2437">      int index = 0;</span>
+<span class="fc bfc" id="L2438" title="All 2 branches covered.">      while (mapping[index] != null) {</span>
+<span class="fc" id="L2439">        localeToLanguageMap.put(mapping[index].locale, mapping[index].msValue);</span>
+<span class="fc" id="L2440">        languageToLocaleMap.put(mapping[index].msValue, mapping[index].locale);</span>
+<span class="fc" id="L2441">        ++index;</span>
+      }
+    }
+<span class="fc" id="L2444">  }</span>
+
+  /**
+   * converts a language code from a string and interpretes the number as hex value and returns the
+   * a locale or null if either the format is wrong or no locale is known
+   */
+  public static String getLocaleFromLangCode(String languageCode) {
+<span class="pc bpc" id="L2451" title="1 of 2 branches missed.">    if (languageToLocaleMap == null) {</span>
+<span class="nc" id="L2452">      fillLocaleMaps();</span>
+    }
+<span class="fc" id="L2454">    String ret = &quot;&quot;;</span>
+    try {
+<span class="fc" id="L2456">      int languageValue = Integer.parseInt(languageCode, 16);</span>
+<span class="fc" id="L2457">      ret = languageToLocaleMap.get(languageValue);</span>
+<span class="nc" id="L2458">    } catch (NumberFormatException e) {</span>
+      // no handling required
+<span class="fc" id="L2460">    }</span>
+<span class="fc" id="L2461">    return ret;</span>
+  }
+
+  /**
+   * converts locale information to a hex value string but without a hex marker like '0x' returns
+   * null if no value can be found
+   */
+  public static String getMSLangCode(String language, String country) {
+<span class="fc bfc" id="L2469" title="All 2 branches covered.">    if (localeToLanguageMap == null) {</span>
+<span class="fc" id="L2470">      fillLocaleMaps();</span>
+    }
+<span class="fc" id="L2472">    String cmpString = new String(language);</span>
+<span class="pc bpc" id="L2473" title="1 of 2 branches missed.">    if (!country.isEmpty()) {</span>
+<span class="fc" id="L2474">      cmpString += &quot;-&quot; + country;</span>
+    }
+<span class="fc" id="L2476">    Integer entry = localeToLanguageMap.get(cmpString);</span>
+<span class="pc bpc" id="L2477" title="1 of 2 branches missed.">    if (entry != null) {</span>
+<span class="fc" id="L2478">      return Integer.toHexString(entry.intValue());</span>
+    }
+<span class="nc" id="L2480">    return &quot;&quot;;</span>
+  }
+
+  public static void moveParaToCell(Map&lt;String, Object&gt; allHardFormatting) {
+    // move some paragraph properties to cell properties
+<span class="nc bnc" id="L2485" title="All 4 branches missed.">    if (allHardFormatting != null &amp;&amp; allHardFormatting.containsKey(&quot;paragraph&quot;)) {</span>
+<span class="nc" id="L2486">      JSONObject paraProps = (JSONObject) allHardFormatting.get(&quot;paragraph&quot;);</span>
+<span class="nc bnc" id="L2487" title="All 2 branches missed.">      if (paraProps.has(&quot;alignment&quot;)) {</span>
+<span class="nc bnc" id="L2488" title="All 2 branches missed.">        if (!allHardFormatting.containsKey(&quot;cell&quot;)) {</span>
+<span class="nc" id="L2489">          allHardFormatting.put(&quot;cell&quot;, new JSONObject());</span>
+        }
+<span class="nc" id="L2491">        JSONObject cellProps = (JSONObject) allHardFormatting.get(&quot;cell&quot;);</span>
+        try {
+<span class="nc" id="L2493">          cellProps.put(&quot;alignHor&quot;, paraProps.opt(&quot;alignment&quot;));</span>
+<span class="nc" id="L2494">          paraProps.remove(&quot;alignment&quot;);</span>
+<span class="nc" id="L2495">        } catch (JSONException e) {</span>
+          // no handling required
+<span class="nc" id="L2497">        }</span>
+      }
+    }
+<span class="nc" id="L2500">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PositiveLength.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">PositiveLength.java</span></div><h1>PositiveLength.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.regex.Pattern;
+
+/**
+ * This class represents the in OpenDocument format used data type {@odf.datatype positiveLength}
+ */
+public class PositiveLength extends Length {
+<span class="fc" id="L27">  private static final Pattern positiveLengthPattern =</span>
+<span class="fc" id="L28">      Pattern.compile(</span>
+          &quot;^([0-9]*[1-9][0-9]*(\\.[0-9]*)?|0+\\.[0-9]*[1-9][0-9]*|\\.[0-9]*[1-9][0-9]*)((cm)|(mm)|(in)|(pt)|(pc)|(px))$&quot;);
+
+  /**
+   * Construct PositiveLength by the parsing the given string
+   *
+   * @param length The String to be parsed into PositiveLength
+   * @throws NumberFormatException if the given argument is not a valid PostitiveLength
+   */
+  public PositiveLength(String length) throws NumberFormatException {
+<span class="nc" id="L38">    super(length);</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    if (!isValid(length)) {</span>
+<span class="nc" id="L40">      throw new NumberFormatException(&quot;parameter is invalid for datatype PositiveLength&quot;);</span>
+    }
+<span class="nc" id="L42">  }</span>
+
+  /**
+   * Returns a PositiveLength instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a PositiveLength instance representing stringValue
+   * @throws NumberFormatException if the given argument is not a valid PostitiveLength
+   */
+  public static PositiveLength valueOf(String stringValue) throws NumberFormatException {
+<span class="nc" id="L52">    return new PositiveLength(stringValue);</span>
+  }
+
+  /**
+   * check if the specified String instance is a valid {@odf.datatype positiveLength} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype positiveLength} data type
+   *     false otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">    if ((stringValue == null) || (!positiveLengthPattern.matcher(stringValue).matches())) {</span>
+<span class="nc" id="L64">      return false;</span>
+    } else {
+<span class="fc" id="L66">      return true;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

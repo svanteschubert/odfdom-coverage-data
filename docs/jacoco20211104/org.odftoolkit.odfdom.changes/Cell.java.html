@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Cell.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">Cell.java</span></div><h1>Cell.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import static org.odftoolkit.odfdom.changes.JsonOperationConsumer.addParagraph;
+import static org.odftoolkit.odfdom.changes.JsonOperationConsumer.addStyle;
+import static org.odftoolkit.odfdom.changes.JsonOperationConsumer.addText;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_STYLE_ID;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.number.DataStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberBooleanStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextStyleElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement;
+import org.odftoolkit.odfdom.dom.element.text.TextAElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.element.text.TextParagraphElementBase;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberCurrencyStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberDateStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberPercentageStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberTimeStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * A MultiCoomponent uses a single XML element to represent multiple components. This container can
+ * be used for spreadsheet row and cell components using repeated elements via an attribute.
+ *
+ * @author svante.schubertATgmail.com
+ * @param &lt;T&gt;
+ */
+class Cell&lt;T&gt; extends Component {
+
+  private static final String FORMULA_PREFIX = &quot;of:&quot;;
+
+  public Cell(OdfElement componentElement, Component parent) {
+<span class="fc" id="L59">    super(componentElement, parent);</span>
+<span class="fc" id="L60">  }</span>
+
+  /**
+   * A multiple components can be represented by a single XML element
+   *
+   * @return the number of components the elements represents
+   */
+  @Override
+  public int repetition() {
+<span class="fc" id="L69">    return mRootElement.getRepetition();</span>
+  }
+
+  // CELL ONLY
+  //	Map&lt;String, Object&gt; mInnerCellStyle = null;
+  //
+  //	/** The inner style of a cell will be temporary saved at the cell.
+  //	 Whenever the cell content is deleted, the style is being merged/applied to the cell style */
+  //	public Map&lt;String, Object&gt; getInternalCellStyle(){
+  //		return mInnerCellStyle;
+  //	}
+  //
+  //
+  //	/** The inner style of a cell will be temporary saved at the cell.
+  //	 Whenever the cell content is deleted, the style is being merged/applied to the cell style */
+  //	public void setInternalCellStyle(Map&lt;String, Object&gt; newStyles){
+  //		mInnerCellStyle = newStyles;
+  //	}
+  //
+  /** Adds the given component to the root element */
+  @Override
+  public void addChild(int index, Component c) {
+<span class="nc" id="L91">    mRootElement.insert(c.getRootElement(), index);</span>
+    // 2DO: Svante: ARE THE ABOVE AND THE BELOW EQUIVALENT?
+    //		OdfElement rootElement = c.getRootElement();
+    //		if (index &gt;= 0) {
+    //			mRootElement.insertBefore(rootElement, ((OdfElement) mRootElement).receiveNode(index));
+    //		} else {
+    //			mRootElement.appendChild(rootElement);
+    //		}
+<span class="nc" id="L99">  }</span>
+
+  /** @return either a text node of size 1 or an element being the root element of a component */
+  @Override
+  public Node getChildNode(int index) {
+<span class="fc" id="L104">    return mRootElement.receiveNode(index);</span>
+  }
+
+  /**
+   * Removes a component from the text element container. Removes either an element representing a
+   * component or text node of size 1
+   */
+  @Override
+  public Node remove(int index) {
+<span class="nc" id="L113">    Node removedNode = null;</span>
+<span class="nc" id="L114">    Node node = this.getChildNode(index);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">    if (node != null) {</span>
+<span class="nc" id="L116">      removedNode = mRootElement.removeChild(node);</span>
+    }
+<span class="nc" id="L118">    return removedNode;</span>
+  }
+
+  /**
+   * All children of the root element will be traversed. If it is a text node the size is added, if
+   * it is an element and a component a size of one is added, if it is a marker, for known text
+   * marker elements (text:span, text:bookmark) the children are recursive checked
+   *
+   * @return the number of child components
+   */
+  @Override
+  public int size() {
+<span class="nc" id="L130">    return mRootElement.componentSize();</span>
+  }
+
+  private static final String FLOAT = &quot;float&quot;;
+  private static final String STRING = &quot;string&quot;;
+  private static final String CURRENCY = &quot;currency&quot;;
+  private static final String DATE = &quot;date&quot;;
+  private static final String TIME = &quot;time&quot;;
+  private static final String PERCENTAGE = &quot;percentage&quot;;
+  private static final String BOOLEAN = &quot;boolean&quot;;
+
+  /**
+   * Adding cell content: either as formula or paragraph and text content, latter with default
+   * styles
+   */
+  public TableTableCellElement addCellStyleAndContent(
+      Component rootComponent, Object value, JSONObject attrs) {
+    // see if the cell is repeated
+<span class="nc" id="L148">    TableTableCellElement cell = (TableTableCellElement) this.getRootElement();</span>
+<span class="nc" id="L149">    OdfFileDom ownerDoc = (OdfFileDom) rootComponent.getOwnerDocument();</span>
+    // save the URL as everyting else will be deleted
+<span class="nc" id="L151">    String url = reuseCellHyperlink(cell, attrs);</span>
+<span class="nc" id="L152">    boolean setValueType = true;</span>
+<span class="nc" id="L153">    boolean isNumberValue = true;</span>
+    // exchanges the content if requested
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    if (value != null) {</span>
+<span class="nc" id="L156">      cell.removeContent();</span>
+      // if there is new content..
+<span class="nc bnc" id="L158" title="All 2 branches missed.">      if (!value.equals(JSONObject.NULL)) {</span>
+<span class="nc" id="L159">        String valueString = value.toString();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (valueString.startsWith(Constants.EQUATION)) {</span>
+          // How am I able to set the other values? What is the OOXML solution for this?
+<span class="nc" id="L162">          cell.setAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;office:value-type&quot;, FLOAT);</span>
+<span class="nc" id="L163">          cell.setAttributeNS(</span>
+<span class="nc" id="L164">              OdfDocumentNamespace.TABLE.getUri(),</span>
+              &quot;table:formula&quot;,
+<span class="nc" id="L166">              FORMULA_PREFIX.concat(valueString));</span>
+        } else {
+          // insert a paragraph to store the text within..
+<span class="nc" id="L169">          TextParagraphElementBase newParagraph = addParagraph(this, 0, attrs);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">          if (url != null) {</span>
+<span class="nc" id="L171">            attrs = addUrlToCharacterProps(attrs, url);</span>
+          }
+          // if the formula was masked
+<span class="nc bnc" id="L174" title="All 2 branches missed.">          if (value instanceof String</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">              &amp;&amp; valueString.startsWith(Constants.APOSTROPHE_AND_EQUATION)) {</span>
+            // cut the first apostrophe
+<span class="nc" id="L177">            valueString = valueString.substring(1);</span>
+          }
+          // addChild the text &amp; removes existing values
+<span class="nc" id="L180">          addText(newParagraph, 0, attrs, valueString);</span>
+<span class="nc bnc" id="L181" title="All 6 branches missed.">          if (value instanceof Integer || value instanceof Double || value instanceof Float) {</span>
+<span class="nc" id="L182">            isNumberValue = true;</span>
+<span class="nc" id="L183">            cell.setAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;office:value&quot;, valueString);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">          } else if (value instanceof String) {</span>
+<span class="nc" id="L185">            cell.setAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;office:value-type&quot;, STRING);</span>
+<span class="nc" id="L186">            setValueType = false;</span>
+          }
+        }
+      }
+    }
+<span class="nc bnc" id="L191" title="All 2 branches missed.">    if (attrs != null) {</span>
+      // Format: Adding Styles to the element
+<span class="nc" id="L193">      addStyle(attrs, cell, ownerDoc);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">      if (cell.hasChildNodes()) {</span>
+<span class="nc" id="L195">        NodeList children = cell.getChildNodes();</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L197">          Node child = children.item(i);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">          if (child instanceof OdfElement) {</span>
+<span class="nc" id="L199">            ((OdfElement) child).markText(0, Integer.MAX_VALUE - 1, attrs);</span>
+          }
+        }
+<span class="nc" id="L202">      } else {</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">        if (url != null) {</span>
+<span class="nc" id="L204">          TextPElement containerElement1 = new TextPElement(ownerDoc);</span>
+<span class="nc" id="L205">          TextAElement containerElement2 = new TextAElement(ownerDoc);</span>
+<span class="nc" id="L206">          containerElement2.setXlinkHrefAttribute(url);</span>
+<span class="nc" id="L207">          cell.appendChild(containerElement1);</span>
+<span class="nc" id="L208">          containerElement1.appendChild(containerElement2);</span>
+        }
+      }
+    }
+    // value-type has to be set if
+    // - a number is set replacing a previous string-type
+    // - if a number is changed to a string (already done above ) or vice-versa
+    // - if attributes have been set (that contain a number format or a new style)
+    //
+<span class="nc bnc" id="L217" title="All 2 branches missed.">    if (setValueType) {</span>
+<span class="nc" id="L218">      String currentValueType = cell.getOfficeValueTypeAttribute();</span>
+<span class="nc bnc" id="L219" title="All 4 branches missed.">      boolean isStringType = currentValueType != null &amp;&amp; currentValueType.equals(&quot;String&quot;);</span>
+<span class="nc bnc" id="L220" title="All 4 branches missed.">      boolean changedToNumber = isNumberValue &amp;&amp; isStringType;</span>
+<span class="nc" id="L221">      boolean numberFormatChanged = false;</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">      if (attrs != null) {</span>
+<span class="nc" id="L223">        JSONObject cellAttrs = attrs.optJSONObject(&quot;cell&quot;);</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (cellAttrs != null) {</span>
+<span class="nc" id="L225">          numberFormatChanged = cellAttrs.has(&quot;formatCode&quot;);</span>
+        }
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (!numberFormatChanged) {</span>
+<span class="nc" id="L228">          String styleId = attrs.optString(OPK_STYLE_ID);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">          numberFormatChanged = styleId != null;</span>
+        }
+      }
+<span class="nc bnc" id="L232" title="All 6 branches missed.">      if (currentValueType == null || changedToNumber || numberFormatChanged) {</span>
+<span class="nc" id="L233">        DataStyleElement dataStyle = cell.getOwnDataStyle();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        if (dataStyle != null) {</span>
+<span class="nc" id="L235">          String valueType = &quot;&quot;;</span>
+<span class="nc" id="L236">          String currencySymbol = &quot;&quot;;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">          if (dataStyle instanceof OdfNumberStyle) {</span>
+<span class="nc" id="L238">            valueType = FLOAT;</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">          } else if (dataStyle instanceof OdfNumberCurrencyStyle) {</span>
+<span class="nc" id="L240">            currencySymbol =</span>
+<span class="nc" id="L241">                ((OdfNumberCurrencyStyle) dataStyle).getCurrencySymbolElement().getTextContent();</span>
+<span class="nc" id="L242">            valueType = CURRENCY;</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">          } else if (dataStyle instanceof NumberTextStyleElement) {</span>
+<span class="nc" id="L244">            valueType = STRING;</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">          } else if (dataStyle instanceof OdfNumberDateStyle) {</span>
+<span class="nc" id="L246">            valueType = DATE;</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">          } else if (dataStyle instanceof OdfNumberTimeStyle) {</span>
+<span class="nc" id="L248">            valueType = TIME;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">          } else if (dataStyle instanceof OdfNumberPercentageStyle) {</span>
+<span class="nc" id="L250">            valueType = PERCENTAGE;</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">          } else if (dataStyle instanceof NumberBooleanStyleElement) {</span>
+<span class="nc" id="L252">            valueType = BOOLEAN;</span>
+          }
+<span class="nc bnc" id="L254" title="All 2 branches missed.">          if (!valueType.isEmpty()) {</span>
+<span class="nc" id="L255">            cell.setOfficeValueTypeAttribute(valueType);</span>
+<span class="nc" id="L256">            cell.setCalcextValueTypeAttribute(valueType);</span>
+<span class="nc" id="L257">            cell.setOfficeCurrencyAttribute(currencySymbol);</span>
+            // make sure that an appropriate value is available:
+<span class="nc bnc" id="L259" title="All 4 branches missed.">            if (value == null &amp;&amp; cell.getOfficeValueAttribute() == null) {</span>
+<span class="nc" id="L260">              String oldDateValue = cell.getOfficeDateValueAttribute();</span>
+<span class="nc" id="L261">              String oldTimeValue = cell.getOfficeTimeValueAttribute();</span>
+<span class="nc" id="L262">              Boolean oldBooleanValue = cell.getOfficeBooleanValueAttribute();</span>
+<span class="nc" id="L263">              Double newValue = null;</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">              if (oldDateValue != null) {</span>
+<span class="nc" id="L265">                newValue = new Double(MapHelper.dateToDouble(oldDateValue));</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">              } else if (oldTimeValue != null) {</span>
+<span class="nc" id="L267">                newValue = new Double(MapHelper.timeToDouble(oldTimeValue));</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">              } else if (oldBooleanValue != null) {</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">                newValue = new Double(oldBooleanValue.booleanValue() ? 1 : 0);</span>
+              }
+
+<span class="nc bnc" id="L272" title="All 2 branches missed.">              if (newValue != null) {</span>
+<span class="nc" id="L273">                cell.setOfficeValueAttribute(newValue);</span>
+              }
+            }
+          }
+        }
+      }
+    }
+<span class="nc" id="L280">    return cell;</span>
+  }
+
+  /**
+   * To be able to reuse existing style on the full table, new cell hyperlinks will be stored in the
+   * cell text style properties as @xlink:href attribute and taken back when nothing new is set.
+   */
+  private static String reuseCellHyperlink(TableTableCellElement cell, JSONObject attrs) {
+<span class="nc" id="L288">    String cellURL = null;</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">    if (attrs != null) { // apply style changes to the cell</span>
+      // apply new styles to the cell (modifying not overwriting)
+<span class="nc bnc" id="L291" title="All 2 branches missed.">      if (attrs.has(&quot;character&quot;)) {</span>
+<span class="nc" id="L292">        JSONObject charProps = attrs.optJSONObject(&quot;character&quot;);</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (charProps != null) {</span>
+<span class="nc bnc" id="L294" title="All 4 branches missed.">          if (charProps.has(&quot;url&quot;) &amp;&amp; !charProps.get(&quot;url&quot;).equals(JSONObject.NULL)) {</span>
+<span class="nc" id="L295">            cellURL = charProps.optString(&quot;url&quot;);</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">          } else if (charProps.has(&quot;url&quot;)) {</span>
+            // removeAnchors();
+          }
+        }
+      }
+    }
+    // if there is no new hyperlink given, check for an existing cached (in the properties)
+<span class="nc bnc" id="L303" title="All 4 branches missed.">    if (cellURL == null || cellURL.isEmpty()) {</span>
+      // check if there is still one given at the cell
+<span class="nc" id="L305">      OdfStyle autoStyle = cell.getAutomaticStyle();</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">      if (autoStyle != null) {</span>
+<span class="nc" id="L307">        OdfElement textProps = autoStyle.getPropertiesElement(OdfStylePropertiesSet.TextProperties);</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (textProps != null</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            &amp;&amp; textProps.hasAttributeNS(OdfDocumentNamespace.XLINK.getUri(), &quot;href&quot;)) {</span>
+<span class="nc" id="L310">          cellURL = textProps.getAttributeNS(OdfDocumentNamespace.XLINK.getUri(), &quot;href&quot;);</span>
+        }
+      }
+    }
+<span class="nc" id="L314">    return cellURL;</span>
+  }
+
+  private static JSONObject addUrlToCharacterProps(JSONObject attrs, String cellURL) {
+<span class="nc" id="L318">    JSONObject charProps = null;</span>
+<span class="nc bnc" id="L319" title="All 4 branches missed.">    if (cellURL != null &amp;&amp; !cellURL.isEmpty()) {</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">      if (attrs == null) {</span>
+<span class="nc" id="L321">        attrs = new JSONObject();</span>
+      }
+<span class="nc bnc" id="L323" title="All 2 branches missed.">      if (!attrs.has(&quot;character&quot;)) {</span>
+<span class="nc" id="L324">        charProps = new JSONObject();</span>
+        try {
+<span class="nc" id="L326">          attrs.put(&quot;character&quot;, charProps);</span>
+<span class="nc" id="L327">        } catch (JSONException ex) {</span>
+<span class="nc" id="L328">          Logger.getLogger(JsonOperationConsumer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L329">        }</span>
+      } else {
+<span class="nc" id="L331">        charProps = attrs.optJSONObject(&quot;character&quot;);</span>
+      }
+      try {
+<span class="nc" id="L334">        charProps.put(&quot;url&quot;, cellURL);</span>
+<span class="nc" id="L335">      } catch (JSONException ex) {</span>
+<span class="nc" id="L336">        Logger.getLogger(JsonOperationConsumer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L337">      }</span>
+    }
+<span class="nc" id="L339">    return attrs;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

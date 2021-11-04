@@ -1,0 +1,805 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfOfficeStyles.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.office</a> &gt; <span class="el_source">OdfOfficeStyles.java</span></div><h1>OdfOfficeStyles.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.office;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import org.odftoolkit.odfdom.dom.DefaultElementVisitor;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.draw.DrawFillImageElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawGradientElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawHatchElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawMarkerElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawOpacityElement;
+import org.odftoolkit.odfdom.dom.element.draw.DrawStrokeDashElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberBooleanStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberCurrencyStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberDateStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberPercentageStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTimeStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleDefaultPageLayoutElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleDefaultStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StylePresentationPageLayoutElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleStyleElement;
+import org.odftoolkit.odfdom.dom.element.svg.SvgLinearGradientElement;
+import org.odftoolkit.odfdom.dom.element.svg.SvgRadialGradientElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableTemplateElement;
+import org.odftoolkit.odfdom.dom.element.text.TextBibliographyConfigurationElement;
+import org.odftoolkit.odfdom.dom.element.text.TextLinenumberingConfigurationElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListStyleElement;
+import org.odftoolkit.odfdom.dom.element.text.TextNotesConfigurationElement;
+import org.odftoolkit.odfdom.dom.element.text.TextOutlineStyleElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfDefaultStyle;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextListStyle;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextOutlineStyle;
+import org.odftoolkit.odfdom.pkg.ElementVisitor;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public abstract class OdfOfficeStyles extends OdfStylesBase {
+
+<span class="fc" id="L69">  public static final OdfName ELEMENT_NAME = OdfName.newName(OdfDocumentNamespace.OFFICE, &quot;styles&quot;);</span>
+
+  private static final long serialVersionUID = 700763983193326060L;
+
+  // styles that are only in OdfOfficeStyles
+  private HashMap&lt;OdfStyleFamily, OdfDefaultStyle&gt; mDefaultStyles;
+  private HashMap&lt;String, DrawMarkerElement&gt; mMarker;
+  private HashMap&lt;String, DrawGradientElement&gt; mGradients;
+  private HashMap&lt;String, DrawHatchElement&gt; mHatches;
+  private HashMap&lt;String, DrawFillImageElement&gt; mFillImages;
+  private OdfTextOutlineStyle mOutlineStyle;
+
+  public OdfOfficeStyles(OdfFileDom ownerDoc) {
+<span class="fc" id="L82">    super(ownerDoc, ELEMENT_NAME);</span>
+    //        mStylesBaseImpl = new OdfStylesBase();
+<span class="fc" id="L84">  }</span>
+
+  @Override
+  public OdfName getOdfName() {
+<span class="nc" id="L88">    return ELEMENT_NAME;</span>
+  }
+
+  /**
+   * Retrieve or create ODF default style
+   *
+   * @param family The style family
+   * @return The code&gt;OdfDefaultStyle&lt;/code&gt; element
+   */
+  public OdfDefaultStyle getOrCreateDefaultStyle(OdfStyleFamily family) {
+<span class="fc" id="L98">    OdfDefaultStyle style = getDefaultStyle(family);</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">    if (style == null) {</span>
+<span class="nc" id="L100">      style = ((OdfFileDom) this.ownerDocument).newOdfElement(OdfDefaultStyle.class);</span>
+<span class="nc" id="L101">      style.setStyleFamilyAttribute(family.getName());</span>
+<span class="nc" id="L102">      this.appendChild(style);</span>
+    }
+<span class="fc" id="L104">    return style;</span>
+  }
+
+  /**
+   * Create ODF TextListStyle
+   *
+   * @param name The style name
+   * @return The code&gt;OdfTextListStyle&lt;/code&gt; element
+   */
+  public OdfTextListStyle newListStyle(String name) {
+<span class="fc" id="L114">    OdfTextListStyle newStyle =</span>
+<span class="fc" id="L115">        ((OdfFileDom) this.ownerDocument).newOdfElement(OdfTextListStyle.class);</span>
+<span class="fc" id="L116">    newStyle.setStyleNameAttribute(name);</span>
+<span class="fc" id="L117">    this.appendChild(newStyle);</span>
+<span class="fc" id="L118">    return newStyle;</span>
+  }
+
+  /**
+   * Retrieve or create ODF OutlineStyle
+   *
+   * @return The code&gt;OdfTextOutlineStyle&lt;/code&gt; element
+   */
+  public OdfTextOutlineStyle getOrCreateOutlineStyle() {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    if (mOutlineStyle == null) {</span>
+<span class="nc" id="L128">      this.appendChild(((OdfFileDom) this.ownerDocument).newOdfElement(OdfTextOutlineStyle.class));</span>
+    }
+
+<span class="nc" id="L131">    return mOutlineStyle;</span>
+  }
+
+  /**
+   * Returns the &lt;code&gt;OdfTextOutlineStyle&lt;/code&gt; element.
+   *
+   * @return a pointer to the outline stye or null if there is no such element
+   */
+  public OdfTextOutlineStyle getOutlineStyle() {
+<span class="nc" id="L140">    return mOutlineStyle;</span>
+  }
+
+  /**
+   * Returns the &lt;code&gt;OdfStyleDefaultStyle&lt;/code&gt; element.
+   *
+   * @param familyType is the family for the default style
+   * @return the default style with the given family or null if there is no such default style
+   */
+  public OdfDefaultStyle getDefaultStyle(OdfStyleFamily familyType) {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">    if (mDefaultStyles != null) {</span>
+<span class="fc" id="L151">      return mDefaultStyles.get(familyType);</span>
+    } else {
+<span class="fc" id="L153">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;OdfStyleDefaultStyle&lt;/code&gt; elements.
+   *
+   * @return iterator for all &lt;code&gt;OdfStyleDefaultStyle&lt;/code&gt; elements
+   */
+  public Iterable&lt;OdfDefaultStyle&gt; getDefaultStyles() {
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">    if (mDefaultStyles != null) {</span>
+<span class="fc" id="L164">      return mDefaultStyles.values();</span>
+    } else {
+<span class="nc" id="L166">      return new ArrayList&lt;OdfDefaultStyle&gt;();</span>
+    }
+  }
+
+  /**
+   * Returns the &lt;code&gt;DrawMarkerElement&lt;/code&gt; element with the given name.
+   *
+   * @param name is the name of the marker
+   * @return the marker or null if there is no such marker
+   */
+  public DrawMarkerElement getMarker(String name) {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">    if (mMarker != null) {</span>
+<span class="fc" id="L178">      return mMarker.get(name);</span>
+    } else {
+<span class="nc" id="L180">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;DrawMarkerElement&lt;/code&gt; elements.
+   *
+   * @return an iterator for all &lt;code&gt;DrawMarkerElement&lt;/code&gt; elements
+   */
+  public Iterable&lt;DrawMarkerElement&gt; getMarker() {
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">    if (mMarker != null) {</span>
+<span class="fc" id="L191">      return mMarker.values();</span>
+    } else {
+<span class="nc" id="L193">      return new ArrayList&lt;DrawMarkerElement&gt;();</span>
+    }
+  }
+
+  /**
+   * Returns the &lt;code&gt;DrawGradientElement&lt;/code&gt; element with the given name.
+   *
+   * @param name is the name of the gradient
+   * @return the gradient or null if there is no such gradient
+   */
+  public DrawGradientElement getGradient(String name) {
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">    if (mGradients != null) {</span>
+<span class="fc" id="L205">      return mGradients.get(name);</span>
+    } else {
+<span class="nc" id="L207">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;DrawGradientElement&lt;/code&gt; elements.
+   *
+   * @return an iterator for all &lt;code&gt;DrawGradientElement&lt;/code&gt; elements
+   */
+  public Iterable&lt;DrawGradientElement&gt; getGradients() {
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">    if (mGradients != null) {</span>
+<span class="fc" id="L218">      return mGradients.values();</span>
+    } else {
+<span class="nc" id="L220">      return new ArrayList&lt;DrawGradientElement&gt;();</span>
+    }
+  }
+
+  /**
+   * Returns the &lt;code&gt;DrawHatchElement&lt;/code&gt; element with the given name.
+   *
+   * @param name is the name of the hatch
+   * @return the hatch or null if there is no such hatch
+   */
+  public DrawHatchElement getHatch(String name) {
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">    if (mHatches != null) {</span>
+<span class="fc" id="L232">      return mHatches.get(name);</span>
+    } else {
+<span class="nc" id="L234">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;DrawHatchElement&lt;/code&gt; elements.
+   *
+   * @return an iterator for all &lt;code&gt;DrawHatchElement&lt;/code&gt; elements
+   */
+  public Iterable&lt;DrawHatchElement&gt; getHatches() {
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">    if (mHatches != null) {</span>
+<span class="fc" id="L245">      return mHatches.values();</span>
+    } else {
+<span class="nc" id="L247">      return new ArrayList&lt;DrawHatchElement&gt;();</span>
+    }
+  }
+
+  /**
+   * Returns the &lt;code&gt;DrawFillImageElement&lt;/code&gt; element with the given name.
+   *
+   * @param name is the name of the fill image
+   * @return the fill image or null if there is no such fill image
+   */
+  public DrawFillImageElement getFillImage(String name) {
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">    if (mFillImages != null) {</span>
+<span class="fc" id="L259">      return mFillImages.get(name);</span>
+    } else {
+<span class="nc" id="L261">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns an iterator for all &lt;code&gt;DrawFillImageElement&lt;/code&gt; elements.
+   *
+   * @return an iterator for all &lt;code&gt;DrawFillImageElement&lt;/code&gt; elements
+   */
+  public Iterable&lt;DrawFillImageElement&gt; getFillImages() {
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">    if (mFillImages != null) {</span>
+<span class="fc" id="L272">      return mFillImages.values();</span>
+    } else {
+<span class="nc" id="L274">      return new ArrayList&lt;DrawFillImageElement&gt;();</span>
+    }
+  }
+
+  @Override
+  public void onOdfNodeInserted(OdfElement node, Node refNode) {
+<span class="fc bfc" id="L280" title="All 2 branches covered.">    if (node instanceof OdfDefaultStyle) {</span>
+<span class="fc" id="L281">      OdfDefaultStyle defaultStyle = (OdfDefaultStyle) node;</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">      if (mDefaultStyles == null) {</span>
+<span class="fc" id="L283">        mDefaultStyles = new HashMap&lt;OdfStyleFamily, OdfDefaultStyle&gt;();</span>
+      }
+
+<span class="fc" id="L286">      mDefaultStyles.put(defaultStyle.getFamily(), defaultStyle);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">    } else if (node instanceof DrawMarkerElement) {</span>
+<span class="fc" id="L288">      DrawMarkerElement marker = (DrawMarkerElement) node;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">      if (mMarker == null) {</span>
+<span class="fc" id="L290">        mMarker = new HashMap&lt;String, DrawMarkerElement&gt;();</span>
+      }
+
+<span class="fc" id="L293">      mMarker.put(marker.getDrawNameAttribute(), marker);</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">    } else if (node instanceof DrawGradientElement) {</span>
+<span class="fc" id="L295">      DrawGradientElement gradient = (DrawGradientElement) node;</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">      if (mGradients == null) {</span>
+<span class="fc" id="L297">        mGradients = new HashMap&lt;String, DrawGradientElement&gt;();</span>
+      }
+
+<span class="fc" id="L300">      mGradients.put(gradient.getDrawNameAttribute(), gradient);</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">    } else if (node instanceof DrawHatchElement) {</span>
+<span class="fc" id="L302">      DrawHatchElement hatch = (DrawHatchElement) node;</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">      if (mHatches == null) {</span>
+<span class="fc" id="L304">        mHatches = new HashMap&lt;String, DrawHatchElement&gt;();</span>
+      }
+
+<span class="fc" id="L307">      mHatches.put(hatch.getDrawNameAttribute(), hatch);</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">    } else if (node instanceof DrawFillImageElement) {</span>
+<span class="fc" id="L309">      DrawFillImageElement fillImage = (DrawFillImageElement) node;</span>
+
+<span class="fc bfc" id="L311" title="All 2 branches covered.">      if (mFillImages == null) {</span>
+<span class="fc" id="L312">        mFillImages = new HashMap&lt;String, DrawFillImageElement&gt;();</span>
+      }
+
+<span class="fc" id="L315">      mFillImages.put(fillImage.getDrawNameAttribute(), fillImage);</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">    } else if (node instanceof OdfTextOutlineStyle) {</span>
+<span class="fc" id="L317">      mOutlineStyle = (OdfTextOutlineStyle) node;</span>
+    } else {
+<span class="fc" id="L319">      super.onOdfNodeInserted(node, refNode);</span>
+    }
+<span class="fc" id="L321">  }</span>
+
+  @Override
+  public void onOdfNodeRemoved(OdfElement node) {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">    if (node instanceof OdfDefaultStyle) {</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">      if (mDefaultStyles != null) {</span>
+<span class="fc" id="L327">        OdfDefaultStyle defaultStyle = (OdfDefaultStyle) node;</span>
+<span class="fc" id="L328">        mDefaultStyles.remove(defaultStyle.getFamily());</span>
+<span class="fc" id="L329">      }</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">    } else if (node instanceof DrawMarkerElement) {</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">      if (mMarker != null) {</span>
+<span class="nc" id="L332">        DrawMarkerElement marker = (DrawMarkerElement) node;</span>
+<span class="nc" id="L333">        mMarker.remove(marker.getDrawNameAttribute());</span>
+<span class="nc" id="L334">      }</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">    } else if (node instanceof DrawGradientElement) {</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">      if (mGradients != null) {</span>
+<span class="nc" id="L337">        DrawGradientElement gradient = (DrawGradientElement) node;</span>
+<span class="nc" id="L338">        mGradients.remove(gradient.getDrawNameAttribute());</span>
+<span class="nc" id="L339">      }</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">    } else if (node instanceof DrawHatchElement) {</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">      if (mHatches != null) {</span>
+<span class="nc" id="L342">        DrawHatchElement hatch = (DrawHatchElement) node;</span>
+<span class="nc" id="L343">        mHatches.remove(hatch.getDrawNameAttribute());</span>
+<span class="nc" id="L344">      }</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">    } else if (node instanceof DrawFillImageElement) {</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">      if (mFillImages != null) {</span>
+<span class="nc" id="L347">        DrawFillImageElement fillImage = (DrawFillImageElement) node;</span>
+<span class="nc" id="L348">        mFillImages.remove(fillImage.getDrawNameAttribute());</span>
+<span class="nc" id="L349">      }</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">    } else if (node instanceof OdfTextOutlineStyle) {</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">      if (mOutlineStyle == (OdfTextOutlineStyle) node) {</span>
+<span class="nc" id="L352">        mOutlineStyle = null;</span>
+      }
+    } else {
+<span class="fc" id="L355">      super.onOdfNodeRemoved(node);</span>
+    }
+<span class="fc" id="L357">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  protected &lt;T extends OdfElement&gt; T getStylesElement(OdfFileDom dom, Class&lt;T&gt; clazz)
+      throws Exception {
+
+<span class="fc" id="L363">    OdfElement stylesRoot = dom.getRootElement();</span>
+
+<span class="fc" id="L365">    OdfOfficeStyles contentBody = OdfElement.findFirstChildNode(OdfOfficeStyles.class, stylesRoot);</span>
+<span class="fc" id="L366">    NodeList childs = contentBody.getChildNodes();</span>
+<span class="fc bfc" id="L367" title="All 2 branches covered.">    for (int i = 0; i &lt; childs.getLength(); i++) {</span>
+<span class="fc" id="L368">      Node cur = childs.item(i);</span>
+<span class="pc bpc" id="L369" title="1 of 4 branches missed.">      if ((cur != null) &amp;&amp; clazz.isInstance(cur)) {</span>
+<span class="fc" id="L370">        return (T) cur;</span>
+      }
+    }
+<span class="fc" id="L373">    return null;</span>
+  }
+
+  /**
+   * Create child element {@odf.element draw:fill-image}.
+   *
+   * @param drawNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:name} at specification
+   * @param xlinkHrefValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;XlinkHrefAttribute&lt;/code&gt;, see
+   *     {@odf.attribute xlink:href} at specification
+   * @param xlinkTypeValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;XlinkTypeAttribute&lt;/code&gt;, see
+   *     {@odf.attribute xlink:type} at specification
+   * @return the element {@odf.element draw:fill-image}
+   */
+  public DrawFillImageElement newDrawFillImageElement(
+      String drawNameValue, String xlinkHrefValue, String xlinkTypeValue) {
+<span class="nc" id="L389">    DrawFillImageElement drawFillImage =</span>
+<span class="nc" id="L390">        ((OdfFileDom) this.ownerDocument).newOdfElement(DrawFillImageElement.class);</span>
+<span class="nc" id="L391">    drawFillImage.setDrawNameAttribute(drawNameValue);</span>
+<span class="nc" id="L392">    drawFillImage.setXlinkHrefAttribute(xlinkHrefValue);</span>
+<span class="nc" id="L393">    drawFillImage.setXlinkTypeAttribute(xlinkTypeValue);</span>
+<span class="nc" id="L394">    this.appendChild(drawFillImage);</span>
+<span class="nc" id="L395">    return drawFillImage;</span>
+  }
+
+  /**
+   * Create child element {@odf.element draw:gradient}.
+   *
+   * @param drawStyleValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawStyleAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:style} at specification
+   * @return the element {@odf.element draw:gradient}
+   */
+  public DrawGradientElement newDrawGradientElement(String drawStyleValue) {
+<span class="nc" id="L406">    DrawGradientElement drawGradient =</span>
+<span class="nc" id="L407">        ((OdfFileDom) this.ownerDocument).newOdfElement(DrawGradientElement.class);</span>
+<span class="nc" id="L408">    drawGradient.setDrawStyleAttribute(drawStyleValue);</span>
+<span class="nc" id="L409">    this.appendChild(drawGradient);</span>
+<span class="nc" id="L410">    return drawGradient;</span>
+  }
+
+  /**
+   * Create child element {@odf.element draw:hatch}.
+   *
+   * @param drawNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:name} at specification
+   * @param drawStyleValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawStyleAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:style} at specification
+   * @return the element {@odf.element draw:hatch}
+   */
+  public DrawHatchElement newDrawHatchElement(String drawNameValue, String drawStyleValue) {
+<span class="nc" id="L423">    DrawHatchElement drawHatch =</span>
+<span class="nc" id="L424">        ((OdfFileDom) this.ownerDocument).newOdfElement(DrawHatchElement.class);</span>
+<span class="nc" id="L425">    drawHatch.setDrawNameAttribute(drawNameValue);</span>
+<span class="nc" id="L426">    drawHatch.setDrawStyleAttribute(drawStyleValue);</span>
+<span class="nc" id="L427">    this.appendChild(drawHatch);</span>
+<span class="nc" id="L428">    return drawHatch;</span>
+  }
+
+  /**
+   * Create child element {@odf.element draw:marker}.
+   *
+   * @param drawNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:name} at specification
+   * @param svgDValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;SvgDAttribute&lt;/code&gt;, see
+   *     {@odf.attribute svg:d} at specification
+   * @param svgViewBoxValue the &lt;code&gt;Integer&lt;/code&gt; value of &lt;code&gt;SvgViewBoxAttribute&lt;/code&gt;, see
+   *     {@odf.attribute svg:viewBox} at specification
+   * @return the element {@odf.element draw:marker}
+   */
+  public DrawMarkerElement newDrawMarkerElement(
+      String drawNameValue, String svgDValue, int svgViewBoxValue) {
+<span class="nc" id="L444">    DrawMarkerElement drawMarker =</span>
+<span class="nc" id="L445">        ((OdfFileDom) this.ownerDocument).newOdfElement(DrawMarkerElement.class);</span>
+<span class="nc" id="L446">    drawMarker.setDrawNameAttribute(drawNameValue);</span>
+<span class="nc" id="L447">    drawMarker.setSvgDAttribute(svgDValue);</span>
+<span class="nc" id="L448">    drawMarker.setSvgViewBoxAttribute(svgViewBoxValue);</span>
+<span class="nc" id="L449">    this.appendChild(drawMarker);</span>
+<span class="nc" id="L450">    return drawMarker;</span>
+  }
+
+  /**
+   * Create child element {@odf.element draw:opacity}.
+   *
+   * @param drawStyleValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawStyleAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:style} at specification
+   * @return the element {@odf.element draw:opacity}
+   */
+  public DrawOpacityElement newDrawOpacityElement(String drawStyleValue) {
+<span class="nc" id="L461">    DrawOpacityElement drawOpacity =</span>
+<span class="nc" id="L462">        ((OdfFileDom) this.ownerDocument).newOdfElement(DrawOpacityElement.class);</span>
+<span class="nc" id="L463">    drawOpacity.setDrawStyleAttribute(drawStyleValue);</span>
+<span class="nc" id="L464">    this.appendChild(drawOpacity);</span>
+<span class="nc" id="L465">    return drawOpacity;</span>
+  }
+
+  /**
+   * Create child element {@odf.element draw:stroke-dash}.
+   *
+   * @param drawNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:name} at specification
+   * @return the element {@odf.element draw:stroke-dash}
+   */
+  public DrawStrokeDashElement newDrawStrokeDashElement(String drawNameValue) {
+<span class="nc" id="L476">    DrawStrokeDashElement drawStrokeDash =</span>
+<span class="nc" id="L477">        ((OdfFileDom) this.ownerDocument).newOdfElement(DrawStrokeDashElement.class);</span>
+<span class="nc" id="L478">    drawStrokeDash.setDrawNameAttribute(drawNameValue);</span>
+<span class="nc" id="L479">    this.appendChild(drawStrokeDash);</span>
+<span class="nc" id="L480">    return drawStrokeDash;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:boolean-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:boolean-style}
+   */
+  public NumberBooleanStyleElement newNumberBooleanStyleElement(String styleNameValue) {
+<span class="nc" id="L491">    NumberBooleanStyleElement numberBooleanStyle =</span>
+<span class="nc" id="L492">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberBooleanStyleElement.class);</span>
+<span class="nc" id="L493">    numberBooleanStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L494">    this.appendChild(numberBooleanStyle);</span>
+<span class="nc" id="L495">    return numberBooleanStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:currency-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:currency-style}
+   */
+  public NumberCurrencyStyleElement newNumberCurrencyStyleElement(String styleNameValue) {
+<span class="nc" id="L506">    NumberCurrencyStyleElement numberCurrencyStyle =</span>
+<span class="nc" id="L507">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberCurrencyStyleElement.class);</span>
+<span class="nc" id="L508">    numberCurrencyStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L509">    this.appendChild(numberCurrencyStyle);</span>
+<span class="nc" id="L510">    return numberCurrencyStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:date-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:date-style}
+   */
+  public NumberDateStyleElement newNumberDateStyleElement(String styleNameValue) {
+<span class="nc" id="L521">    NumberDateStyleElement numberDateStyle =</span>
+<span class="nc" id="L522">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberDateStyleElement.class);</span>
+<span class="nc" id="L523">    numberDateStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L524">    this.appendChild(numberDateStyle);</span>
+<span class="nc" id="L525">    return numberDateStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:number-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:number-style}
+   */
+  public NumberNumberStyleElement newNumberNumberStyleElement(String styleNameValue) {
+<span class="nc" id="L536">    NumberNumberStyleElement numberNumberStyle =</span>
+<span class="nc" id="L537">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberNumberStyleElement.class);</span>
+<span class="nc" id="L538">    numberNumberStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L539">    this.appendChild(numberNumberStyle);</span>
+<span class="nc" id="L540">    return numberNumberStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:percentage-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:percentage-style}
+   */
+  public NumberPercentageStyleElement newNumberPercentageStyleElement(String styleNameValue) {
+<span class="nc" id="L551">    NumberPercentageStyleElement numberPercentageStyle =</span>
+<span class="nc" id="L552">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberPercentageStyleElement.class);</span>
+<span class="nc" id="L553">    numberPercentageStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L554">    this.appendChild(numberPercentageStyle);</span>
+<span class="nc" id="L555">    return numberPercentageStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:text-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:text-style}
+   */
+  public NumberTextStyleElement newNumberTextStyleElement(String styleNameValue) {
+<span class="nc" id="L566">    NumberTextStyleElement numberTextStyle =</span>
+<span class="nc" id="L567">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberTextStyleElement.class);</span>
+<span class="nc" id="L568">    numberTextStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L569">    this.appendChild(numberTextStyle);</span>
+<span class="nc" id="L570">    return numberTextStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:time-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:time-style}
+   */
+  public NumberTimeStyleElement newNumberTimeStyleElement(String styleNameValue) {
+<span class="nc" id="L581">    NumberTimeStyleElement numberTimeStyle =</span>
+<span class="nc" id="L582">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberTimeStyleElement.class);</span>
+<span class="nc" id="L583">    numberTimeStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L584">    this.appendChild(numberTimeStyle);</span>
+<span class="nc" id="L585">    return numberTimeStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element style:default-page-layout}.
+   *
+   * &lt;p&gt;Child element is new in Odf 1.2
+   *
+   * @return the element {@odf.element style:default-page-layout}
+   */
+  public StyleDefaultPageLayoutElement newStyleDefaultPageLayoutElement() {
+<span class="nc" id="L596">    StyleDefaultPageLayoutElement styleDefaultPageLayout =</span>
+<span class="nc" id="L597">        ((OdfFileDom) this.ownerDocument).newOdfElement(StyleDefaultPageLayoutElement.class);</span>
+<span class="nc" id="L598">    this.appendChild(styleDefaultPageLayout);</span>
+<span class="nc" id="L599">    return styleDefaultPageLayout;</span>
+  }
+
+  /**
+   * Create child element {@odf.element style:default-style}.
+   *
+   * @param styleFamilyValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleFamilyAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:family} at specification
+   * @return the element {@odf.element style:default-style}
+   */
+  public StyleDefaultStyleElement newStyleDefaultStyleElement(String styleFamilyValue) {
+<span class="nc" id="L610">    StyleDefaultStyleElement styleDefaultStyle =</span>
+<span class="nc" id="L611">        ((OdfFileDom) this.ownerDocument).newOdfElement(StyleDefaultStyleElement.class);</span>
+<span class="nc" id="L612">    styleDefaultStyle.setStyleFamilyAttribute(styleFamilyValue);</span>
+<span class="nc" id="L613">    this.appendChild(styleDefaultStyle);</span>
+<span class="nc" id="L614">    return styleDefaultStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element style:presentation-page-layout}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element style:presentation-page-layout}
+   */
+  public StylePresentationPageLayoutElement newStylePresentationPageLayoutElement(
+      String styleNameValue) {
+<span class="nc" id="L626">    StylePresentationPageLayoutElement stylePresentationPageLayout =</span>
+<span class="nc" id="L627">        ((OdfFileDom) this.ownerDocument).newOdfElement(StylePresentationPageLayoutElement.class);</span>
+<span class="nc" id="L628">    stylePresentationPageLayout.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L629">    this.appendChild(stylePresentationPageLayout);</span>
+<span class="nc" id="L630">    return stylePresentationPageLayout;</span>
+  }
+
+  /**
+   * Create child element {@odf.element style:style}.
+   *
+   * @param styleFamilyValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleFamilyAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:family} at specification
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element style:style}
+   */
+  public StyleStyleElement newStyleStyleElement(String styleFamilyValue, String styleNameValue) {
+<span class="nc" id="L643">    StyleStyleElement styleStyle =</span>
+<span class="nc" id="L644">        ((OdfFileDom) this.ownerDocument).newOdfElement(StyleStyleElement.class);</span>
+<span class="nc" id="L645">    styleStyle.setStyleFamilyAttribute(styleFamilyValue);</span>
+<span class="nc" id="L646">    styleStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L647">    this.appendChild(styleStyle);</span>
+<span class="nc" id="L648">    return styleStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element svg:linearGradient}.
+   *
+   * @param drawNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:name} at specification
+   * @return the element {@odf.element svg:linearGradient}
+   */
+  public SvgLinearGradientElement newSvgLinearGradientElement(String drawNameValue) {
+<span class="nc" id="L659">    SvgLinearGradientElement svgLinearGradient =</span>
+<span class="nc" id="L660">        ((OdfFileDom) this.ownerDocument).newOdfElement(SvgLinearGradientElement.class);</span>
+<span class="nc" id="L661">    svgLinearGradient.setDrawNameAttribute(drawNameValue);</span>
+<span class="nc" id="L662">    this.appendChild(svgLinearGradient);</span>
+<span class="nc" id="L663">    return svgLinearGradient;</span>
+  }
+
+  /**
+   * Create child element {@odf.element svg:radialGradient}.
+   *
+   * @param drawNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;DrawNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute draw:name} at specification
+   * @return the element {@odf.element svg:radialGradient}
+   */
+  public SvgRadialGradientElement newSvgRadialGradientElement(String drawNameValue) {
+<span class="nc" id="L674">    SvgRadialGradientElement svgRadialGradient =</span>
+<span class="nc" id="L675">        ((OdfFileDom) this.ownerDocument).newOdfElement(SvgRadialGradientElement.class);</span>
+<span class="nc" id="L676">    svgRadialGradient.setDrawNameAttribute(drawNameValue);</span>
+<span class="nc" id="L677">    this.appendChild(svgRadialGradient);</span>
+<span class="nc" id="L678">    return svgRadialGradient;</span>
+  }
+
+  /**
+   * Create child element {@odf.element table:table-template}.
+   *
+   * @param tableFirstRowEndColumnValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;
+   *     TableFirstRowEndColumnAttribute&lt;/code&gt;, see {@odf.attribute table:first-row-end-column} at
+   *     specification
+   * @param tableFirstRowStartColumnValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;
+   *     TableFirstRowStartColumnAttribute&lt;/code&gt;, see {@odf.attribute table:first-row-start-column}
+   *     at specification
+   * @param tableLastRowEndColumnValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;
+   *     TableLastRowEndColumnAttribute&lt;/code&gt;, see {@odf.attribute table:last-row-end-column} at
+   *     specification
+   * @param tableLastRowStartColumnValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;
+   *     TableLastRowStartColumnAttribute&lt;/code&gt;, see {@odf.attribute table:last-row-start-column}
+   *     at specification
+   * @param tableNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;TableNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute table:name} at specification Child element is new in Odf 1.2
+   * @return the element {@odf.element table:table-template}
+   */
+  public TableTableTemplateElement newTableTableTemplateElement(
+      String tableFirstRowEndColumnValue,
+      String tableFirstRowStartColumnValue,
+      String tableLastRowEndColumnValue,
+      String tableLastRowStartColumnValue,
+      String tableNameValue) {
+<span class="nc" id="L706">    TableTableTemplateElement tableTableTemplate =</span>
+<span class="nc" id="L707">        ((OdfFileDom) this.ownerDocument).newOdfElement(TableTableTemplateElement.class);</span>
+<span class="nc" id="L708">    tableTableTemplate.setTableFirstRowEndColumnAttribute(tableFirstRowEndColumnValue);</span>
+<span class="nc" id="L709">    tableTableTemplate.setTableFirstRowStartColumnAttribute(tableFirstRowStartColumnValue);</span>
+<span class="nc" id="L710">    tableTableTemplate.setTableLastRowEndColumnAttribute(tableLastRowEndColumnValue);</span>
+<span class="nc" id="L711">    tableTableTemplate.setTableLastRowStartColumnAttribute(tableLastRowStartColumnValue);</span>
+<span class="nc" id="L712">    tableTableTemplate.setTableNameAttribute(tableNameValue);</span>
+<span class="nc" id="L713">    this.appendChild(tableTableTemplate);</span>
+<span class="nc" id="L714">    return tableTableTemplate;</span>
+  }
+
+  /**
+   * Create child element {@odf.element text:bibliography-configuration}.
+   *
+   * @return the element {@odf.element text:bibliography-configuration}
+   */
+  public TextBibliographyConfigurationElement newTextBibliographyConfigurationElement() {
+<span class="nc" id="L723">    TextBibliographyConfigurationElement textBibliographyConfiguration =</span>
+<span class="nc" id="L724">        ((OdfFileDom) this.ownerDocument).newOdfElement(TextBibliographyConfigurationElement.class);</span>
+<span class="nc" id="L725">    this.appendChild(textBibliographyConfiguration);</span>
+<span class="nc" id="L726">    return textBibliographyConfiguration;</span>
+  }
+
+  /**
+   * Create child element {@odf.element text:linenumbering-configuration}.
+   *
+   * @param styleNumFormatValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNumFormatAttribute
+   *     &lt;/code&gt;, see {@odf.attribute style:num-format} at specification
+   * @return the element {@odf.element text:linenumbering-configuration}
+   */
+  public TextLinenumberingConfigurationElement newTextLinenumberingConfigurationElement(
+      String styleNumFormatValue) {
+<span class="nc" id="L738">    TextLinenumberingConfigurationElement textLinenumberingConfiguration =</span>
+        ((OdfFileDom) this.ownerDocument)
+<span class="nc" id="L740">            .newOdfElement(TextLinenumberingConfigurationElement.class);</span>
+<span class="nc" id="L741">    textLinenumberingConfiguration.setStyleNumFormatAttribute(styleNumFormatValue);</span>
+<span class="nc" id="L742">    this.appendChild(textLinenumberingConfiguration);</span>
+<span class="nc" id="L743">    return textLinenumberingConfiguration;</span>
+  }
+
+  /**
+   * Create child element {@odf.element text:list-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element text:list-style}
+   */
+  public TextListStyleElement newTextListStyleElement(String styleNameValue) {
+<span class="nc" id="L754">    TextListStyleElement textListStyle =</span>
+<span class="nc" id="L755">        ((OdfFileDom) this.ownerDocument).newOdfElement(TextListStyleElement.class);</span>
+<span class="nc" id="L756">    textListStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L757">    this.appendChild(textListStyle);</span>
+<span class="nc" id="L758">    return textListStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element text:notes-configuration}.
+   *
+   * @param styleNumFormatValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNumFormatAttribute
+   *     &lt;/code&gt;, see {@odf.attribute style:num-format} at specification
+   * @param textNoteClassValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;TextNoteClassAttribute&lt;/code&gt;,
+   *     see {@odf.attribute text:note-class} at specification
+   * @return the element {@odf.element text:notes-configuration}
+   */
+  public TextNotesConfigurationElement newTextNotesConfigurationElement(
+      String styleNumFormatValue, String textNoteClassValue) {
+<span class="nc" id="L772">    TextNotesConfigurationElement textNotesConfiguration =</span>
+<span class="nc" id="L773">        ((OdfFileDom) this.ownerDocument).newOdfElement(TextNotesConfigurationElement.class);</span>
+<span class="nc" id="L774">    textNotesConfiguration.setStyleNumFormatAttribute(styleNumFormatValue);</span>
+<span class="nc" id="L775">    textNotesConfiguration.setTextNoteClassAttribute(textNoteClassValue);</span>
+<span class="nc" id="L776">    this.appendChild(textNotesConfiguration);</span>
+<span class="nc" id="L777">    return textNotesConfiguration;</span>
+  }
+
+  /**
+   * Create child element {@odf.element text:outline-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element text:outline-style}
+   */
+  public TextOutlineStyleElement newTextOutlineStyleElement(String styleNameValue) {
+<span class="nc" id="L788">    TextOutlineStyleElement textOutlineStyle =</span>
+<span class="nc" id="L789">        ((OdfFileDom) this.ownerDocument).newOdfElement(TextOutlineStyleElement.class);</span>
+<span class="nc" id="L790">    textOutlineStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L791">    this.appendChild(textOutlineStyle);</span>
+<span class="nc" id="L792">    return textOutlineStyle;</span>
+  }
+
+  @Override
+  public void accept(ElementVisitor visitor) {
+<span class="nc bnc" id="L797" title="All 2 branches missed.">    if (visitor instanceof DefaultElementVisitor) {</span>
+<span class="nc" id="L798">      DefaultElementVisitor defaultVisitor = (DefaultElementVisitor) visitor;</span>
+<span class="nc" id="L799">      defaultVisitor.visit(this);</span>
+<span class="nc" id="L800">    } else {</span>
+<span class="nc" id="L801">      visitor.visit(this);</span>
+    }
+<span class="nc" id="L803">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

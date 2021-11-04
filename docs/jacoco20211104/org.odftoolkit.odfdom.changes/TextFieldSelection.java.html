@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextFieldSelection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">TextFieldSelection.java</span></div><h1>TextFieldSelection.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import static org.odftoolkit.odfdom.changes.OperationConstants.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.odftoolkit.odfdom.dom.element.text.TextUserFieldDeclElement;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberDateStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberTimeStyle;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+
+/** @author svante.schubertATgmail.com */
+public class TextFieldSelection extends TextSelection implements Comparable {
+
+  private String mReplacementText;
+<span class="pc" id="L33">  private final Map&lt;String, Object&gt; mAttrs = new HashMap&lt;String, Object&gt;();</span>
+
+  /**
+   * Constructor.
+   *
+   * @param fieldElement the fieldElement of the Field element.
+   * @param startPosition the startPosition of the Field element.
+   */
+  public TextFieldSelection(
+      OdfElement fieldElement,
+      List&lt;Integer&gt; startPosition,
+      OdfOfficeAutomaticStyles autoStyles,
+<span class="fc" id="L45">      Map&lt;String, TextUserFieldDeclElement&gt; userFieldDecls) {</span>
+<span class="fc" id="L46">    mSelectionElement = fieldElement;</span>
+<span class="fc" id="L47">    mStartPosition = startPosition;</span>
+
+<span class="fc" id="L49">    FieldMap currentMap = FieldMap.fieldMap.get(fieldElement.getLocalName());</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">    if (currentMap != null) {</span>
+<span class="fc" id="L51">      String attributeValue = null;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">      if (currentMap.hasFixed()</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:fixed&quot;)).isEmpty()) {</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        mAttrs.put(&quot;fixed&quot;, attributeValue.equals(&quot;true&quot;) ? &quot;true&quot; : &quot;false&quot;);</span>
+      }
+<span class="fc bfc" id="L56" title="All 2 branches covered.">      if (currentMap.hasDateValue()) {</span>
+<span class="fc" id="L57">        String dateValue =</span>
+<span class="fc" id="L58">            mSelectionElement.getAttribute(</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                currentMap.hasTimeStyle() ? &quot;text:time-value&quot; : &quot;text:date-value&quot;);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (!dateValue.isEmpty()) {</span>
+<span class="fc" id="L61">          mAttrs.put(&quot;dateValue&quot;, dateValue);</span>
+        }
+<span class="fc" id="L63">        String dataStyleName = mSelectionElement.getAttribute(&quot;style:data-style-name&quot;);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (!dataStyleName.isEmpty()) {</span>
+<span class="fc" id="L65">          OdfNumberDateStyle dateStyle = autoStyles.getDateStyle(dataStyleName);</span>
+
+<span class="fc" id="L67">          OdfElement baseStyle = null;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">          if (dateStyle != null) {</span>
+<span class="fc" id="L69">            baseStyle = dateStyle;</span>
+<span class="fc" id="L70">            mAttrs.put(&quot;dateFormat&quot;, dateStyle.getFormat(true));</span>
+          } else {
+<span class="fc" id="L72">            OdfNumberTimeStyle timeStyle = autoStyles.getTimeStyle(dataStyleName);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (timeStyle != null) {</span>
+<span class="fc" id="L74">              baseStyle = timeStyle;</span>
+<span class="fc" id="L75">              mAttrs.put(&quot;dateFormat&quot;, timeStyle.getFormat(true));</span>
+            }
+          }
+<span class="fc bfc" id="L78" title="All 2 branches covered.">          if (baseStyle != null) {</span>
+<span class="fc" id="L79">            String language = baseStyle.getAttribute(&quot;number:language&quot;);</span>
+<span class="fc" id="L80">            String country = baseStyle.getAttribute(&quot;number:country&quot;);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (!language.isEmpty()) {</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">              if (!country.isEmpty()) {</span>
+<span class="fc" id="L83">                language += &quot;-&quot;;</span>
+<span class="fc" id="L84">                language += country;</span>
+              }
+<span class="fc" id="L86">              mAttrs.put(&quot;locale&quot;, language);</span>
+            }
+          }
+        }
+      }
+<span class="fc bfc" id="L91" title="All 2 branches covered.">      if (currentMap.hasdbName()</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:database-name&quot;)).isEmpty()) {</span>
+<span class="fc" id="L93">        mAttrs.put(&quot;dbName&quot;, attributeValue);</span>
+      }
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">      if (currentMap.hasTableType()</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:table-type&quot;)).isEmpty()) {</span>
+<span class="nc" id="L97">        mAttrs.put(&quot;tableType&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L99" title="All 2 branches covered.">      if (currentMap.hasdbTable()</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:table-name&quot;)).isEmpty()) {</span>
+<span class="fc" id="L101">        mAttrs.put(&quot;dbTable&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L103" title="All 2 branches covered.">      if (currentMap.hasdbColumn()</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:column-name&quot;)).isEmpty()) {</span>
+<span class="fc" id="L105">        mAttrs.put(&quot;dbColumn&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L107" title="All 2 branches covered.">      if (currentMap.hasDisplay()</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:display&quot;)).isEmpty()) {</span>
+<span class="fc" id="L109">        mAttrs.put(&quot;display&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L111" title="All 2 branches covered.">      if (currentMap.hasRefFormat()</span>
+<span class="fc" id="L112">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:reference-format&quot;))</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">              .isEmpty()) {</span>
+<span class="fc" id="L114">        mAttrs.put(&quot;refFormat&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L116" title="All 2 branches covered.">      if (currentMap.hasRefName()</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:ref-name&quot;)).isEmpty()) {</span>
+<span class="fc" id="L118">        mAttrs.put(&quot;refName&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L120" title="All 2 branches covered.">      if (currentMap.hasOutlinelevel()</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:outline-level&quot;)).isEmpty()) {</span>
+<span class="fc" id="L122">        mAttrs.put(&quot;outlineLevel&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L124" title="All 2 branches covered.">      if (currentMap.hasPageNumFormat()</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;style:num-format&quot;)).isEmpty()) {</span>
+<span class="fc" id="L126">        mAttrs.put(&quot;pageNumFormat&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">      if (currentMap.hasNumLetterSync()</span>
+<span class="fc" id="L129">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;style:num-letter-sync&quot;))</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">              .isEmpty()) {</span>
+<span class="nc" id="L131">        mAttrs.put(&quot;numLetterSync&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L133" title="All 2 branches covered.">      if (currentMap.hasCondition()</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:condition&quot;)).isEmpty()) {</span>
+<span class="fc" id="L135">        mAttrs.put(&quot;condition&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">      if (currentMap.hasCurrentValue()</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:current-value&quot;)).isEmpty()) {</span>
+<span class="nc" id="L139">        mAttrs.put(&quot;currentValue&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L141" title="All 2 branches covered.">      if (currentMap.hasFalseValue()</span>
+<span class="fc" id="L142">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:string-value-if-false&quot;))</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">              .isEmpty()) {</span>
+<span class="fc" id="L144">        mAttrs.put(&quot;falseValue&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L146" title="All 2 branches covered.">      if (currentMap.hasTrueValue()</span>
+<span class="fc" id="L147">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:string-value-if-true&quot;))</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">              .isEmpty()) {</span>
+<span class="fc" id="L149">        mAttrs.put(&quot;trueValue&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L151" title="All 2 branches covered.">      if (currentMap.hasConnectionName()</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:connection-name&quot;)).isEmpty()) {</span>
+<span class="fc" id="L153">        mAttrs.put(&quot;connectionName&quot;, attributeValue);</span>
+      }
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">      if (currentMap.hasDuration()</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text-duration&quot;)).isEmpty()) {</span>
+<span class="nc" id="L157">        mAttrs.put(&quot;duration&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L159" title="All 2 branches covered.">      if (currentMap.hasName()</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:name&quot;)).isEmpty()) {</span>
+<span class="fc" id="L161">        mAttrs.put(&quot;name&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L163" title="All 2 branches covered.">      if (currentMap.hasBoolValue()</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;office:boolean-value&quot;)).isEmpty()) {</span>
+<span class="nc" id="L165">        mAttrs.put(&quot;boolValue&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L167" title="All 2 branches covered.">      if (currentMap.hasCurrency()</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;office:currency&quot;)).isEmpty()) {</span>
+<span class="nc" id="L169">        mAttrs.put(&quot;currency&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L171" title="All 2 branches covered.">      if (currentMap.hasStringValue()</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;office:value&quot;)).isEmpty()) {</span>
+<span class="fc" id="L173">        mAttrs.put(&quot;stringValue&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L175" title="All 2 branches covered.">      if (currentMap.hasTimeValue()</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:time-value&quot;)).isEmpty()) {</span>
+<span class="nc" id="L177">        mAttrs.put(&quot;timeValue&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L179" title="All 2 branches covered.">      if (currentMap.hasTValue()</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:value&quot;)).isEmpty()) {</span>
+<span class="fc" id="L181">        mAttrs.put(&quot;value&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L183" title="All 2 branches covered.">      if (currentMap.hasOValue()</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;office:value&quot;)).isEmpty()) {</span>
+<span class="fc" id="L185">        mAttrs.put(&quot;value&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L187" title="All 2 branches covered.">      if (currentMap.hasValueType()) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        if (fieldElement.getLocalName().equals(&quot;user-field-get&quot;)) {</span>
+<span class="fc" id="L189">          TextUserFieldDeclElement fieldDecl = userFieldDecls.get(mAttrs.get(&quot;name&quot;));</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">          if (fieldDecl != null</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">              &amp;&amp; !(attributeValue = fieldDecl.getAttribute(&quot;office:value-type&quot;)).isEmpty()) {</span>
+<span class="fc" id="L192">            mAttrs.put(&quot;valueType&quot;, attributeValue);</span>
+          }
+<span class="fc" id="L194">        } else if (!(attributeValue = mSelectionElement.getAttribute(&quot;office:value-type&quot;))</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">            .isEmpty()) {</span>
+<span class="fc" id="L196">          mAttrs.put(&quot;valueType&quot;, attributeValue);</span>
+        }
+      }
+<span class="fc bfc" id="L199" title="All 2 branches covered.">      if (currentMap.hasFormula()</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:formula&quot;)).isEmpty()) {</span>
+<span class="fc" id="L201">        mAttrs.put(&quot;formula&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L203" title="All 2 branches covered.">      if (currentMap.hasIsHidden()</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;xml:id&quot;)).isEmpty()) {</span>
+<span class="nc" id="L205">        mAttrs.put(&quot;isHidden&quot;, attributeValue);</span>
+      }
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">      if (currentMap.hasId()</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;xml:id&quot;)).isEmpty()) {</span>
+<span class="nc" id="L209">        mAttrs.put(OPK_ID, attributeValue);</span>
+      }
+<span class="fc bfc" id="L211" title="All 2 branches covered.">      if (currentMap.hasDescription()</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:description&quot;)).isEmpty()) {</span>
+<span class="fc" id="L213">        mAttrs.put(&quot;description&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L215" title="All 2 branches covered.">      if (currentMap.hasActive()</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:active&quot;)).isEmpty()) {</span>
+<span class="nc" id="L217">        mAttrs.put(&quot;active&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L219" title="All 2 branches covered.">      if (currentMap.hasHref()</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;xlink:href&quot;)).isEmpty()) {</span>
+<span class="nc" id="L221">        mAttrs.put(&quot;href&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L223" title="All 2 branches covered.">      if (currentMap.hasPlaceHolderType()</span>
+<span class="fc" id="L224">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:placeholder-type&quot;))</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">              .isEmpty()) {</span>
+<span class="fc" id="L226">        mAttrs.put(&quot;placeHolderType&quot;, attributeValue);</span>
+      }
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">      if (currentMap.hasKind()</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:kind&quot;)).isEmpty()) {</span>
+<span class="nc" id="L230">        mAttrs.put(&quot;kind&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L232" title="All 2 branches covered.">      if (currentMap.hasLanguage()</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;script:language&quot;)).isEmpty()) {</span>
+<span class="nc" id="L234">        mAttrs.put(&quot;language&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L236" title="All 2 branches covered.">      if (currentMap.hasLinkType()</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;xlink:type&quot;)).isEmpty()) {</span>
+<span class="nc" id="L238">        mAttrs.put(&quot;linkType&quot;, attributeValue);</span>
+      }
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">      if (currentMap.hasNumFormat()</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;style:num-format&quot;)).isEmpty()) {</span>
+<span class="nc" id="L242">        mAttrs.put(&quot;numFormat&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L244" title="All 2 branches covered.">      if (currentMap.hasPageAdjust()</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:page-adjust&quot;)).isEmpty()) {</span>
+<span class="nc" id="L246">        mAttrs.put(&quot;pageAdjust&quot;, attributeValue);</span>
+      }
+<span class="fc bfc" id="L248" title="All 2 branches covered.">      if (currentMap.hasRowNumber()</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">          &amp;&amp; !(attributeValue = mSelectionElement.getAttribute(&quot;text:row-number&quot;)).isEmpty()) {</span>
+<span class="nc" id="L250">        mAttrs.put(&quot;rowNumber&quot;, attributeValue);</span>
+      }
+    }
+<span class="fc" id="L253">  }</span>
+
+  /**
+   * Constructor.
+   *
+   * @param fieldElement the fieldElement of the Field element.
+   * @param startPosition the startPosition of the Field element.
+   */
+  public TextFieldSelection(
+<span class="fc" id="L262">      OdfElement fieldElement, List&lt;Integer&gt; startPosition, String replacementText) {</span>
+<span class="fc" id="L263">    mSelectionElement = fieldElement;</span>
+<span class="fc" id="L264">    mStartPosition = startPosition;</span>
+<span class="fc" id="L265">    mReplacementText = replacementText;</span>
+<span class="fc" id="L266">  }</span>
+
+  /**
+   * Constructor.
+   *
+   * @param fieldElement the fieldElement of the Field element.
+   * @param startPosition the startPosition of the Field element.
+   */
+  TextFieldSelection(
+<span class="nc" id="L275">      OdfElement fieldElement, List&lt;Integer&gt; startPosition, List&lt;Integer&gt; endPosition) {</span>
+<span class="nc" id="L276">    mSelectionElement = fieldElement;</span>
+<span class="nc" id="L277">    mStartPosition = startPosition;</span>
+<span class="nc" id="L278">    mEndPosition = endPosition;</span>
+<span class="nc" id="L279">  }</span>
+
+  public String getReplacementText() {
+<span class="fc" id="L282">    return mReplacementText;</span>
+  }
+
+  public Map&lt;String, Object&gt; getAttributes() {
+<span class="fc" id="L286">    return mAttrs;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L291">    return mStartPosition.toString()</span>
+        + &quot;-URL&quot;
+        + mUrl
+        + &quot;-&quot;
+<span class="nc" id="L295">        + mEndPosition.toString()</span>
+<span class="nc" id="L296">        + mSelectionElement.toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

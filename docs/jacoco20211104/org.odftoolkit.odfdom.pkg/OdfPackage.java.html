@@ -1,0 +1,2587 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfPackage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfPackage.java</span></div><h1>OdfPackage.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import static org.odftoolkit.odfdom.pkg.OdfPackageDocument.ROOT_DOCUMENT_PATH;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Constructor;
+import java.net.URI;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.URIResolver;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.xerces.dom.DOMXSImplementationSourceImpl;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.doc.OdfDocument.OdfMediaType;
+import org.odftoolkit.odfdom.pkg.manifest.AlgorithmElement;
+import org.odftoolkit.odfdom.pkg.manifest.EncryptionDataElement;
+import org.odftoolkit.odfdom.pkg.manifest.FileEntryElement;
+import org.odftoolkit.odfdom.pkg.manifest.KeyDerivationElement;
+import org.odftoolkit.odfdom.pkg.manifest.ManifestElement;
+import org.odftoolkit.odfdom.pkg.manifest.OdfFileEntry;
+import org.odftoolkit.odfdom.pkg.manifest.OdfManifestDom;
+import org.odftoolkit.odfdom.pkg.manifest.StartKeyGenerationElement;
+import org.odftoolkit.odfdom.pkg.rdfa.Util;
+import org.odftoolkit.odfdom.type.Base64Binary;
+import org.w3c.dom.Document;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSOutput;
+import org.w3c.dom.ls.LSSerializer;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+import org.xml.sax.XMLReader;
+
+/**
+ * OdfPackage represents the package view to an OpenDocument document. The OdfPackage will be
+ * created from an ODF document and represents a copy of the loaded document, where files can be
+ * inserted and deleted. The changes take effect, when the OdfPackage is being made persisted by
+ * save().
+ */
+public class OdfPackage implements Closeable {
+
+  // Static parts of file references
+  private static final String DOUBLE_DOT = &quot;..&quot;;
+  private static final String DOT = &quot;.&quot;;
+  private static final String SLASH = &quot;/&quot;;
+  private static final String COLON = &quot;:&quot;;
+  private static final String ENCODED_APOSTROPHE = &quot;&amp;apos;&quot;;
+  private static final String ENCODED_QUOTATION = &quot;&amp;quot;&quot;;
+  private static final String EMPTY_STRING = &quot;&quot;;
+  private static final String XML_MEDIA_TYPE = &quot;text/xml&quot;;
+  // Search patterns to be used in RegEx expressions
+<span class="fc" id="L119">  private static final Pattern BACK_SLASH_PATTERN = Pattern.compile(&quot;\\\\&quot;);</span>
+<span class="fc" id="L120">  private static final Pattern DOUBLE_SLASH_PATTERN = Pattern.compile(&quot;//&quot;);</span>
+<span class="fc" id="L121">  private static final Pattern QUOTATION_PATTERN = Pattern.compile(&quot;\&quot;&quot;);</span>
+<span class="fc" id="L122">  private static final Pattern APOSTROPHE_PATTERN = Pattern.compile(&quot;'&quot;);</span>
+<span class="fc" id="L123">  private static final Pattern CONTROL_CHAR_PATTERN = Pattern.compile(&quot;\\p{Cntrl}&quot;);</span>
+  private static final Set&lt;String&gt; COMPRESSED_FILETYPES;
+<span class="fc" id="L125">  private static final byte[] HREF_PATTERN = {</span>
+    'x', 'l', 'i', 'n', 'k', ':', 'h', 'r', 'e', 'f', '=', '&quot;'
+  }; // xlink:href=&quot;
+
+  // some well known streams inside ODF packages
+  private String mMediaType;
+  private String mBaseURI;
+  private ZipHelper mZipFile;
+  private Resolver mResolver;
+  private Map&lt;String, ZipArchiveEntry&gt; mZipEntries;
+  private HashMap&lt;String, ZipArchiveEntry&gt; mOriginalZipEntries;
+  private Map&lt;String, OdfFileEntry&gt; mManifestEntries;
+  // All opened documents from the same package are cached (including the root document)
+  private Map&lt;String, OdfPackageDocument&gt; mPkgDocuments;
+  // counter for ids that are not allowed to be saved (otherwise it is not guaranteed that this id
+  // is unique)
+<span class="fc" id="L141">  private int mTransientMarkupId = 0;</span>
+  // Three different incarnations of a package file/data
+  // save() will check 1) mPkgDoms, 2) if not check mMemoryFileCache
+  private HashMap&lt;String, Document&gt; mPkgDoms;
+  private HashMap&lt;String, byte[]&gt; mMemoryFileCache;
+<span class="fc" id="L146">  private Map&lt;String, Object&gt; mConfiguration = new HashMap&lt;String, Object&gt;();</span>
+
+  private ErrorHandler mErrorHandler;
+  private String mManifestVersion;
+  private OdfManifestDom mManifestDom;
+  private String mOldPwd;
+  private String mNewPwd;
+
+  /* Commonly used files within the ODF Package */
+<span class="fc" id="L155">  public enum OdfFile {</span>
+
+    /**
+     * The image directory is not defined by the OpenDocument standard, nevertheless the most spread
+     * ODF application OpenOffice.org is using the directory named &quot;Pictures&quot;.
+     */
+<span class="fc" id="L161">    IMAGE_DIRECTORY(&quot;Pictures&quot;),</span>
+    /**
+     * The &quot;META-INF/manifest.xml&quot; file is defined by the ODF 1.2 part 3 Package specification. This
+     * manifest is the 'content table' of the ODF package and describes the file entries of the ZIP
+     * including directories, but should not contain empty directories.
+     */
+<span class="fc" id="L167">    MANIFEST(&quot;META-INF/manifest.xml&quot;),</span>
+    /**
+     * The &quot;mime type&quot; file is defined by the ODF 1.2 part 3 Package specification. It contains the
+     * media type string of the root document and must be the first file in the ZIP and must not be
+     * compressed.
+     */
+<span class="fc" id="L173">    MEDIA_TYPE(&quot;mimetype&quot;);</span>
+    private final String internalPath;
+
+<span class="fc" id="L176">    OdfFile(String internalPath) {</span>
+<span class="fc" id="L177">      this.internalPath = internalPath;</span>
+<span class="fc" id="L178">    }</span>
+
+    public String getPath() {
+<span class="fc" id="L181">      return internalPath;</span>
+    }
+  }
+
+  static {
+<span class="fc" id="L186">    HashSet&lt;String&gt; compressedFileTypes = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L187">    String[] typelist =</span>
+        new String[] {
+          &quot;jpg&quot;, &quot;gif&quot;, &quot;png&quot;, &quot;zip&quot;, &quot;rar&quot;, &quot;jpeg&quot;, &quot;mpe&quot;, &quot;mpg&quot;, &quot;mpeg&quot;, &quot;mpeg4&quot;, &quot;mp4&quot;, &quot;7z&quot;,
+          &quot;ari&quot;, &quot;arj&quot;, &quot;jar&quot;, &quot;gz&quot;, &quot;tar&quot;, &quot;war&quot;, &quot;mov&quot;, &quot;avi&quot;
+        };
+<span class="fc" id="L192">    compressedFileTypes.addAll(Arrays.asList(typelist));</span>
+<span class="fc" id="L193">    COMPRESSED_FILETYPES = Collections.unmodifiableSet(compressedFileTypes);</span>
+<span class="fc" id="L194">  }</span>
+
+  /** Creates the ODFPackage as an empty Package. */
+<span class="fc" id="L197">  private OdfPackage() {</span>
+<span class="fc" id="L198">    mMediaType = null;</span>
+<span class="fc" id="L199">    mResolver = null;</span>
+<span class="fc" id="L200">    mPkgDocuments = new HashMap&lt;String, OdfPackageDocument&gt;();</span>
+<span class="fc" id="L201">    mPkgDoms = new HashMap&lt;String, Document&gt;();</span>
+<span class="fc" id="L202">    mTransientMarkupId = 0;</span>
+<span class="fc" id="L203">    mMemoryFileCache = new HashMap&lt;String, byte[]&gt;();</span>
+<span class="fc" id="L204">    mManifestEntries = new HashMap&lt;String, OdfFileEntry&gt;();</span>
+    // specify whether validation should be enabled and what SAX
+    // ErrorHandler should be used.
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">    if (mErrorHandler == null) {</span>
+<span class="fc" id="L208">      String errorHandlerProperty = System.getProperty(&quot;org.odftoolkit.odfdom.validation&quot;);</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">      if (errorHandlerProperty != null) {</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        if (errorHandlerProperty.equalsIgnoreCase(&quot;true&quot;)) {</span>
+<span class="fc" id="L211">          mErrorHandler = new DefaultErrorHandler();</span>
+<span class="fc" id="L212">          Logger.getLogger(OdfPackage.class.getName())</span>
+<span class="fc" id="L213">              .config(&quot;Activated validation with default ErrorHandler!&quot;);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        } else if (!errorHandlerProperty.equalsIgnoreCase(&quot;false&quot;)) {</span>
+          try {
+<span class="nc" id="L216">            Class&lt;?&gt; cl = Class.forName(errorHandlerProperty);</span>
+<span class="nc" id="L217">            Constructor&lt;?&gt; ctor = cl.getDeclaredConstructor(new Class[] {});</span>
+<span class="nc" id="L218">            mErrorHandler = (ErrorHandler) ctor.newInstance();</span>
+<span class="nc" id="L219">            Logger.getLogger(OdfPackage.class.getName())</span>
+<span class="nc" id="L220">                .log(</span>
+                    Level.CONFIG,
+                    &quot;Activated validation with ErrorHandler:''{0}''!&quot;,
+                    errorHandlerProperty);
+<span class="nc" id="L224">          } catch (Exception ex) {</span>
+<span class="nc" id="L225">            Logger.getLogger(OdfPackage.class.getName())</span>
+<span class="nc" id="L226">                .log(</span>
+                    Level.SEVERE,
+                    &quot;Could not initiate validation with the given ErrorHandler: '&quot;
+                        + errorHandlerProperty
+                        + &quot;'&quot;,
+                    ex);
+<span class="nc" id="L232">          }</span>
+        }
+      }
+    }
+<span class="fc" id="L236">  }</span>
+
+  // is called if a low memory notification was received... then its tried to free as much memory as
+  // possible
+  public void freeMemory() {
+<span class="nc" id="L241">    mZipFile = null;</span>
+<span class="nc" id="L242">    mResolver = null;</span>
+<span class="nc" id="L243">    mZipEntries = null;</span>
+<span class="nc" id="L244">    mOriginalZipEntries = null;</span>
+<span class="nc" id="L245">    mManifestEntries = null;</span>
+<span class="nc" id="L246">    mPkgDocuments = null;</span>
+<span class="nc" id="L247">    mPkgDoms = null;</span>
+<span class="nc" id="L248">    mMemoryFileCache = null;</span>
+<span class="nc" id="L249">    mConfiguration = null;</span>
+<span class="nc" id="L250">    mErrorHandler = null;</span>
+<span class="nc" id="L251">  }</span>
+
+  /**
+   * Creates an OdfPackage from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param pkgFile - a file representing the ODF document
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   */
+  private OdfPackage(File pkgFile) throws SAXException, IOException {
+<span class="nc" id="L264">    this(pkgFile, getBaseURLFromFile(pkgFile), null, null);</span>
+<span class="nc" id="L265">  }</span>
+
+  /**
+   * Creates an OdfPackage from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param pkgFile - a file representing the ODF document
+   * @param baseURI defining the base URI of ODF package.
+   * @param password defining the password of ODF package.
+   * @param errorHandler - SAX ErrorHandler used for ODF validation
+   * @see #getErrorHandler
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   * @see #getErrorHandler*
+   */
+  private OdfPackage(File pkgFile, String baseURI, String password, ErrorHandler errorHandler)
+      throws SAXException, IOException {
+<span class="fc" id="L284">    this();</span>
+<span class="fc" id="L285">    mBaseURI = getBaseURLFromFile(pkgFile);</span>
+<span class="fc" id="L286">    mErrorHandler = errorHandler;</span>
+<span class="fc" id="L287">    mOldPwd = password;</span>
+<span class="fc" id="L288">    mNewPwd = mOldPwd;</span>
+<span class="fc" id="L289">    mBaseURI = baseURI;</span>
+
+<span class="fc" id="L291">    InputStream packageStream = new FileInputStream(pkgFile);</span>
+    try {
+<span class="fc" id="L293">      initializeZip(packageStream);</span>
+    } finally {
+<span class="fc" id="L295">      close(packageStream);</span>
+    }
+<span class="fc" id="L297">  }</span>
+
+  /**
+   * Creates an OdfPackage from the OpenDocument provided by a InputStream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfPackage, the InputStream is cached. This usually takes more time compared to the other
+   * constructors.
+   *
+   * @param packageStream - an inputStream representing the ODF package
+   * @param baseURI defining the base URI of ODF package.
+   * @param password defining the password of ODF package.
+   * @param errorHandler - SAX ErrorHandler used for ODF validation
+   * @see #getErrorHandler
+   * @throws IOException if there's an I/O error while loading the package
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @see #getErrorHandler*
+   */
+  private OdfPackage(
+      InputStream packageStream,
+      String baseURI,
+      String password,
+      ErrorHandler errorHandler,
+      Map&lt;String, Object&gt; configuration)
+      throws SAXException, IOException {
+<span class="fc" id="L322">    this(); // calling private constructor</span>
+<span class="fc" id="L323">    mErrorHandler = errorHandler;</span>
+<span class="fc" id="L324">    mBaseURI = baseURI;</span>
+<span class="fc" id="L325">    mOldPwd = password;</span>
+<span class="fc" id="L326">    mNewPwd = mOldPwd;</span>
+<span class="fc" id="L327">    mConfiguration = configuration;</span>
+<span class="fc" id="L328">    initializeZip(packageStream);</span>
+<span class="fc" id="L329">  }</span>
+
+  /**
+   * Creates an OdfPackage from the OpenDocument provided by a InputStream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfPackage, the InputStream is cached. This usually takes more time compared to the other
+   * constructors.
+   *
+   * @param packageStream - an inputStream representing the ODF package
+   * @param baseURI defining the base URI of ODF package.
+   * @param errorHandler - SAX ErrorHandler used for ODF validation
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   * @see #getErrorHandler
+   */
+  private OdfPackage(InputStream packageStream, String baseURI, ErrorHandler errorHandler)
+      throws SAXException, IOException {
+<span class="nc" id="L347">    this(); // calling private constructor</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">    if (errorHandler != null) {</span>
+<span class="nc" id="L349">      mErrorHandler = errorHandler;</span>
+    }
+<span class="nc" id="L351">    mBaseURI = baseURI;</span>
+<span class="nc" id="L352">    initializeZip(packageStream);</span>
+<span class="nc" id="L353">  }</span>
+
+  /**
+   * Loads an OdfPackage from the given documentURL.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param path - the documentURL to the ODF package
+   * @return the OpenDocument document represented as an OdfPackage
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   */
+  public static OdfPackage loadPackage(String path) throws SAXException, IOException {
+<span class="fc" id="L367">    File pkgFile = new File(path);</span>
+<span class="fc" id="L368">    return new OdfPackage(pkgFile, getBaseURLFromFile(pkgFile), null, null);</span>
+  }
+
+  /**
+   * Loads an OdfPackage from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param pkgFile - the ODF Package
+   * @return the OpenDocument document represented as an OdfPackage
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   */
+  public static OdfPackage loadPackage(File pkgFile) throws SAXException, IOException {
+<span class="fc" id="L383">    return new OdfPackage(pkgFile, getBaseURLFromFile(pkgFile), null, null);</span>
+  }
+
+  /**
+   * Creates an OdfPackage from the given InputStream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfPackage, the InputStream is cached. This usually takes more time compared to the other
+   * loadPackage methods.
+   *
+   * @param packageStream - an inputStream representing the ODF package
+   * @return the OpenDocument document represented as an OdfPackage
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   */
+  public static OdfPackage loadPackage(InputStream packageStream) throws SAXException, IOException {
+<span class="fc" id="L399">    return new OdfPackage(packageStream, null, null, null, null);</span>
+  }
+
+  /**
+   * Creates an OdfPackage from the given InputStream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfPackage, the InputStream is cached. This usually takes more time compared to the other
+   * loadPackage methods.
+   *
+   * @param packageStream - an inputStream representing the ODF package
+   * @param configuration - key/value pairs of user given run-time settings (configuration) For
+   *     instance, the maximum size of tables.
+   * @return the OpenDocument document represented as an OdfPackage
+   * @throws java.lang.Exception - if the package could not be loaded
+   */
+  public static OdfPackage loadPackage(InputStream packageStream, Map&lt;String, Object&gt; configuration)
+      throws Exception {
+<span class="fc" id="L417">    return new OdfPackage(packageStream, null, null, null, configuration);</span>
+  }
+
+  /**
+   * Creates an OdfPackage from the given InputStream.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param packageStream - an inputStream representing the ODF package
+   * @param baseURI allows to explicitly set the base URI from the document, As the URL can not be
+   *     derived from a stream. In addition it is possible to set the baseURI to any arbitrary URI,
+   *     e.g. an URN. One usage of the baseURI to describe the source of validation exception thrown
+   *     by the ErrorHandler.
+   * @param errorHandler - SAX ErrorHandler used for ODF validation
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   * @see #getErrorHandler
+   */
+  public static OdfPackage loadPackage(
+      InputStream packageStream, String baseURI, ErrorHandler errorHandler)
+      throws SAXException, IOException {
+<span class="nc" id="L439">    return new OdfPackage(packageStream, baseURI, null, errorHandler, null);</span>
+  }
+
+  /**
+   * Loads an OdfPackage from the given File.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param pkgFile - the ODF Package. A baseURL is being generated based on its location.
+   * @param errorHandler - SAX ErrorHandler used for ODF validation.
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   * @see #getErrorHandler
+   */
+  public static OdfPackage loadPackage(File pkgFile, ErrorHandler errorHandler)
+      throws SAXException, IOException {
+<span class="nc" id="L456">    return new OdfPackage(pkgFile, getBaseURLFromFile(pkgFile), null, errorHandler);</span>
+  }
+
+  /**
+   * Run-time configuration such as special logging or maximum table size to create operations from
+   * are stored in this map.
+   *
+   * @return key/value pairs of user given run-time settings (configuration)
+   */
+  public Map&lt;String, Object&gt; getRunTimeConfiguration() {
+<span class="fc" id="L466">    return mConfiguration;</span>
+  }
+
+  /**
+   * Loads an OdfPackage from the given File.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param pkgFile - the ODF Package. A baseURL is being generated based on its location.
+   * @param password - the ODF Package password.
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   * @see #getErrorHandler
+   */
+  public static OdfPackage loadPackage(File pkgFile, String password)
+      throws SAXException, IOException {
+<span class="fc" id="L483">    return OdfPackage.loadPackage(pkgFile, password, null);</span>
+  }
+
+  /**
+   * Loads an OdfPackage from the given File.
+   *
+   * &lt;p&gt;OdfPackage relies on the file being available for read access over the whole life-cycle of
+   * OdfPackage.
+   *
+   * @param pkgFile - the ODF Package. A baseURL is being generated based on its location.
+   * @param password - the ODF Package password.
+   * @param errorHandler - SAX ErrorHandler used for ODF validation.
+   * @throws SAXException if there's an XML- or validation-related error while loading the package
+   * @throws IOException if there's an I/O error while loading the package
+   * @see #getErrorHandler
+   */
+  public static OdfPackage loadPackage(File pkgFile, String password, ErrorHandler errorHandler)
+      throws SAXException, IOException {
+<span class="fc" id="L501">    return new OdfPackage(pkgFile, getBaseURLFromFile(pkgFile), password, errorHandler);</span>
+  }
+
+  // Initialize using memory
+  private void initializeZip(InputStream odfStream) throws SAXException, IOException {
+<span class="fc" id="L506">    ByteArrayOutputStream tempBuf = new ByteArrayOutputStream();</span>
+<span class="fc" id="L507">    StreamHelper.transformStream(odfStream, tempBuf);</span>
+<span class="fc" id="L508">    byte[] mTempByteBuf = tempBuf.toByteArray();</span>
+<span class="fc" id="L509">    tempBuf.close();</span>
+<span class="fc bfc" id="L510" title="All 2 branches covered.">    if (mTempByteBuf.length &lt; 3) {</span>
+<span class="fc" id="L511">      OdfValidationException ve =</span>
+<span class="fc" id="L512">          new OdfValidationException(OdfPackageConstraint.PACKAGE_IS_NO_ZIP, getBaseURI());</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">      if (mErrorHandler != null) {</span>
+<span class="nc" id="L514">        mErrorHandler.fatalError(ve);</span>
+      }
+<span class="fc" id="L516">      throw new IllegalArgumentException(ve);</span>
+    }
+<span class="fc" id="L518">    mZipFile = new ZipHelper(this, mTempByteBuf);</span>
+<span class="fc" id="L519">    readZip();</span>
+<span class="fc" id="L520">  }</span>
+
+  // // Initialize using ZipFile
+  // private void initializeZip(File pkgFile) throws Exception {
+  // try {
+  // mZipFile = new ZipHelper(this, new ZipFile(pkgFile));
+  // } catch (ZipException ze) {
+  // OdfValidationException ve = new
+  // OdfValidationException(OdfPackageConstraint.PACKAGE_IS_NO_ZIP,
+  // getBaseURI());
+  // if (mErrorHandler != null) {
+  // mErrorHandler.fatalError(ve);
+  // }
+  // throw new IllegalArgumentException(ve);
+  // }
+  // readZip();
+  // }
+  private void readZip() throws SAXException, IOException {
+<span class="fc" id="L538">    mZipEntries = new HashMap&lt;String, ZipArchiveEntry&gt;();</span>
+<span class="fc" id="L539">    String firstEntryName = mZipFile.entriesToMap(mZipEntries);</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">    if (mZipEntries.isEmpty()) {</span>
+<span class="fc" id="L541">      OdfValidationException ve =</span>
+<span class="fc" id="L542">          new OdfValidationException(OdfPackageConstraint.PACKAGE_IS_NO_ZIP, getBaseURI());</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">      if (mErrorHandler != null) {</span>
+<span class="fc" id="L544">        mErrorHandler.fatalError(ve);</span>
+      }
+<span class="fc" id="L546">      throw new IllegalArgumentException(ve);</span>
+    } else {
+      // initialize the files of the package (fileEnties of Manifest)
+<span class="fc" id="L549">      parseManifest();</span>
+
+      // initialize the package media type
+<span class="fc" id="L552">      initializeMediaType(firstEntryName);</span>
+
+      // ToDo: Remove all META-INF/* files from the fileEntries of
+      // Manifest
+<span class="fc" id="L556">      mOriginalZipEntries = new HashMap&lt;String, ZipArchiveEntry&gt;();</span>
+<span class="fc" id="L557">      mOriginalZipEntries.putAll(mZipEntries);</span>
+<span class="fc" id="L558">      mZipEntries.remove(OdfPackage.OdfFile.MEDIA_TYPE.getPath());</span>
+<span class="fc" id="L559">      mZipEntries.remove(OdfPackage.OdfFile.MANIFEST.getPath());</span>
+<span class="fc" id="L560">      mZipEntries.remove(&quot;META-INF/&quot;);</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">      if (mErrorHandler != null) {</span>
+<span class="fc" id="L562">        validateManifest();</span>
+      }
+<span class="fc" id="L564">      Iterator&lt;String&gt; zipPaths = mZipEntries.keySet().iterator();</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">      while (zipPaths.hasNext()) {</span>
+<span class="fc" id="L566">        String internalPath = zipPaths.next();</span>
+        // every resource aside the /META-INF/manifest.xml (and
+        // META-INF/ directory)
+        // and &quot;mimetype&quot; will be added as fileEntry
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">        if (!internalPath.equals(OdfPackage.OdfFile.MANIFEST.getPath())</span>
+<span class="pc bpc" id="L571" title="1 of 2 branches missed.">            &amp;&amp; !internalPath.equals(&quot;META-INF/&quot;)</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">            &amp;&amp; !internalPath.equals(OdfPackage.OdfFile.MEDIA_TYPE.getPath())) {</span>
+          // aside &quot;mediatype&quot; and &quot;META-INF/manifest&quot;
+          // add manifest entry as to be described by a
+          // &lt;manifest:file-entry&gt;
+<span class="fc" id="L576">          ensureFileEntryExistence(internalPath);</span>
+        }
+<span class="fc" id="L578">      }</span>
+    }
+<span class="fc" id="L580">  }</span>
+
+  /**
+   * Validates if all file entries exist in the ZIP and vice versa
+   *
+   * @throws SAXException
+   */
+  private void validateManifest() throws SAXException {
+<span class="fc" id="L588">    Set&lt;String&gt; zipPaths = mZipEntries.keySet();</span>
+<span class="fc" id="L589">    Set&lt;String&gt; manifestPaths = mManifestEntries.keySet();</span>
+<span class="fc" id="L590">    Set&lt;String&gt; sharedPaths = new HashSet&lt;String&gt;(zipPaths);</span>
+<span class="fc" id="L591">    sharedPaths.retainAll(manifestPaths);</span>
+
+<span class="fc bfc" id="L593" title="All 2 branches covered.">    if (sharedPaths.size() &lt; zipPaths.size()) {</span>
+<span class="fc" id="L594">      Set&lt;String&gt; zipPathSuperset = new HashSet&lt;String&gt;(mZipEntries.keySet());</span>
+<span class="fc" id="L595">      zipPathSuperset.removeAll(sharedPaths);</span>
+<span class="fc" id="L596">      Set&lt;String&gt; sortedSet = new TreeSet&lt;String&gt;(zipPathSuperset);</span>
+<span class="fc" id="L597">      Iterator&lt;String&gt; iter = sortedSet.iterator();</span>
+<span class="fc" id="L598">      String documentURL = getBaseURI();</span>
+      String internalPath;
+<span class="fc bfc" id="L600" title="All 2 branches covered.">      while (iter.hasNext()) {</span>
+<span class="fc" id="L601">        internalPath = (String) iter.next();</span>
+<span class="pc bpc" id="L602" title="1 of 2 branches missed.">        if (!internalPath.endsWith(SLASH)</span>
+            &amp;&amp; // not for directories!
+            // The “META-INF/manifest.xml” file need not contain &lt;manifest:file-entry&gt; elements 4.3
+            // whose manifest:full-path attribute 4.8.4 references files whose relative path start
+            // with &quot;META-INF/&quot;.
+<span class="pc bpc" id="L607" title="1 of 2 branches missed.">            !internalPath.startsWith(&quot;META-INF/&quot;)) {</span>
+<span class="fc" id="L608">          logValidationError(</span>
+              OdfPackageConstraint.MANIFEST_DOES_NOT_LIST_FILE, documentURL, internalPath);
+        }
+      }
+    }
+<span class="fc bfc" id="L613" title="All 2 branches covered.">    if (sharedPaths.size() &lt; manifestPaths.size()) {</span>
+<span class="fc" id="L614">      Set&lt;String&gt; zipPathSubset = new HashSet&lt;String&gt;(mManifestEntries.keySet());</span>
+<span class="fc" id="L615">      zipPathSubset.removeAll(sharedPaths);</span>
+      // removing root directory
+<span class="fc" id="L617">      zipPathSubset.remove(SLASH);</span>
+
+      // No directory are listed in a ZIP removing all directory with
+      // content
+<span class="fc" id="L621">      Iterator&lt;String&gt; manifestOnlyPaths = zipPathSubset.iterator();</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">      while (manifestOnlyPaths.hasNext()) {</span>
+<span class="fc" id="L623">        String manifestOnlyPath = manifestOnlyPaths.next();</span>
+        // assumption: all directories end with slash
+<span class="fc bfc" id="L625" title="All 2 branches covered.">        if (manifestOnlyPath.endsWith(SLASH)) {</span>
+<span class="fc" id="L626">          removeDirectory(manifestOnlyPath);</span>
+        } else {
+          // if it is a nonexistent file
+<span class="fc" id="L629">          logValidationError(</span>
+<span class="fc" id="L630">              OdfPackageConstraint.MANIFEST_LISTS_NONEXISTENT_FILE, getBaseURI(), manifestOnlyPath);</span>
+          // remove from the manifest Map
+<span class="fc" id="L632">          OdfFileEntry manifestEntry = mManifestEntries.remove(manifestOnlyPath);</span>
+          // remove from the manifest DOM
+<span class="fc" id="L634">          FileEntryElement manifestEle = manifestEntry.getOdfElement();</span>
+<span class="fc" id="L635">          manifestEle.getParentNode().removeChild(manifestEle);</span>
+        }
+<span class="fc" id="L637">      }</span>
+    }
+    // remove none document directories
+<span class="fc" id="L640">    Iterator&lt;String&gt; sharedPathsIter = sharedPaths.iterator();</span>
+<span class="fc bfc" id="L641" title="All 2 branches covered.">    while (sharedPathsIter.hasNext()) {</span>
+<span class="fc" id="L642">      String sharedPath = sharedPathsIter.next();</span>
+      // assumption: all directories end with slash
+<span class="fc bfc" id="L644" title="All 2 branches covered.">      if (sharedPath.endsWith(SLASH)) {</span>
+<span class="fc" id="L645">        removeDirectory(sharedPath);</span>
+      }
+<span class="fc" id="L647">    }</span>
+<span class="fc" id="L648">  }</span>
+
+  /**
+   * Removes directories without a mimetype (all none documents)
+   *
+   * @throws SAXException
+   */
+  private void removeDirectory(String path) throws SAXException {
+<span class="pc bpc" id="L656" title="1 of 2 branches missed.">    if (path.endsWith(SLASH)) {</span>
+      // Check if it is a sub-document?
+      // Our assumption: it is a document if it has a mimetype...
+<span class="fc" id="L659">      String dirMimeType = mManifestEntries.get(path).getMediaTypeString();</span>
+<span class="pc bpc" id="L660" title="1 of 4 branches missed.">      if (dirMimeType == null || EMPTY_STRING.equals(dirMimeType)) {</span>
+<span class="fc" id="L661">        logValidationWarning(OdfPackageConstraint.MANIFEST_LISTS_DIRECTORY, getBaseURI(), path);</span>
+        // remove from the manifest Map
+<span class="fc" id="L663">        OdfFileEntry manifestEntry = mManifestEntries.remove(path);</span>
+        // remove from the manifest DOM
+<span class="fc" id="L665">        FileEntryElement manifestEle = manifestEntry.getOdfElement();</span>
+<span class="fc" id="L666">        manifestEle.getParentNode().removeChild(manifestEle);</span>
+      }
+    }
+<span class="fc" id="L669">  }</span>
+
+  /**
+   * Reads the uncompressed &quot;mimetype&quot; file, which contains the package media / mime type
+   *
+   * @throws SAXException
+   */
+  private void initializeMediaType(String firstEntryName) throws SAXException, IOException {
+<span class="fc" id="L677">    ZipArchiveEntry mimetypeEntry = mZipEntries.get(OdfPackage.OdfFile.MEDIA_TYPE.getPath());</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">    if (mimetypeEntry != null) {</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">      if (mErrorHandler != null) {</span>
+<span class="fc" id="L680">        validateMimeTypeEntry(mimetypeEntry, firstEntryName);</span>
+      }
+      // get mediatype value of the root document/package from the
+      // mediatype file stream
+<span class="fc" id="L684">      String entryMediaType = getMediaTypeFromEntry(mimetypeEntry);</span>
+      // get mediatype value of the root document/package from the
+      // manifest.xml
+<span class="fc" id="L687">      String manifestMediaType = getMediaTypeFromManifest();</span>
+      // if a valid mediatype was set by the &quot;mimetype&quot; file
+<span class="pc bpc" id="L689" title="2 of 4 branches missed.">      if (entryMediaType != null &amp;&amp; !entryMediaType.equals(EMPTY_STRING)) {</span>
+        // the root document's mediatype is taken from the &quot;mimetype&quot;
+        // file
+<span class="fc" id="L692">        mMediaType = entryMediaType;</span>
+<span class="fc bfc" id="L693" title="All 2 branches covered.">        if (mErrorHandler != null) {</span>
+          // if the &quot;mediatype&quot; does exist, the
+          // &quot;/META-INF/manifest.xml&quot; have to contain a MIMETYPE for
+          // the root document);
+<span class="pc bpc" id="L697" title="1 of 4 branches missed.">          if (manifestMediaType != null &amp;&amp; !manifestMediaType.equals(EMPTY_STRING)) {</span>
+            // if the two media-types are inconsistent
+<span class="fc bfc" id="L699" title="All 2 branches covered.">            if (!entryMediaType.equals(manifestMediaType)) {</span>
+<span class="fc" id="L700">              logValidationError(</span>
+                  OdfPackageConstraint.MIMETYPE_DIFFERS_FROM_PACKAGE,
+<span class="fc" id="L702">                  getBaseURI(),</span>
+<span class="fc" id="L703">                  CONTROL_CHAR_PATTERN.matcher(mMediaType).replaceAll(EMPTY_STRING),</span>
+                  manifestMediaType);
+            }
+          } else { // if &quot;mimetype&quot; file exists, there have to be a
+            // mimetype in the manifest.xml for the root
+            // document (see ODF 1.2 part 3)
+<span class="fc" id="L709">            logValidationError(</span>
+                OdfPackageConstraint.MIMETYPE_WITHOUT_MANIFEST_MEDIATYPE,
+<span class="fc" id="L711">                getBaseURI(),</span>
+<span class="fc" id="L712">                CONTROL_CHAR_PATTERN.matcher(mMediaType).replaceAll(EMPTY_STRING),</span>
+                manifestMediaType);
+          }
+        }
+      } else // if there is no media-type was set by the &quot;mimetype&quot; file
+      // try as fall-back the mediatype of the root document from the
+      // manifest.xml
+      {
+<span class="nc bnc" id="L720" title="All 4 branches missed.">        if (manifestMediaType != null &amp;&amp; !manifestMediaType.equals(EMPTY_STRING)) {</span>
+          // and used as fall-back for the mediatype of the package
+<span class="nc" id="L722">          mMediaType = manifestMediaType;</span>
+        }
+      }
+<span class="fc" id="L725">    } else {</span>
+<span class="fc" id="L726">      String manifestMediaType = getMediaTypeFromManifest();</span>
+<span class="pc bpc" id="L727" title="1 of 4 branches missed.">      if (manifestMediaType != null &amp;&amp; !manifestMediaType.equals(EMPTY_STRING)) {</span>
+        // if not mimetype file exists, the root document mediaType from
+        // the manifest.xml is taken
+<span class="fc" id="L730">        mMediaType = manifestMediaType;</span>
+      }
+<span class="fc bfc" id="L732" title="All 2 branches covered.">      if (mErrorHandler != null) {</span>
+<span class="fc" id="L733">        logValidationWarning(OdfPackageConstraint.MIMETYPE_NOT_IN_PACKAGE, getBaseURI());</span>
+      }
+    }
+<span class="fc" id="L736">  }</span>
+
+  private void validateMimeTypeEntry(ZipArchiveEntry mimetypeEntry, String firstEntryName)
+      throws SAXException {
+
+<span class="fc bfc" id="L741" title="All 2 branches covered.">    if (mimetypeEntry.getMethod() != ZipArchiveEntry.STORED) {</span>
+<span class="fc" id="L742">      logValidationError(OdfPackageConstraint.MIMETYPE_IS_COMPRESSED, getBaseURI());</span>
+    }
+<span class="pc bpc" id="L744" title="1 of 4 branches missed.">    if (mimetypeEntry.getExtra() != null &amp;&amp; mimetypeEntry.getExtra().length &gt; 0) {</span>
+<span class="fc" id="L745">      logValidationError(OdfPackageConstraint.MIMETYPE_HAS_EXTRA_FIELD, getBaseURI());</span>
+    }
+<span class="fc bfc" id="L747" title="All 2 branches covered.">    if (!OdfFile.MEDIA_TYPE.getPath().equals(firstEntryName)) {</span>
+<span class="fc" id="L748">      logValidationError(OdfPackageConstraint.MIMETYPE_NOT_FIRST_IN_PACKAGE, getBaseURI());</span>
+    }
+<span class="fc" id="L750">  }</span>
+
+  /** @returns the media type of the root document from the manifest.xml */
+  private String getMediaTypeFromManifest() {
+<span class="fc" id="L754">    OdfFileEntry rootDocumentEntry = mManifestEntries.get(SLASH);</span>
+<span class="fc bfc" id="L755" title="All 2 branches covered.">    if (rootDocumentEntry != null) {</span>
+<span class="fc" id="L756">      return rootDocumentEntry.getMediaTypeString();</span>
+    } else {
+<span class="fc" id="L758">      return null;</span>
+    }
+  }
+
+  /** @returns the media type of the root document from the manifest.xml */
+  private String getMediaTypeFromEntry(ZipArchiveEntry mimetypeEntry)
+      throws SAXException, IOException {
+<span class="fc" id="L765">    String entryMediaType = null;</span>
+<span class="fc" id="L766">    ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+    try {
+<span class="fc" id="L768">      StreamHelper.transformStream(mZipFile.getInputStream(mimetypeEntry), out);</span>
+<span class="fc" id="L769">      entryMediaType = new String(out.toByteArray(), 0, out.size(), &quot;UTF-8&quot;);</span>
+<span class="nc" id="L770">    } catch (IOException ex) {</span>
+<span class="nc" id="L771">      Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L772">      handleIOException(ex, false);</span>
+    } finally {
+<span class="pc bpc" id="L774" title="1 of 2 branches missed.">      if (out != null) {</span>
+        try {
+<span class="fc" id="L776">          closeStream(out);</span>
+<span class="nc" id="L777">        } catch (IOException ex) {</span>
+<span class="nc" id="L778">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L779">        }</span>
+<span class="fc" id="L780">        out = null;</span>
+      }
+    }
+<span class="fc" id="L783">    return entryMediaType;</span>
+  }
+
+  private void closeStream(Closeable closeable) throws SAXException, IOException {
+<span class="pc bpc" id="L787" title="1 of 2 branches missed.">    if (closeable != null) {</span>
+      try {
+<span class="fc" id="L789">        closeable.close();</span>
+<span class="nc" id="L790">      } catch (IOException ioe) {</span>
+        // Warning only. This is usually just logged.
+        // Allow user to throw an exception all the same
+<span class="nc" id="L793">        handleIOException(ioe, true);</span>
+<span class="fc" id="L794">      }</span>
+    }
+<span class="fc" id="L796">  }</span>
+
+  private void handleIOException(IOException ex, boolean warningOnly)
+      throws SAXException, IOException {
+<span class="nc bnc" id="L800" title="All 2 branches missed.">    if (mErrorHandler != null) {</span>
+<span class="nc" id="L801">      SAXParseException se = new SAXParseException(ex.getMessage(), null, ex);</span>
+      try {
+<span class="nc bnc" id="L803" title="All 2 branches missed.">        if (warningOnly) {</span>
+<span class="nc" id="L804">          mErrorHandler.warning(se);</span>
+        } else {
+<span class="nc" id="L806">          mErrorHandler.error(se);</span>
+        }
+<span class="nc" id="L808">      } catch (SAXException e1) {</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">        if (e1 == se) {</span>
+<span class="nc" id="L810">          throw ex;</span>
+          // We re-throw the original exception if the error handler
+          // just threw the SAXException we gave it.
+        } else {
+<span class="nc" id="L814">          throw e1; // Throw what the error handler threw.</span>
+        }
+<span class="nc" id="L816">      }</span>
+    }
+<span class="nc" id="L818">    throw ex; // No error handler? Just throw the original IOException</span>
+  }
+
+  /**
+   * Insert an ODF document into the package at the given path. The path has to be a directory and
+   * will receive the MIME type of the OdfPackageDocument.
+   *
+   * @param doc the OdfPackageDocument to be inserted.
+   * @param internalPath path relative to the package root, where the document should be inserted.
+   */
+  void cacheDocument(OdfPackageDocument doc, String internalPath) {
+<span class="fc bfc" id="L829" title="All 2 branches covered.">    if (!internalPath.isEmpty()) {</span>
+<span class="fc" id="L830">      internalPath = normalizeDirectoryPath(internalPath);</span>
+<span class="fc" id="L831">      updateFileEntry(ensureFileEntryExistence(internalPath), doc.getMediaTypeString());</span>
+<span class="fc" id="L832">      mPkgDocuments.put(internalPath, doc);</span>
+    }
+<span class="fc" id="L834">  }</span>
+
+  /**
+   * Set the baseURI for this ODF package. NOTE: Should only be set during saving the package.
+   *
+   * @param baseURI defining the location of the package
+   */
+  void setBaseURI(String baseURI) {
+<span class="nc" id="L842">    mBaseURI = baseURI;</span>
+<span class="nc" id="L843">  }</span>
+
+  /**
+   * @return The URI to the ODF package, usually the URL, where this ODF package is located. If the
+   *     package has not URI NULL is returned. This is the case if the package was new created
+   *     without an URI and not saved before.
+   */
+  public String getBaseURI() {
+<span class="fc" id="L851">    return mBaseURI;</span>
+  }
+
+  /**
+   * Returns on ODF documents based a given mediatype.
+   *
+   * @param internalPath path relative to the package root, where the document should be loaded.
+   * @return The ODF document, which mediatype depends on the parameter or NULL if media type were
+   *     not supported.
+   */
+  public OdfPackageDocument loadDocument(String internalPath) {
+<span class="fc" id="L862">    OdfPackageDocument doc = getCachedDocument(internalPath);</span>
+<span class="fc bfc" id="L863" title="All 2 branches covered.">    if (doc == null) {</span>
+<span class="fc" id="L864">      String mediaTypeString = getMediaTypeString();</span>
+      // ToDo: Issue 265 - Remove dependency to higher layer by factory
+<span class="fc" id="L866">      OdfMediaType odfMediaType = OdfMediaType.getOdfMediaType(mediaTypeString);</span>
+<span class="pc bpc" id="L867" title="1 of 2 branches missed.">      if (odfMediaType == null) {</span>
+<span class="nc" id="L868">        doc = new OdfPackageDocument(this, internalPath, mediaTypeString);</span>
+      } else {
+        try {
+<span class="fc" id="L871">          String documentMediaType = getMediaTypeString(internalPath);</span>
+<span class="fc" id="L872">          odfMediaType = OdfMediaType.getOdfMediaType(documentMediaType);</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">          if (odfMediaType == null) {</span>
+<span class="fc" id="L874">            return null;</span>
+          }
+          // ToDo: Issue 265 - Remove dependency to higher layer by factory
+<span class="fc" id="L877">          doc = OdfDocument.loadDocument(this, internalPath);</span>
+<span class="nc" id="L878">        } catch (Exception ex) {</span>
+          // ToDo: catching Exception, logging it and continuing is bad style.
+          // Refactor exception handling in higher layer, too. - ??
+<span class="nc" id="L881">          Logger.getLogger(OdfPackageDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L882">        }</span>
+      }
+    }
+<span class="fc" id="L885">    return doc;</span>
+  }
+
+  /**
+   * @deprecated This method is only added temporary as workaround for the IBM fork using different
+   *     DOC classes. Until the registering of DOC documents to the PKG layer has been finished.
+   * @param internalPath path relative to the package root, where the document should be inserted.
+   * @return an already open OdfPackageDocument via its path, otherwise NULL.
+   */
+  @Deprecated
+  public OdfPackageDocument getCachedDocument(String internalPath) {
+<span class="fc" id="L896">    internalPath = normalizeDirectoryPath(internalPath);</span>
+<span class="fc" id="L897">    return mPkgDocuments.get(internalPath);</span>
+  }
+
+  /**
+   * @param dom the DOM tree that has been parsed and should be added to the cache.
+   * @param internalPath path relative to the package root, where the XML of the DOM is located.
+   * @return an already open OdfPackageDocument via its path, otherwise NULL.
+   */
+  void cacheDom(Document dom, String internalPath) {
+<span class="fc" id="L906">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc" id="L907">    this.insert(dom, internalPath, null);</span>
+<span class="fc" id="L908">  }</span>
+
+  /**
+   * @param internalPath path relative to the package root, where the document should be inserted.
+   * @return an already open W3C XML Document via its path, otherwise NULL.
+   */
+  Document getCachedDom(String internalPath) {
+<span class="fc" id="L915">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc" id="L916">    return this.mPkgDoms.get(internalPath);</span>
+  }
+
+  /** @return a map with all open W3C XML documents with their internal package path as key. */
+  Map&lt;String, Document&gt; getCachedDoms() {
+<span class="fc" id="L921">    return this.mPkgDoms;</span>
+  }
+
+  /**
+   * Removes a document from the package via its path. Independent if it was already opened or not.
+   *
+   * @param internalPath path relative to the package root, where the document should be removed.
+   */
+  public void removeDocument(String internalPath) {
+    // Note: the EMPTY String for root path will be exchanged to a SLASH
+<span class="fc" id="L931">    internalPath = normalizeDirectoryPath(internalPath);</span>
+    // get all files of the package
+<span class="fc" id="L933">    Set&lt;String&gt; allPackageFileNames = getFilePaths();</span>
+
+    // If the document is the root document
+    // the &quot;/&quot; representing the root document is outside the
+    // manifest.xml in the API an empty path
+    // still normalizeDirectoryPath() already exchanged the EMPTY_STRING
+    // to SLASH
+<span class="pc bpc" id="L940" title="1 of 2 branches missed.">    if (internalPath.equals(SLASH)) {</span>
+<span class="nc bnc" id="L941" title="All 2 branches missed.">      for (String entryName : allPackageFileNames) {</span>
+<span class="nc" id="L942">        remove(entryName);</span>
+<span class="nc" id="L943">      }</span>
+<span class="nc" id="L944">      remove(SLASH);</span>
+    } else {
+      // remove all the stream of the directory, such as pictures
+<span class="fc" id="L947">      List&lt;String&gt; directoryEntryNames = new ArrayList&lt;String&gt;();</span>
+<span class="fc bfc" id="L948" title="All 2 branches covered.">      for (String entryName : allPackageFileNames) {</span>
+<span class="fc bfc" id="L949" title="All 2 branches covered.">        if (entryName.startsWith(internalPath)) {</span>
+<span class="fc" id="L950">          directoryEntryNames.add(entryName);</span>
+        }
+<span class="fc" id="L952">      }</span>
+<span class="fc bfc" id="L953" title="All 2 branches covered.">      for (String entryName : directoryEntryNames) {</span>
+<span class="fc" id="L954">        remove(entryName);</span>
+<span class="fc" id="L955">      }</span>
+<span class="fc" id="L956">      remove(internalPath);</span>
+    }
+<span class="fc" id="L958">  }</span>
+
+  /** @return all currently opened OdfPackageDocument of this OdfPackage */
+  Set&lt;String&gt; getCachedPackageDocuments() {
+<span class="nc" id="L962">    return mPkgDocuments.keySet();</span>
+  }
+
+  public OdfPackageDocument getRootDocument() {
+<span class="fc" id="L966">    OdfPackageDocument odfPackageDocument = null;</span>
+<span class="fc" id="L967">    odfPackageDocument = mPkgDocuments.get(OdfPackageDocument.ROOT_DOCUMENT_PATH);</span>
+<span class="pc bpc" id="L968" title="1 of 2 branches missed.">    if (odfPackageDocument == null) {</span>
+<span class="fc" id="L969">      odfPackageDocument = this.loadDocument(OdfPackageDocument.ROOT_DOCUMENT_PATH);</span>
+    }
+<span class="fc" id="L971">    return odfPackageDocument;</span>
+  }
+
+  public OdfManifestDom getManifestDom() {
+<span class="fc" id="L975">    return mManifestDom;</span>
+  }
+
+  /**
+   * Get the media type of the ODF file or document (ie. a directory). A directory with a mediatype
+   * can be loaded as &lt;code&gt;OdfPackageDocument&lt;/code&gt;. Note: A directoy is represented by in the
+   * package as directory with media type
+   *
+   * @param internalPath within the package of the file or document.
+   * @return the mediaType for the resource of the given path
+   */
+  public String getMediaTypeString(String internalPath) {
+<span class="fc" id="L987">    String mediaType = null;</span>
+<span class="pc bpc" id="L988" title="1 of 2 branches missed.">    if (internalPath != null) {</span>
+<span class="fc bfc" id="L989" title="All 4 branches covered.">      if (internalPath.equals(EMPTY_STRING) || internalPath.equals(SLASH)) {</span>
+<span class="fc" id="L990">        return mMediaType;</span>
+      } else {
+<span class="fc" id="L992">        mediaType = getMediaTypeFromEntry(normalizePath(internalPath));</span>
+        // if no file was found, look for a normalized directory name
+<span class="fc bfc" id="L994" title="All 2 branches covered.">        if (mediaType == null) {</span>
+<span class="fc" id="L995">          mediaType = getMediaTypeFromEntry(normalizeDirectoryPath(internalPath));</span>
+        }
+      }
+    }
+<span class="fc" id="L999">    return mediaType;</span>
+  }
+
+  private String getMediaTypeFromEntry(String internalPath) {
+<span class="fc" id="L1003">    OdfFileEntry entry = getFileEntry(internalPath);</span>
+    // if the document is not in the package, the return is NULL
+<span class="fc bfc" id="L1005" title="All 2 branches covered.">    if (entry != null) {</span>
+<span class="fc" id="L1006">      return entry.getMediaTypeString();</span>
+    } else {
+<span class="fc" id="L1008">      return null;</span>
+    }
+  }
+
+  /**
+   * Get the media type of the ODF package (equal to media type of ODF root document)
+   *
+   * @return the mediaType string of this ODF package
+   */
+  public String getMediaTypeString() {
+<span class="fc" id="L1018">    return mMediaType;</span>
+  }
+
+  /**
+   * Set the media type of the ODF package (equal to media type of ODF root document)
+   *
+   * @param mediaType string of this ODF package
+   */
+  void setMediaTypeString(String mediaType) {
+<span class="fc" id="L1027">    mMediaType = mediaType;</span>
+<span class="fc" id="L1028">  }</span>
+
+  /**
+   * Get an OdfFileEntry for the internalPath NOTE: This method should be better moved to a DOM
+   * inherited Manifest class
+   *
+   * @param internalPath The relative package path within the ODF package
+   * @return The manifest file entry will be returned.
+   */
+  public OdfFileEntry getFileEntry(String internalPath) {
+<span class="fc" id="L1038">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc" id="L1039">    return mManifestEntries.get(internalPath);</span>
+  }
+
+  /**
+   * Get a OdfFileEntries from the manifest file (i.e. /META/manifest.xml&quot;)
+   *
+   * @return The paths of the manifest file entries will be returned.
+   */
+  public Set&lt;String&gt; getFilePaths() {
+<span class="fc" id="L1048">    return mManifestEntries.keySet();</span>
+  }
+
+  /**
+   * Check existence of a file in the package.
+   *
+   * @param internalPath The relative package documentURL within the ODF package
+   * @return True if there is an entry and a file for the given documentURL
+   */
+  public boolean contains(String internalPath) {
+<span class="fc" id="L1058">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc" id="L1059">    return mManifestEntries.containsKey(internalPath);</span>
+  }
+
+  /**
+   * Save the package to given documentURL.
+   *
+   * @param odfPath - the path to the ODF package destination
+   * @throws java.io.IOException - if the package could not be saved
+   */
+  public void save(String odfPath) throws SAXException, IOException {
+<span class="nc" id="L1069">    File f = new File(odfPath);</span>
+<span class="nc" id="L1070">    save(f);</span>
+<span class="nc" id="L1071">  }</span>
+
+  /**
+   * Save package to a given File. After saving it is still necessary to close the package to have
+   * again full access about the file.
+   *
+   * @param pkgFile - the File to save the ODF package to
+   * @throws java.io.IOException - if the package could not be saved
+   */
+  public void save(File pkgFile) throws SAXException, IOException {
+<span class="fc" id="L1081">    String baseURL = getBaseURLFromFile(pkgFile);</span>
+    // if (baseURL.equals(mBaseURI)) {
+    // // save to the same file: cache everything first
+    // // ToDo: (Issue 219 - PackageRefactoring) --maybe it's better to
+    // write to a new file and copy that
+    // // to the original one - would be less memory footprint
+    // cacheContent();
+    // }
+<span class="fc" id="L1089">    FileOutputStream fos = new FileOutputStream(pkgFile);</span>
+    try {
+<span class="fc" id="L1091">      save(fos, baseURL);</span>
+    } finally {
+<span class="fc" id="L1093">      fos.close();</span>
+    }
+<span class="fc" id="L1095">  }</span>
+
+  /**
+   * Saves the package to a given {@link OutputStream}. The given stream is not closed by this
+   * method.
+   *
+   * @param odfStream the output stream
+   * @throws IOException if an I/O error occurs while saving the package
+   * @throws SAXException
+   */
+  public void save(OutputStream odfStream) throws SAXException, IOException {
+<span class="nc" id="L1106">    save(odfStream, null);</span>
+<span class="nc" id="L1107">  }</span>
+
+  /**
+   * Sets the password of this package. if password is not null, package will be encrypted when
+   * save.
+   *
+   * @param password password
+   * @since 0.8.9
+   */
+  public void setPassword(String password) {
+<span class="fc" id="L1117">    mNewPwd = password;</span>
+<span class="fc" id="L1118">  }</span>
+
+  /**
+   * Save an ODF document to the OutputStream.
+   *
+   * @param odfStream - the OutputStream to insert content to
+   * @param baseURL defining the location of the package
+   * @throws java.io.IOException if an I/O error occurs while saving the package
+   */
+  private void save(OutputStream odfStream, String baseURL) throws IOException, SAXException {
+<span class="fc" id="L1128">    mBaseURI = baseURL;</span>
+<span class="fc" id="L1129">    OdfFileEntry rootEntry = mManifestEntries.get(SLASH);</span>
+<span class="pc bpc" id="L1130" title="1 of 2 branches missed.">    if (rootEntry == null) {</span>
+<span class="nc" id="L1131">      rootEntry =</span>
+          new OdfFileEntry(
+<span class="nc" id="L1133">              getManifestDom().getRootElement().newFileEntryElement(SLASH, mMediaType));</span>
+<span class="nc" id="L1134">      mManifestEntries.put(SLASH, rootEntry);</span>
+    } else {
+<span class="fc" id="L1136">      rootEntry.setMediaTypeString(mMediaType);</span>
+    }
+<span class="fc" id="L1138">    ZipArchiveOutputStream zos = new ZipArchiveOutputStream(odfStream);</span>
+    // remove mediatype path and use it as first
+<span class="fc" id="L1140">    this.mManifestEntries.remove(OdfFile.MEDIA_TYPE.getPath());</span>
+<span class="fc" id="L1141">    Set&lt;String&gt; keys = mManifestEntries.keySet();</span>
+<span class="fc" id="L1142">    boolean isFirstFile = true;</span>
+<span class="fc" id="L1143">    CRC32 crc = new CRC32();</span>
+<span class="fc" id="L1144">    long modTime = (new java.util.Date()).getTime();</span>
+<span class="fc" id="L1145">    byte[] data = null;</span>
+<span class="fc bfc" id="L1146" title="All 2 branches covered.">    for (String path : keys) {</span>
+      // ODF requires the &quot;mimetype&quot; file to be at first in the package
+<span class="fc bfc" id="L1148" title="All 2 branches covered.">      if (isFirstFile) {</span>
+<span class="fc" id="L1149">        isFirstFile = false;</span>
+        // create &quot;mimetype&quot; from current attribute value
+<span class="fc" id="L1151">        data = mMediaType.getBytes(&quot;UTF-8&quot;);</span>
+<span class="fc" id="L1152">        createZipEntry(OdfFile.MEDIA_TYPE.getPath(), data, zos, modTime, crc);</span>
+      }
+      // create an entry, but NOT for &quot;ODF document directory&quot;, &quot;MANIFEST&quot; or &quot;mimetype&quot;
+<span class="fc bfc" id="L1155" title="All 2 branches covered.">      if (!path.endsWith(SLASH)</span>
+<span class="fc bfc" id="L1156" title="All 2 branches covered.">          &amp;&amp; !path.equals(OdfPackage.OdfFile.MANIFEST.getPath())</span>
+<span class="pc bpc" id="L1157" title="1 of 2 branches missed.">          &amp;&amp; !path.equals(OdfPackage.OdfFile.MEDIA_TYPE.getPath())) {</span>
+<span class="fc" id="L1158">        data = getBytes(path);</span>
+<span class="fc" id="L1159">        createZipEntry(path, data, zos, modTime, crc);</span>
+      }
+<span class="fc" id="L1161">      data = null;</span>
+<span class="fc" id="L1162">    }</span>
+    // Create &quot;META-INF/&quot; directory
+<span class="fc" id="L1164">    createZipEntry(&quot;META-INF/&quot;, null, zos, modTime, crc);</span>
+    // Create &quot;META-INF/manifest.xml&quot; file after all entries with potential encryption have been
+    // added
+<span class="fc" id="L1167">    data = getBytes(OdfFile.MANIFEST.getPath());</span>
+<span class="fc" id="L1168">    createZipEntry(OdfFile.MANIFEST.getPath(), data, zos, modTime, crc);</span>
+<span class="fc" id="L1169">    zos.flush();</span>
+<span class="fc" id="L1170">    zos.close();</span>
+<span class="fc" id="L1171">    odfStream.flush();</span>
+<span class="fc" id="L1172">  }</span>
+
+  private void createZipEntry(
+      String path, byte[] data, ZipArchiveOutputStream zos, long modTime, CRC32 crc)
+      throws IOException {
+<span class="fc" id="L1177">    ZipArchiveEntry ze = null;</span>
+<span class="fc" id="L1178">    ze = mZipEntries.get(path);</span>
+<span class="fc bfc" id="L1179" title="All 2 branches covered.">    if (ze == null) {</span>
+<span class="fc" id="L1180">      ze = new ZipArchiveEntry(path);</span>
+    }
+<span class="fc" id="L1182">    ze.setTime(modTime);</span>
+<span class="fc bfc" id="L1183" title="All 2 branches covered.">    if (fileNeedsCompression(path)) {</span>
+<span class="fc" id="L1184">      ze.setMethod(ZipArchiveEntry.DEFLATED);</span>
+    } else {
+<span class="fc" id="L1186">      ze.setMethod(ZipArchiveEntry.STORED);</span>
+    }
+<span class="fc" id="L1188">    crc.reset();</span>
+<span class="fc bfc" id="L1189" title="All 2 branches covered.">    if (data != null) {</span>
+<span class="fc" id="L1190">      OdfFileEntry fileEntry = mManifestEntries.get(path);</span>
+      // encrypt file
+<span class="fc bfc" id="L1192" title="All 4 branches covered.">      if (data.length &gt; 0 &amp;&amp; fileNeedsEncryption(path)) {</span>
+<span class="fc" id="L1193">        data = encryptData(data, fileEntry);</span>
+        // encrypted file entries shall be flagged as 'STORED'.
+<span class="fc" id="L1195">        ze.setMethod(ZipArchiveEntry.STORED);</span>
+        // the size of the encrypted file should replace the real
+        // size value.
+<span class="fc" id="L1198">        ze.setCompressedSize(data.length);</span>
+      } else {
+<span class="fc bfc" id="L1200" title="All 2 branches covered.">        if (fileEntry != null) {</span>
+<span class="fc" id="L1201">          fileEntry.setSize(null);</span>
+<span class="fc" id="L1202">          FileEntryElement fileEntryEle = fileEntry.getOdfElement();</span>
+<span class="fc" id="L1203">          EncryptionDataElement encryptionDataElement =</span>
+<span class="fc" id="L1204">              OdfElement.findFirstChildNode(EncryptionDataElement.class, fileEntryEle);</span>
+<span class="pc bpc" id="L1205" title="1 of 2 branches missed.">          while (encryptionDataElement != null) {</span>
+<span class="nc" id="L1206">            fileEntryEle.removeChild(encryptionDataElement);</span>
+<span class="nc" id="L1207">            encryptionDataElement =</span>
+<span class="nc" id="L1208">                OdfElement.findFirstChildNode(EncryptionDataElement.class, fileEntryEle);</span>
+          }
+        }
+<span class="fc" id="L1211">        ze.setCompressedSize(-1);</span>
+      }
+<span class="fc" id="L1213">      ze.setSize(data.length);</span>
+<span class="fc" id="L1214">      crc.update(data);</span>
+<span class="fc" id="L1215">      ze.setCrc(crc.getValue());</span>
+<span class="fc" id="L1216">    } else {</span>
+<span class="fc" id="L1217">      ze.setSize(0);</span>
+<span class="fc" id="L1218">      ze.setCrc(0);</span>
+<span class="fc" id="L1219">      ze.setCompressedSize(-1);</span>
+    }
+<span class="fc" id="L1221">    zos.putArchiveEntry(ze);</span>
+<span class="fc bfc" id="L1222" title="All 2 branches covered.">    if (data != null) {</span>
+<span class="fc" id="L1223">      zos.write(data, 0, data.length);</span>
+    }
+<span class="fc" id="L1225">    zos.closeArchiveEntry();</span>
+<span class="fc" id="L1226">    mZipEntries.put(path, ze);</span>
+<span class="fc" id="L1227">  }</span>
+
+  /**
+   * Determines if a file have to be compressed.
+   *
+   * @param internalPath the file location
+   * @return true if the file needs compression, false, otherwise
+   */
+  private boolean fileNeedsCompression(String internalPath) {
+<span class="fc" id="L1236">    boolean result = true;</span>
+
+    // ODF spec does not allow compression of &quot;./mimetype&quot; file
+<span class="fc bfc" id="L1239" title="All 2 branches covered.">    if (internalPath.equals(OdfPackage.OdfFile.MEDIA_TYPE.getPath())) {</span>
+<span class="fc" id="L1240">      return false;</span>
+    }
+    // see if the file was already compressed
+<span class="fc bfc" id="L1243" title="All 2 branches covered.">    if (internalPath.lastIndexOf(&quot;.&quot;) &gt; 0) {</span>
+<span class="fc" id="L1244">      String suffix =</span>
+<span class="fc" id="L1245">          internalPath.substring(internalPath.lastIndexOf(&quot;.&quot;) + 1, internalPath.length());</span>
+<span class="fc bfc" id="L1246" title="All 2 branches covered.">      if (COMPRESSED_FILETYPES.contains(suffix.toLowerCase())) {</span>
+<span class="fc" id="L1247">        result = false;</span>
+      }
+    }
+<span class="fc" id="L1250">    return result;</span>
+  }
+
+  /**
+   * Determines if a file have to be encrypted.
+   *
+   * @param internalPath the file location
+   * @return true if the file needs encrypted, false, otherwise
+   */
+  private boolean fileNeedsEncryption(String internalPath) {
+<span class="fc bfc" id="L1260" title="All 2 branches covered.">    if (mNewPwd != null) {</span>
+      // ODF spec does not allow encrytion of &quot;./mimetype&quot; file
+<span class="pc bpc" id="L1262" title="1 of 2 branches missed.">      if (internalPath.endsWith(SLASH)</span>
+<span class="fc bfc" id="L1263" title="All 2 branches covered.">          || OdfFile.MANIFEST.getPath().equals(internalPath)</span>
+<span class="fc bfc" id="L1264" title="All 2 branches covered.">          || OdfPackage.OdfFile.MEDIA_TYPE.getPath().equals(internalPath)) {</span>
+<span class="fc" id="L1265">        return false;</span>
+      }
+<span class="fc" id="L1267">      return fileNeedsCompression(internalPath);</span>
+    } else {
+<span class="fc" id="L1269">      return false;</span>
+    }
+  }
+
+  private void close(Closeable closeable) throws SAXException, IOException {
+<span class="pc bpc" id="L1274" title="1 of 2 branches missed.">    if (closeable != null) {</span>
+      try {
+<span class="fc" id="L1276">        closeable.close();</span>
+<span class="nc" id="L1277">      } catch (IOException ioe) {</span>
+        // Warning only. This is usually just logged.
+        // Allow user to throw an exception all the same
+<span class="nc" id="L1280">        handleIOException(ioe, true);</span>
+<span class="fc" id="L1281">      }</span>
+    }
+<span class="fc" id="L1283">  }</span>
+
+  /**
+   * Close the OdfPackage after it is no longer needed. Even after saving it is still necessary to
+   * close the package to have again full access about the file. Closing the OdfPackage will release
+   * all temporary created data. Do this as the last action to free resources. Closing an already
+   * closed document has no effect.
+   */
+  public void close() {
+<span class="pc bpc" id="L1292" title="1 of 2 branches missed.">    if (mZipFile != null) {</span>
+      try {
+<span class="fc" id="L1294">        mZipFile.close();</span>
+<span class="nc" id="L1295">      } catch (IOException ex) {</span>
+        // log exception and continue
+<span class="nc" id="L1297">        Logger.getLogger(OdfPackage.class.getName()).log(Level.INFO, null, ex);</span>
+<span class="fc" id="L1298">      }</span>
+    }
+    // release all stuff - this class is impossible to use afterwards
+<span class="fc" id="L1301">    mZipFile = null;</span>
+<span class="fc" id="L1302">    mMediaType = null;</span>
+<span class="fc" id="L1303">    mZipEntries = null;</span>
+<span class="fc" id="L1304">    mPkgDoms = null;</span>
+<span class="fc" id="L1305">    mMemoryFileCache = null;</span>
+<span class="fc" id="L1306">    mManifestEntries = null;</span>
+<span class="fc" id="L1307">    mBaseURI = null;</span>
+<span class="fc" id="L1308">    mResolver = null;</span>
+<span class="fc" id="L1309">  }</span>
+
+  /** Parse the Manifest file */
+  private void parseManifest() throws SAXException, IOException {
+<span class="fc" id="L1313">    mManifestDom = (OdfManifestDom) OdfFileDom.newFileDom(this, OdfFile.MANIFEST.getPath());</span>
+<span class="fc" id="L1314">    ManifestElement manifestEle = mManifestDom.getRootElement();</span>
+<span class="fc bfc" id="L1315" title="All 2 branches covered.">    if (manifestEle != null) {</span>
+<span class="fc" id="L1316">      setManifestVersion(manifestEle.getVersionAttribute());</span>
+    } else {
+<span class="fc" id="L1318">      logValidationError(OdfPackageConstraint.MANIFEST_NOT_IN_PACKAGE, getBaseURI());</span>
+    }
+<span class="fc" id="L1320">    Map&lt;String, OdfFileEntry&gt; entries = getManifestEntries();</span>
+<span class="fc" id="L1321">    FileEntryElement fileEntryEle =</span>
+<span class="fc" id="L1322">        OdfElement.findFirstChildNode(FileEntryElement.class, manifestEle);</span>
+<span class="fc bfc" id="L1323" title="All 2 branches covered.">    while (fileEntryEle != null) {</span>
+<span class="fc" id="L1324">      String path = fileEntryEle.getFullPathAttribute();</span>
+<span class="fc bfc" id="L1325" title="All 2 branches covered.">      if (path.equals(EMPTY_STRING)) {</span>
+<span class="fc bfc" id="L1326" title="All 2 branches covered.">        if (getErrorHandler() != null) {</span>
+<span class="fc" id="L1327">          logValidationError(OdfPackageConstraint.MANIFEST_WITH_EMPTY_PATH, getBaseURI());</span>
+        }
+      } else {
+<span class="fc" id="L1330">        path = normalizePath(path);</span>
+<span class="fc" id="L1331">        OdfFileEntry currentFileEntry = entries.get(path);</span>
+<span class="pc bpc" id="L1332" title="1 of 2 branches missed.">        if (currentFileEntry == null) {</span>
+<span class="fc" id="L1333">          currentFileEntry = new OdfFileEntry(fileEntryEle);</span>
+        }
+<span class="pc bpc" id="L1335" title="1 of 2 branches missed.">        if (path != null) {</span>
+<span class="fc" id="L1336">          entries.put(path, currentFileEntry);</span>
+        }
+      }
+<span class="fc" id="L1339">      fileEntryEle = OdfElement.findNextChildNode(FileEntryElement.class, fileEntryEle);</span>
+<span class="fc" id="L1340">    }</span>
+<span class="fc" id="L1341">    mMemoryFileCache.remove(OdfFile.MANIFEST.getPath());</span>
+<span class="fc" id="L1342">    mPkgDoms.put(OdfFile.MANIFEST.getPath(), mManifestDom);</span>
+<span class="fc" id="L1343">  }</span>
+
+  XMLReader getXMLReader() throws ParserConfigurationException, SAXException {
+    // create sax parser
+<span class="fc" id="L1347">    SAXParserFactory saxFactory = new org.apache.xerces.jaxp.SAXParserFactoryImpl();</span>
+<span class="fc" id="L1348">    saxFactory.setNamespaceAware(true);</span>
+<span class="fc" id="L1349">    saxFactory.setValidating(false);</span>
+    try {
+<span class="fc" id="L1351">      saxFactory.setXIncludeAware(false);</span>
+<span class="fc" id="L1352">      saxFactory.setFeature(</span>
+          &quot;http://apache.org/xml/features/nonvalidating/load-external-dtd&quot;, false);
+      // removing potential vulnerability: see
+      // https://www.owasp.org/index.php/XML_External_Entity_%28XXE%29_Processing
+<span class="fc" id="L1356">      saxFactory.setFeature(&quot;http://xml.org/sax/features/external-general-entities&quot;, false);</span>
+<span class="fc" id="L1357">      saxFactory.setFeature(&quot;http://xml.org/sax/features/external-parameter-entities&quot;, false);</span>
+<span class="fc" id="L1358">      saxFactory.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true);</span>
+<span class="nc" id="L1359">    } catch (Exception ex) {</span>
+<span class="nc" id="L1360">      Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1361">      throw new RuntimeException();</span>
+<span class="fc" id="L1362">    }</span>
+
+    SAXParser parser;
+    try {
+<span class="fc" id="L1366">      parser = saxFactory.newSAXParser();</span>
+<span class="nc" id="L1367">    } catch (ParserConfigurationException pce) {</span>
+      // Re-throw as SAXException in order not to introduce too many checked exceptions
+<span class="nc" id="L1369">      throw new SAXException(pce);</span>
+<span class="fc" id="L1370">    }</span>
+<span class="fc" id="L1371">    XMLReader xmlReader = parser.getXMLReader();</span>
+    // More details at http://xerces.apache.org/xerces2-j/features.html#namespaces
+<span class="fc" id="L1373">    xmlReader.setFeature(&quot;http://xml.org/sax/features/namespaces&quot;, true);</span>
+    // More details at http://xerces.apache.org/xerces2-j/features.html#namespace-prefixes
+<span class="fc" id="L1375">    xmlReader.setFeature(&quot;http://xml.org/sax/features/namespace-prefixes&quot;, true);</span>
+    // More details at http://xerces.apache.org/xerces2-j/features.html#xmlns-uris
+<span class="fc" id="L1377">    xmlReader.setFeature(&quot;http://xml.org/sax/features/xmlns-uris&quot;, true);</span>
+    // removing potential vulnerability: see
+    // https://www.owasp.org/index.php/XML_External_Entity_%28XXE%29_Processing
+<span class="fc" id="L1380">    xmlReader.setFeature(&quot;http://xml.org/sax/features/external-general-entities&quot;, false);</span>
+<span class="fc" id="L1381">    xmlReader.setFeature(&quot;http://xml.org/sax/features/external-parameter-entities&quot;, false);</span>
+<span class="fc" id="L1382">    xmlReader.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true);</span>
+<span class="fc" id="L1383">    return xmlReader;</span>
+  }
+
+  // Add the given path and all its subdirectories to the internalPath list
+  // to be written later to the manifest
+  private void createSubEntries(String internalPath) {
+<span class="nc" id="L1389">    ManifestElement manifestEle = getManifestDom().getRootElement();</span>
+<span class="nc" id="L1390">    StringTokenizer tok = new StringTokenizer(internalPath, SLASH);</span>
+<span class="nc bnc" id="L1391" title="All 2 branches missed.">    if (tok.countTokens() &gt; 1) {</span>
+<span class="nc" id="L1392">      String path = EMPTY_STRING;</span>
+<span class="nc bnc" id="L1393" title="All 2 branches missed.">      while (tok.hasMoreTokens()) {</span>
+<span class="nc" id="L1394">        String directory = tok.nextToken();</span>
+        // it is a directory, if there are more token
+<span class="nc bnc" id="L1396" title="All 2 branches missed.">        if (tok.hasMoreTokens()) {</span>
+<span class="nc" id="L1397">          path = path + directory + SLASH;</span>
+<span class="nc" id="L1398">          OdfFileEntry fileEntry = mManifestEntries.get(path);</span>
+          // ??? no subdirectory without mimetype in the specification allowed
+<span class="nc bnc" id="L1400" title="All 2 branches missed.">          if (fileEntry == null) {</span>
+<span class="nc" id="L1401">            mManifestEntries.put(</span>
+<span class="nc" id="L1402">                path, new OdfFileEntry(manifestEle.newFileEntryElement(path, null)));</span>
+          }
+        }
+<span class="nc" id="L1405">      }</span>
+    }
+<span class="nc" id="L1407">  }</span>
+
+  /**
+   * Insert DOM tree into OdfPackage. An existing file will be replaced.
+   *
+   * @param fileDOM - XML DOM tree to be inserted as file.
+   * @param internalPath - relative documentURL where the DOM tree should be inserted as XML file
+   * @param mediaType - media type of stream. Set to null if unknown
+   * @throws java.lang.Exception when the DOM tree could not be inserted
+   */
+  public void insert(Document fileDOM, String internalPath, String mediaType) {
+<span class="fc" id="L1418">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc bfc" id="L1419" title="All 2 branches covered.">    if (mediaType == null) {</span>
+<span class="fc" id="L1420">      mediaType = XML_MEDIA_TYPE;</span>
+    }
+<span class="pc bpc" id="L1422" title="1 of 2 branches missed.">    if (fileDOM == null) {</span>
+<span class="nc" id="L1423">      mPkgDoms.remove(internalPath);</span>
+    } else {
+<span class="fc" id="L1425">      mPkgDoms.put(internalPath, fileDOM);</span>
+    }
+<span class="fc bfc" id="L1427" title="All 2 branches covered.">    if (!internalPath.endsWith(OdfFile.MANIFEST.internalPath)) {</span>
+<span class="fc" id="L1428">      updateFileEntry(ensureFileEntryExistence(internalPath), mediaType);</span>
+    }
+    // remove byte array version of new DOM
+<span class="fc" id="L1431">    mMemoryFileCache.remove(internalPath);</span>
+<span class="fc" id="L1432">  }</span>
+
+  /**
+   * Embed an OdfPackageDocument to the current OdfPackage. All the file entries of child document
+   * will be inserted.
+   *
+   * @param sourceDocument the OdfPackageDocument to be embedded.
+   * @param destinationPath path to the directory the ODF document should be inserted (relative to
+   *     ODF package root).
+   */
+  public void insertDocument(OdfPackageDocument sourceDocument, String destinationPath) {
+<span class="fc" id="L1443">    destinationPath = normalizeDirectoryPath(destinationPath);</span>
+    // opened DOM of descendant Documents will be flashed to the their pkg
+<span class="fc" id="L1445">    flushDoms(sourceDocument);</span>
+    // Gets the OdfDocument's manifest entry info, no matter it is a
+    // independent document or an embeddedDocument.
+    Map&lt;String, OdfFileEntry&gt; manifestEntriesToCopy;
+<span class="fc" id="L1449">    String sourceSubPath = null;</span>
+<span class="fc bfc" id="L1450" title="All 2 branches covered.">    if (sourceDocument.isRootDocument()) {</span>
+<span class="fc" id="L1451">      manifestEntriesToCopy = sourceDocument.getPackage().getManifestEntries();</span>
+<span class="fc" id="L1452">      sourceSubPath = ROOT_DOCUMENT_PATH;</span>
+    } else {
+<span class="fc" id="L1454">      manifestEntriesToCopy =</span>
+<span class="fc" id="L1455">          sourceDocument.getPackage().getSubDirectoryEntries(sourceDocument.getDocumentPath());</span>
+<span class="fc" id="L1456">      sourceSubPath = sourceDocument.getDocumentPath();</span>
+    }
+<span class="fc" id="L1458">    addEntriesToPackageAndManifest(</span>
+        manifestEntriesToCopy, sourceDocument, sourceSubPath, destinationPath);
+
+<span class="pc bpc" id="L1461" title="1 of 2 branches missed.">    if (!mManifestEntries.containsKey(destinationPath)) {</span>
+<span class="nc" id="L1462">      ManifestElement manifestEle = mManifestDom.getRootElement();</span>
+      // make sure the media type of embedded Document is right set.
+<span class="nc" id="L1464">      OdfFileEntry embedDocumentRootEntry =</span>
+          new OdfFileEntry(
+<span class="nc" id="L1466">              manifestEle.newFileEntryElement(</span>
+<span class="nc" id="L1467">                  destinationPath, sourceDocument.getMediaTypeString()));</span>
+<span class="nc" id="L1468">      mManifestEntries.put(destinationPath, embedDocumentRootEntry);</span>
+    }
+    // the new document will be attached to its new package (it has been
+    // inserted to)
+<span class="fc" id="L1472">    sourceDocument.setPackage(this);</span>
+<span class="fc" id="L1473">    cacheDocument(sourceDocument, destinationPath);</span>
+<span class="fc" id="L1474">  }</span>
+
+  private void addEntriesToPackageAndManifest(
+      Map&lt;String, OdfFileEntry&gt; entryMapToCopy,
+      OdfPackageDocument sourceDocument,
+      String subDocumentPath,
+      String destinationPath) {
+    // insert to package and add it to the Manifest
+<span class="fc" id="L1482">    destinationPath = sourceDocument.setDocumentPath(destinationPath);</span>
+
+<span class="fc" id="L1484">    Set&lt;String&gt; entryNameList = entryMapToCopy.keySet();</span>
+<span class="fc bfc" id="L1485" title="All 2 branches covered.">    for (String entryName : entryNameList) {</span>
+<span class="fc" id="L1486">      OdfFileEntry entry = entryMapToCopy.get(entryName);</span>
+<span class="pc bpc" id="L1487" title="1 of 2 branches missed.">      if (entry != null) {</span>
+        try {
+<span class="fc bfc" id="L1489" title="All 2 branches covered.">          if (!subDocumentPath.equals(ROOT_DOCUMENT_PATH)) {</span>
+<span class="fc" id="L1490">            entryName = entryName.substring(subDocumentPath.length());</span>
+<span class="fc bfc" id="L1491" title="All 2 branches covered.">            if (entryName.length() == 0) {</span>
+<span class="fc" id="L1492">              entryName = SLASH;</span>
+            }
+          }
+          // if entry is a directory (e.g. an ODF document root)
+<span class="fc bfc" id="L1496" title="All 2 branches covered.">          if (entryName.endsWith(SLASH)) {</span>
+            // insert directory
+<span class="fc bfc" id="L1498" title="All 2 branches covered.">            if (entryName.equals(SLASH)) {</span>
+<span class="fc" id="L1499">              insert((byte[]) null, destinationPath, sourceDocument.getMediaTypeString());</span>
+            } else {
+<span class="fc" id="L1501">              String mediaType = sourceDocument.getMediaTypeString();</span>
+<span class="pc bpc" id="L1502" title="2 of 4 branches missed.">              if (mediaType != null &amp;&amp; mediaType.length() != 0) {</span>
+<span class="fc bfc" id="L1503" title="All 2 branches covered.">                if (!destinationPath.equals(SLASH)) {</span>
+<span class="fc" id="L1504">                  entryName = destinationPath + entryName;</span>
+                }
+<span class="fc" id="L1506">                insert((byte[]) null, entryName, entry.getMediaTypeString());</span>
+              }
+<span class="fc" id="L1508">            }</span>
+          } else {
+<span class="fc" id="L1510">            String documentDirectory = null;</span>
+<span class="fc bfc" id="L1511" title="All 2 branches covered.">            if (destinationPath.equals(SLASH)) {</span>
+<span class="fc" id="L1512">              documentDirectory = EMPTY_STRING;</span>
+            } else {
+<span class="fc" id="L1514">              documentDirectory = destinationPath;</span>
+            }
+<span class="fc" id="L1516">            String packagePath = documentDirectory + entryName;</span>
+<span class="fc" id="L1517">            insert(</span>
+<span class="fc" id="L1518">                sourceDocument.getPackage().getInputStream(entry.getPath()),</span>
+                packagePath,
+<span class="fc" id="L1520">                entry.getMediaTypeString());</span>
+          }
+<span class="nc" id="L1522">        } catch (Exception ex) {</span>
+<span class="nc" id="L1523">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L1524">        }</span>
+      }
+<span class="fc" id="L1526">    }</span>
+<span class="fc" id="L1527">  }</span>
+
+  /**
+   * Insert all open DOMs of XML files beyond parent document to the package. The XML files will be
+   * updated in the package after calling save.
+   *
+   * @param parentDocument the document, which XML files shall be serialized
+   */
+  void flushDoms(OdfPackageDocument parentDocument) {
+<span class="fc" id="L1536">    OdfPackage pkg = parentDocument.getPackage();</span>
+<span class="fc bfc" id="L1537" title="All 2 branches covered.">    if (parentDocument.isRootDocument()) {</span>
+      // for every parsed XML file (DOM)
+<span class="fc bfc" id="L1539" title="All 2 branches covered.">      for (String xmlFilePath : pkg.getCachedDoms().keySet()) {</span>
+        // insert it to the package (serializing and caching it till
+        // final save)
+<span class="fc" id="L1542">        pkg.insert(pkg.getCachedDom(xmlFilePath), xmlFilePath, &quot;text/xml&quot;);</span>
+<span class="fc" id="L1543">      }</span>
+    } else {
+      // if not root document, check ..
+<span class="fc" id="L1546">      String parentDocumentPath = parentDocument.getDocumentPath();</span>
+      // for every parsed XML file (DOM)
+<span class="fc bfc" id="L1548" title="All 2 branches covered.">      for (String xmlFilePath : pkg.getCachedDoms().keySet()) {</span>
+        // if the file is within the given document
+<span class="fc bfc" id="L1550" title="All 2 branches covered.">        if (xmlFilePath.startsWith(parentDocumentPath)) {</span>
+          // insert it to the package (serializing and caching it till
+          // final save)
+<span class="fc" id="L1553">          pkg.insert(pkg.getCachedDom(xmlFilePath), xmlFilePath, &quot;text/xml&quot;);</span>
+        }
+<span class="fc" id="L1555">      }</span>
+    }
+<span class="fc" id="L1557">  }</span>
+
+  /** Get all the file entries from a sub directory */
+  private Map&lt;String, OdfFileEntry&gt; getSubDirectoryEntries(String directory) {
+<span class="fc" id="L1561">    directory = normalizeDirectoryPath(directory);</span>
+<span class="fc" id="L1562">    Map&lt;String, OdfFileEntry&gt; subEntries = new HashMap&lt;String, OdfFileEntry&gt;();</span>
+<span class="fc" id="L1563">    Map&lt;String, OdfFileEntry&gt; allEntries = getManifestEntries();</span>
+<span class="fc" id="L1564">    Set&lt;String&gt; rootEntryNameSet = getFilePaths();</span>
+<span class="fc bfc" id="L1565" title="All 2 branches covered.">    for (String entryName : rootEntryNameSet) {</span>
+<span class="fc bfc" id="L1566" title="All 2 branches covered.">      if (entryName.startsWith(directory)) {</span>
+<span class="fc" id="L1567">        subEntries.put(entryName, allEntries.get(entryName));</span>
+      }
+<span class="fc" id="L1569">    }</span>
+<span class="fc" id="L1570">    return subEntries;</span>
+  }
+
+  /**
+   * Method returns the paths of all document within the package.
+   *
+   * @return A set of paths of all documents of the package, including the root document.
+   */
+  public Set&lt;String&gt; getDocumentPaths() {
+<span class="fc" id="L1579">    return getDocumentPaths(null, null);</span>
+  }
+
+  /**
+   * Method returns the paths of all document within the package matching the given criteria.
+   *
+   * @param mediaTypeString limits the desired set of document paths to documents of the given
+   *     mediaType
+   * @return A set of paths of all documents of the package, including the root document, that match
+   *     the given parameter.
+   */
+  public Set&lt;String&gt; getDocumentPaths(String mediaTypeString) {
+<span class="fc" id="L1591">    return getDocumentPaths(mediaTypeString, null);</span>
+  }
+
+  /**
+   * Method returns the paths of all document within the package matching the given criteria.
+   *
+   * @param mediaTypeString limits the desired set of document paths to documents of the given
+   *     mediaType
+   * @param subDirectory limits the desired set document paths to those documents below of this
+   *     subdirectory
+   * @return A set of paths of all documents of the package, including the root document, that match
+   *     the given parameter.
+   */
+  Set&lt;String&gt; getDocumentPaths(String mediaTypeString, String subDirectory) {
+<span class="fc" id="L1605">    Set&lt;String&gt; innerDocuments = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L1606">    Set&lt;String&gt; packageFilePaths = getFilePaths();</span>
+    // check manifest for current embedded OdfPackageDocuments
+<span class="fc bfc" id="L1608" title="All 2 branches covered.">    for (String filePath : packageFilePaths) {</span>
+      // check if a subdirectory was the criteria and if the files are
+      // beyond the given subdirectory
+<span class="pc bpc" id="L1611" title="1 of 2 branches missed.">      if (subDirectory == null</span>
+<span class="nc bnc" id="L1612" title="All 4 branches missed.">          || filePath.startsWith(subDirectory) &amp;&amp; !filePath.equals(subDirectory)) {</span>
+        // with documentURL is not empty and is a directory (ie. a
+        // potential document)
+<span class="fc bfc" id="L1615" title="All 4 branches covered.">        if (filePath.length() &gt; 1 &amp;&amp; filePath.endsWith(SLASH)) {</span>
+<span class="fc" id="L1616">          String fileMediaType = getFileEntry(filePath).getMediaTypeString();</span>
+<span class="pc bpc" id="L1617" title="1 of 4 branches missed.">          if (fileMediaType != null &amp;&amp; !fileMediaType.equals(EMPTY_STRING)) {</span>
+            // check if a certain mediaType was the critera and was
+            // matched
+<span class="pc bpc" id="L1620" title="1 of 4 branches missed.">            if (mediaTypeString == null || mediaTypeString.equals(fileMediaType)) {</span>
+              // only relative path is allowed as path
+<span class="fc" id="L1622">              innerDocuments.add(filePath);</span>
+            }
+          }
+        }
+      }
+<span class="fc" id="L1627">    }</span>
+<span class="fc" id="L1628">    return innerDocuments;</span>
+  }
+
+  /**
+   * Adding a manifest:file-entry to be saved in manifest.xml. In addition, sub directories will be
+   * added as well to the manifest.
+   */
+  private OdfFileEntry ensureFileEntryExistence(String internalPath) {
+    // if it is NOT the resource &quot;/META-INF/manifest.xml&quot;
+<span class="fc" id="L1637">    OdfFileEntry fileEntry = null;</span>
+<span class="pc bpc" id="L1638" title="2 of 4 branches missed.">    if (!OdfFile.MANIFEST.internalPath.equals(internalPath) &amp;&amp; !internalPath.equals(EMPTY_STRING)) {</span>
+<span class="pc bpc" id="L1639" title="1 of 2 branches missed.">      if (mManifestEntries == null) {</span>
+<span class="nc" id="L1640">        mManifestEntries = new HashMap&lt;String, OdfFileEntry&gt;();</span>
+      }
+<span class="fc" id="L1642">      fileEntry = mManifestEntries.get(internalPath);</span>
+      // for every new file entry
+<span class="fc bfc" id="L1644" title="All 2 branches covered.">      if (fileEntry == null) {</span>
+<span class="fc" id="L1645">        ManifestElement manifestEle = getManifestDom().getRootElement();</span>
+<span class="fc bfc" id="L1646" title="All 2 branches covered.">        if (manifestEle == null) {</span>
+<span class="fc" id="L1647">          return null;</span>
+        }
+<span class="fc" id="L1649">        fileEntry = new OdfFileEntry(manifestEle.newFileEntryElement(internalPath, &quot;&quot;));</span>
+<span class="fc" id="L1650">        mManifestEntries.put(internalPath, fileEntry);</span>
+        // creates recursive file entries for all sub directories
+        // BUT ONLY SUBDIRECTORYS WITH MIMETYPE (documents) ARE ALLOWED IN THE MANIFEST
+        // createSubEntries(internalPath);
+      }
+    }
+<span class="fc" id="L1656">    return fileEntry;</span>
+  }
+
+  /** update file entry setting. */
+  private void updateFileEntry(OdfFileEntry fileEntry, String mediaType) {
+    // overwrite previous settings
+<span class="fc" id="L1662">    fileEntry.setMediaTypeString(mediaType);</span>
+    // reset encryption data (ODFDOM does not support encryption yet)
+    //		fileEntry.setEncryptionData(null);
+    // reset size to be unset
+<span class="fc" id="L1666">    fileEntry.setSize(null);</span>
+<span class="fc" id="L1667">  }</span>
+
+  /**
+   * Gets org.w3c.dom.Document for XML file contained in package.
+   *
+   * @param internalPath to a file within the Odf Package (eg. content.xml)
+   * @return an org.w3c.dom.Document
+   * @throws SAXException
+   * @throws ParserConfigurationException
+   * @throws IOException
+   * @throws IllegalArgumentException
+   * @throws TransformerConfigurationException
+   * @throws TransformerException
+   */
+  public Document getDom(String internalPath)
+      throws SAXException, ParserConfigurationException, IllegalArgumentException,
+          TransformerConfigurationException, TransformerException, IOException {
+
+<span class="fc" id="L1685">    Document dom = mPkgDoms.get(internalPath);</span>
+<span class="fc bfc" id="L1686" title="All 2 branches covered.">    if (dom != null) {</span>
+<span class="fc" id="L1687">      return dom;</span>
+    }
+
+<span class="fc" id="L1690">    InputStream is = getInputStream(internalPath);</span>
+
+    // We depend on Xerces. So we just go ahead and create a Xerces DBF,
+    // without
+    // forcing everything else to do so.
+<span class="fc" id="L1695">    DocumentBuilderFactory factory = new org.apache.xerces.jaxp.DocumentBuilderFactoryImpl();</span>
+<span class="fc" id="L1696">    factory.setNamespaceAware(true);</span>
+<span class="fc" id="L1697">    factory.setValidating(false);</span>
+    try {
+<span class="fc" id="L1699">      factory.setXIncludeAware(false);</span>
+<span class="fc" id="L1700">      factory.setFeature(&quot;http://apache.org/xml/features/nonvalidating/load-external-dtd&quot;, false);</span>
+      // removing potential vulnerability: see
+      // https://www.owasp.org/index.php/XML_External_Entity_%28XXE%29_Processing
+<span class="fc" id="L1703">      factory.setFeature(&quot;http://xml.org/sax/features/external-general-entities&quot;, false);</span>
+<span class="fc" id="L1704">      factory.setFeature(&quot;http://xml.org/sax/features/external-parameter-entities&quot;, false);</span>
+<span class="fc" id="L1705">      factory.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true);</span>
+<span class="nc" id="L1706">    } catch (Exception ex) {</span>
+<span class="nc" id="L1707">      Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1708">      throw new RuntimeException();</span>
+<span class="fc" id="L1709">    }</span>
+
+<span class="fc" id="L1711">    DocumentBuilder builder = factory.newDocumentBuilder();</span>
+<span class="fc" id="L1712">    builder.setEntityResolver(getEntityResolver());</span>
+
+<span class="fc" id="L1714">    String uri = getBaseURI() + internalPath;</span>
+
+<span class="pc bpc" id="L1716" title="1 of 2 branches missed.">    if (mErrorHandler != null) {</span>
+<span class="nc" id="L1717">      builder.setErrorHandler(mErrorHandler);</span>
+    }
+
+<span class="fc" id="L1720">    InputSource ins = new InputSource(is);</span>
+<span class="fc" id="L1721">    ins.setSystemId(uri);</span>
+
+<span class="fc" id="L1723">    dom = builder.parse(ins);</span>
+
+<span class="pc bpc" id="L1725" title="1 of 2 branches missed.">    if (dom != null) {</span>
+<span class="fc" id="L1726">      mPkgDoms.put(internalPath, dom);</span>
+<span class="fc" id="L1727">      mMemoryFileCache.remove(internalPath);</span>
+    }
+<span class="fc" id="L1729">    return dom;</span>
+  }
+
+  /**
+   * Inserts an external file into an OdfPackage. An existing file will be replaced.
+   *
+   * @param sourceURI - the source URI to the file to be inserted into the package.
+   * @param internalPath - relative documentURL where the tree should be inserted as XML file
+   * @param mediaType - media type of stream. Set to null if unknown
+   * @throws java.lang.Exception In case the file could not be saved
+   */
+  public void insert(URI sourceURI, String internalPath, String mediaType) throws Exception {
+<span class="fc" id="L1741">    InputStream is = null;</span>
+<span class="fc bfc" id="L1742" title="All 2 branches covered.">    if (sourceURI.isAbsolute()) {</span>
+      // if the URI is absolute it can be converted to URL
+<span class="fc" id="L1744">      is = sourceURI.toURL().openStream();</span>
+    } else {
+      // otherwise create a file class to open the stream
+<span class="fc" id="L1747">      is = new FileInputStream(sourceURI.toString());</span>
+    }
+<span class="fc" id="L1749">    insert(is, internalPath, mediaType);</span>
+<span class="fc" id="L1750">  }</span>
+
+  /**
+   * Inserts InputStream into an OdfPackage. An existing file will be replaced.
+   *
+   * @param fileStream - the stream of the file to be inserted into the ODF package.
+   * @param internalPath - relative documentURL where the tree should be inserted as XML file
+   * @param mediaType - media type of stream. Set to null if unknown
+   */
+  public void insert(InputStream fileStream, String internalPath, String mediaType)
+      throws IOException {
+<span class="fc" id="L1761">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc bfc" id="L1762" title="All 2 branches covered.">    if (fileStream == null) {</span>
+      // adding a simple directory without MIMETYPE
+<span class="fc" id="L1764">      insert((byte[]) null, internalPath, mediaType);</span>
+    } else {
+<span class="fc" id="L1766">      ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="fc" id="L1767">      BufferedInputStream bis = null;</span>
+<span class="fc bfc" id="L1768" title="All 2 branches covered.">      if (fileStream instanceof BufferedInputStream) {</span>
+<span class="fc" id="L1769">        bis = (BufferedInputStream) fileStream;</span>
+      } else {
+<span class="fc" id="L1771">        bis = new BufferedInputStream(fileStream);</span>
+      }
+<span class="fc" id="L1773">      StreamHelper.transformStream(bis, baos);</span>
+<span class="fc" id="L1774">      byte[] data = baos.toByteArray();</span>
+<span class="fc" id="L1775">      insert(data, internalPath, mediaType);</span>
+    }
+<span class="fc" id="L1777">  }</span>
+
+  /**
+   * Inserts a byte array into OdfPackage. An existing file will be replaced. If the byte array is
+   * NULL a directory with the given mimetype will be created.
+   *
+   * @param fileBytes - data of the file stream to be stored in package. If NULL a directory with
+   *     the given mimetype will be created.
+   * @param internalPath - path of the file or directory relative to the package root.
+   * @param mediaTypeString - media type of stream. If unknown null can be used.
+   */
+  public void insert(byte[] fileBytes, String internalPath, String mediaTypeString) {
+<span class="fc" id="L1789">    internalPath = normalizeFilePath(internalPath);</span>
+    // if path is from the mimetype, which should be first in document
+<span class="pc bpc" id="L1791" title="1 of 2 branches missed.">    if (OdfPackage.OdfFile.MEDIA_TYPE.getPath().equals(internalPath)) {</span>
+      try {
+<span class="nc" id="L1793">        setMediaTypeString(new String(fileBytes, &quot;UTF-8&quot;));</span>
+<span class="nc" id="L1794">      } catch (UnsupportedEncodingException useEx) {</span>
+<span class="nc" id="L1795">        Logger.getLogger(OdfPackage.class.getName())</span>
+<span class="nc" id="L1796">            .log(Level.SEVERE, &quot;ODF file could not be created as string!&quot;, useEx);</span>
+<span class="nc" id="L1797">      }</span>
+<span class="nc" id="L1798">      return;</span>
+    }
+<span class="fc bfc" id="L1800" title="All 2 branches covered.">    if (fileBytes != null) {</span>
+<span class="fc" id="L1801">      mMemoryFileCache.put(internalPath, fileBytes);</span>
+      // as DOM would overwrite data cache, any existing DOM cache will be
+      // deleted
+<span class="pc bpc" id="L1804" title="1 of 2 branches missed.">      if (mPkgDoms.containsKey(internalPath)) {</span>
+<span class="nc" id="L1805">        mPkgDoms.remove(internalPath);</span>
+      }
+    }
+<span class="fc" id="L1808">    updateFileEntry(ensureFileEntryExistence(internalPath), mediaTypeString);</span>
+<span class="fc" id="L1809">  }</span>
+
+  // changed to package access as the manifest interiors are an implementation
+  // detail
+  Map&lt;String, OdfFileEntry&gt; getManifestEntries() {
+<span class="fc" id="L1814">    return mManifestEntries;</span>
+  }
+
+  /**
+   * Get package (sub-) content as byte array
+   *
+   * @param internalPath relative documentURL to the package content
+   * @return the unzipped package content as byte array
+   * @throws java.lang.Exception
+   */
+  public byte[] getBytes(String internalPath) {
+    // if path is null or empty return null
+<span class="pc bpc" id="L1826" title="2 of 4 branches missed.">    if (internalPath == null || internalPath.equals(EMPTY_STRING)) {</span>
+<span class="nc" id="L1827">      return null;</span>
+    }
+<span class="fc" id="L1829">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="fc" id="L1830">    byte[] data = null;</span>
+    // if the file is &quot;mimetype&quot;
+<span class="pc bpc" id="L1832" title="1 of 2 branches missed.">    if (internalPath.equals(OdfPackage.OdfFile.MEDIA_TYPE.getPath())) {</span>
+<span class="nc bnc" id="L1833" title="All 2 branches missed.">      if (mMediaType == null) {</span>
+<span class="nc" id="L1834">        return null;</span>
+      } else {
+        try {
+<span class="nc" id="L1837">          data = mMediaType.getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L1838">        } catch (UnsupportedEncodingException use) {</span>
+<span class="nc" id="L1839">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, use);</span>
+<span class="nc" id="L1840">          return null;</span>
+<span class="nc" id="L1841">        }</span>
+      }
+<span class="fc bfc" id="L1843" title="All 2 branches covered.">    } else if (mPkgDoms.get(internalPath) != null) {</span>
+<span class="fc" id="L1844">      data = flushDom(mPkgDoms.get(internalPath));</span>
+<span class="fc" id="L1845">      mMemoryFileCache.put(internalPath, data);</span>
+      // if the path's file was cached to memory (second high priority)
+<span class="fc bfc" id="L1847" title="All 2 branches covered.">    } else if (mManifestEntries.containsKey(internalPath)</span>
+<span class="fc bfc" id="L1848" title="All 2 branches covered.">        &amp;&amp; mMemoryFileCache.get(internalPath) != null) {</span>
+<span class="fc" id="L1849">      data = mMemoryFileCache.get(internalPath);</span>
+
+      // if the path's file was cached to disc (lowest priority)
+    }
+    // if not available, check if file exists in ZIP
+<span class="fc bfc" id="L1854" title="All 2 branches covered.">    if (data == null) {</span>
+<span class="fc" id="L1855">      ZipArchiveEntry entry = null;</span>
+<span class="fc bfc" id="L1856" title="All 2 branches covered.">      if ((entry = mZipEntries.get(internalPath)) != null) {</span>
+<span class="fc" id="L1857">        InputStream inputStream = null;</span>
+        try {
+<span class="fc" id="L1859">          inputStream = mZipFile.getInputStream(entry);</span>
+<span class="pc bpc" id="L1860" title="1 of 2 branches missed.">          if (inputStream != null) {</span>
+<span class="fc" id="L1861">            ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="fc" id="L1862">            StreamHelper.transformStream(inputStream, out);</span>
+<span class="fc" id="L1863">            data = out.toByteArray();</span>
+            // decrypt data as needed
+<span class="pc bpc" id="L1865" title="1 of 2 branches missed.">            if (!(internalPath.equals(OdfFile.MEDIA_TYPE.getPath())</span>
+<span class="fc bfc" id="L1866" title="All 2 branches covered.">                || internalPath.equals(OdfFile.MANIFEST.getPath()))) {</span>
+<span class="fc" id="L1867">              OdfFileEntry manifestEntry = getManifestEntries().get(internalPath);</span>
+<span class="fc" id="L1868">              EncryptionDataElement encryptionDataElement = manifestEntry.getEncryptionData();</span>
+<span class="fc bfc" id="L1869" title="All 2 branches covered.">              if (encryptionDataElement != null) {</span>
+<span class="fc" id="L1870">                byte[] newData = decryptData(data, manifestEntry, encryptionDataElement);</span>
+<span class="fc bfc" id="L1871" title="All 2 branches covered.">                if (newData != null) {</span>
+<span class="fc" id="L1872">                  data = newData;</span>
+                } else {
+<span class="fc" id="L1874">                  Logger.getLogger(OdfPackage.class.getName())</span>
+<span class="fc" id="L1875">                      .log(Level.SEVERE, null, &quot;Wrong password being used for decryption!&quot;);</span>
+                }
+              }
+            }
+            // store for further usage; do not care about manifest:
+            // that is handled exclusively
+<span class="fc" id="L1881">            mMemoryFileCache.put(internalPath, data);</span>
+          }
+<span class="nc" id="L1883">        } catch (IOException ex) {</span>
+          // Catching IOException here should be fine: in-memory operations only
+<span class="nc" id="L1885">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+        } finally {
+          try {
+<span class="pc bpc" id="L1888" title="1 of 2 branches missed.">            if (inputStream != null) {</span>
+<span class="fc" id="L1889">              inputStream.close();</span>
+            }
+<span class="nc" id="L1891">          } catch (IOException ex) {</span>
+<span class="nc" id="L1892">            Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L1893">          }</span>
+        }
+      }
+    }
+<span class="fc" id="L1897">    return data;</span>
+  }
+
+  // encrypt data and update manifest.
+  private byte[] encryptData(byte[] data, OdfFileEntry fileEntry) {
+<span class="fc" id="L1902">    byte[] encryptedData = null;</span>
+    try {
+      // 1.The original uncompressed, unencrypted size is
+      // contained in the manifest:size.
+<span class="fc" id="L1906">      fileEntry.setSize(data.length);</span>
+
+      // 2.Compress with the &quot;deflate&quot; algorithm
+<span class="fc" id="L1909">      Deflater compresser = new Deflater(Deflater.DEFLATED, true);</span>
+<span class="fc" id="L1910">      compresser.setInput(data);</span>
+<span class="fc" id="L1911">      compresser.finish();</span>
+<span class="fc" id="L1912">      byte[] compressedData = new byte[data.length];</span>
+<span class="fc" id="L1913">      int compressedDataLength = compresser.deflate(compressedData);</span>
+
+      // 3. The start key is generated: the byte sequence
+      // representing the password in UTF-8 is used to
+      // generate a 20-byte SHA1 digest.
+<span class="fc" id="L1918">      byte[] passBytes = mNewPwd.getBytes(&quot;UTF-8&quot;);</span>
+<span class="fc" id="L1919">      MessageDigest md = MessageDigest.getInstance(&quot;SHA1&quot;);</span>
+<span class="fc" id="L1920">      passBytes = md.digest(passBytes);</span>
+      // 4. Checksum specifies a digest in BASE64 encoding
+      // that can be used to detect password correctness. The
+      // digest is build from the compressed unencrypted file.
+<span class="fc" id="L1924">      md.reset();</span>
+<span class="fc bfc" id="L1925" title="All 2 branches covered.">      md.update(compressedData, 0, (compressedDataLength &gt; 1024 ? 1024 : compressedDataLength));</span>
+<span class="fc" id="L1926">      byte[] checksumBytes = new byte[20];</span>
+<span class="fc" id="L1927">      md.digest(checksumBytes, 0, 20);</span>
+
+      // 5. For each file, a 16-byte salt is generated by a random
+      // generator.
+      // The salt is a BASE64 encoded binary sequence.
+<span class="fc" id="L1932">      SecureRandom secureRandom = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L1933">      byte[] salt = new byte[16];</span>
+<span class="fc" id="L1934">      secureRandom.nextBytes(salt);</span>
+
+      // char passChars[] = new String(passBytes, &quot;UTF-8&quot;).toCharArray();
+      /*
+       * char passChars[] = new char[20]; for (int i = 0; i &lt;
+       * passBytes.length; i++) { passChars[i] = (char)
+       * ((passBytes[i]+256)%256);
+       * //System.out.println(&quot;passChars[i]:&quot;+passChars
+       * [i]+&quot;, passBytes[i]&quot;+passBytes[i]); } //char passChars[] =
+       * getChars(passBytes); // 6. The PBKDF2 algorithm based on the
+       * HMAC-SHA-1 function is used for the key derivation.
+       * SecretKeyFactory factory =
+       * SecretKeyFactory.getInstance(&quot;PBKDF2WithHmacSHA1&quot;); // 7. The
+       * salt is used together with the start key to derive a unique
+       * 128-bit key for each file. // The default iteration count for the
+       * algorithm is 1024. KeySpec spec = new PBEKeySpec(passChars, salt,
+       * 1024, 128); SecretKey skey = factory.generateSecret(spec); byte[]
+       * raw = skey.getEncoded(); // algorithm-name=&quot;Blowfish CFB&quot;
+       * SecretKeySpec skeySpec = new SecretKeySpec(raw, &quot;Blowfish&quot;);
+       */
+<span class="fc" id="L1954">      byte[] dk = derivePBKDF2Key(passBytes, salt, 1024, 16);</span>
+<span class="fc" id="L1955">      SecretKeySpec key = new SecretKeySpec(dk, &quot;Blowfish&quot;);</span>
+      // 8.The files are encrypted: The random number
+      // generator is used to generate the 8-byte initialization vector
+      // for the
+      // algorithm. The derived key is used together with the
+      // initialization
+      // vector to encrypt the file using the Blowfish algorithm in cipher
+      // feedback
+      // CFB mode.
+<span class="fc" id="L1964">      Cipher cipher = Cipher.getInstance(&quot;Blowfish/CFB/NoPadding&quot;);</span>
+      // initialisation-vector specifies the byte-sequence used
+      // as an initialization vector to a encryption algorithm. The
+      // initialization vector is a BASE64 encoded binary sequence.
+<span class="fc" id="L1968">      byte[] iv = new byte[8];</span>
+<span class="fc" id="L1969">      secureRandom.nextBytes(iv);</span>
+<span class="fc" id="L1970">      IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);</span>
+<span class="fc" id="L1971">      cipher.init(Cipher.ENCRYPT_MODE, key, ivParameterSpec);</span>
+<span class="fc" id="L1972">      encryptedData = cipher.doFinal(compressedData, 0, compressedDataLength);</span>
+
+      // 9.update file entry encryption data.
+<span class="fc" id="L1975">      String checksum = new Base64Binary(checksumBytes).toString();</span>
+<span class="fc" id="L1976">      FileEntryElement fileEntryElement = fileEntry.getOdfElement();</span>
+<span class="fc" id="L1977">      EncryptionDataElement encryptionDataElement =</span>
+<span class="fc" id="L1978">          OdfElement.findFirstChildNode(EncryptionDataElement.class, fileEntryElement);</span>
+<span class="pc bpc" id="L1979" title="1 of 2 branches missed.">      if (encryptionDataElement != null) {</span>
+<span class="nc" id="L1980">        fileEntryElement.removeChild(encryptionDataElement);</span>
+      }
+<span class="fc" id="L1982">      encryptionDataElement = fileEntryElement.newEncryptionDataElement(checksum, &quot;SHA1/1K&quot;);</span>
+<span class="fc" id="L1983">      String initialisationVector = new Base64Binary(iv).toString();</span>
+<span class="fc" id="L1984">      AlgorithmElement algorithmElement =</span>
+<span class="fc" id="L1985">          OdfElement.findFirstChildNode(AlgorithmElement.class, encryptionDataElement);</span>
+<span class="pc bpc" id="L1986" title="1 of 2 branches missed.">      if (algorithmElement != null) {</span>
+<span class="nc" id="L1987">        encryptionDataElement.removeChild(algorithmElement);</span>
+      }
+<span class="fc" id="L1989">      algorithmElement =</span>
+<span class="fc" id="L1990">          encryptionDataElement.newAlgorithmElement(&quot;Blowfish CFB&quot;, initialisationVector);</span>
+<span class="fc" id="L1991">      String saltStr = new Base64Binary(salt).toString();</span>
+<span class="fc" id="L1992">      KeyDerivationElement keyDerivationElement =</span>
+<span class="fc" id="L1993">          OdfElement.findFirstChildNode(KeyDerivationElement.class, encryptionDataElement);</span>
+<span class="pc bpc" id="L1994" title="1 of 2 branches missed.">      if (keyDerivationElement != null) {</span>
+<span class="nc" id="L1995">        encryptionDataElement.removeChild(keyDerivationElement);</span>
+      }
+<span class="fc" id="L1997">      keyDerivationElement = encryptionDataElement.newKeyDerivationElement(1024, &quot;PBKDF2&quot;, saltStr);</span>
+<span class="fc" id="L1998">      StartKeyGenerationElement startKeyGenerationElement =</span>
+<span class="fc" id="L1999">          OdfElement.findFirstChildNode(StartKeyGenerationElement.class, encryptionDataElement);</span>
+<span class="pc bpc" id="L2000" title="1 of 2 branches missed.">      if (startKeyGenerationElement != null) {</span>
+<span class="nc" id="L2001">        encryptionDataElement.removeChild(startKeyGenerationElement);</span>
+      }
+<span class="fc" id="L2003">      encryptionDataElement.newStartKeyGenerationElement(&quot;SHA1&quot;).setKeySizeAttribute(20);</span>
+
+      // System.out.println(&quot;full-path=\&quot;&quot;+ path +&quot;\&quot;&quot;);
+      // System.out.println(&quot;size=\&quot;&quot;+ data.length +&quot;\&quot;&quot;);
+      // System.out.println(&quot;checksum=\&quot;&quot;+ checksum +&quot;\&quot;&quot;);
+      // System.out.println(&quot;compressedData =&quot;+compressedDataLength);
+      // System.out.println(&quot;MANIFEST: &quot; + fileEntryElement.getParentNode().toString());
+<span class="nc" id="L2010">    } catch (Exception e) {</span>
+      // throws NoSuchAlgorithmException,
+      // InvalidKeySpecException, NoSuchPaddingException,
+      // InvalidKeyException,
+      // InvalidAlgorithmParameterException,
+      // IllegalBlockSizeException, BadPaddingException
+<span class="nc" id="L2016">      Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="fc" id="L2017">    }</span>
+<span class="fc" id="L2018">    return encryptedData;</span>
+  }
+
+  private byte[] decryptData(
+      byte[] data, OdfFileEntry manifestEntry, EncryptionDataElement encryptionDataElement) {
+<span class="fc" id="L2023">    byte[] decompressData = null;</span>
+    try {
+<span class="fc" id="L2025">      KeyDerivationElement keyDerivationElement =</span>
+<span class="fc" id="L2026">          OdfElement.findFirstChildNode(KeyDerivationElement.class, encryptionDataElement);</span>
+<span class="fc" id="L2027">      AlgorithmElement algorithmElement =</span>
+<span class="fc" id="L2028">          OdfElement.findFirstChildNode(AlgorithmElement.class, encryptionDataElement);</span>
+<span class="fc" id="L2029">      String saltStr = keyDerivationElement.getSaltAttribute();</span>
+<span class="fc" id="L2030">      String ivStr = algorithmElement.getInitialisationVectorAttribute();</span>
+<span class="fc" id="L2031">      String checksum = encryptionDataElement.getChecksumAttribute();</span>
+<span class="fc" id="L2032">      byte[] salt = Base64Binary.valueOf(saltStr).getBytes();</span>
+<span class="fc" id="L2033">      byte[] iv = Base64Binary.valueOf(ivStr).getBytes();</span>
+<span class="fc" id="L2034">      byte[] passBytes = mOldPwd.getBytes(&quot;UTF-8&quot;);</span>
+<span class="fc" id="L2035">      MessageDigest md = MessageDigest.getInstance(&quot;SHA-1&quot;);</span>
+<span class="fc" id="L2036">      passBytes = md.digest(passBytes);</span>
+      /*
+       * char passChars[] = new char[passBytes.length]; for(int i = 0;
+       * i&lt;passBytes.length; i++){ passChars[i] =
+       * (char)(passBytes[i]|0xFF); } KeySpec spec = new
+       * PBEKeySpec(passChars, salt, 1024, 128); SecretKeyFactory factory
+       * = SecretKeyFactory.getInstance(&quot;PBKDF2WithHmacSHA1&quot;); SecretKey
+       * skey = factory.generateSecret(spec); byte[] raw =
+       * skey.getEncoded(); SecretKeySpec skeySpec = new
+       * SecretKeySpec(raw, &quot;Blowfish&quot;);
+       */
+<span class="fc" id="L2047">      byte[] dk = derivePBKDF2Key(passBytes, salt, 1024, 16);</span>
+<span class="fc" id="L2048">      SecretKeySpec key = new SecretKeySpec(dk, &quot;Blowfish&quot;);</span>
+
+<span class="fc" id="L2050">      Cipher cipher = Cipher.getInstance(&quot;Blowfish/CFB/NoPadding&quot;);</span>
+<span class="fc" id="L2051">      IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);</span>
+<span class="fc" id="L2052">      cipher.init(Cipher.DECRYPT_MODE, key, ivParameterSpec);</span>
+<span class="fc" id="L2053">      byte[] decryptedData = cipher.doFinal(data);</span>
+
+      // valid checksum
+<span class="fc" id="L2056">      md.reset();</span>
+<span class="pc bpc" id="L2057" title="1 of 2 branches missed.">      md.update(decryptedData, 0, (decryptedData.length &gt; 1024 ? 1024 : decryptedData.length));</span>
+<span class="fc" id="L2058">      byte[] checksumBytes = new byte[20];</span>
+<span class="fc" id="L2059">      md.digest(checksumBytes, 0, 20);</span>
+<span class="fc" id="L2060">      String newChecksum = new Base64Binary(checksumBytes).toString();</span>
+<span class="fc bfc" id="L2061" title="All 2 branches covered.">      if (newChecksum.equals(checksum)) {</span>
+        // decompress the bytes
+<span class="fc" id="L2063">        Inflater decompresser = new Inflater(true);</span>
+<span class="fc" id="L2064">        decompresser.setInput(decryptedData);</span>
+<span class="fc" id="L2065">        decompressData = new byte[manifestEntry.getSize()];</span>
+<span class="fc" id="L2066">        decompresser.inflate(decompressData);</span>
+<span class="fc" id="L2067">        decompresser.end();</span>
+<span class="fc" id="L2068">      } else {</span>
+<span class="fc" id="L2069">        throw new OdfDecryptedException(&quot;The given password is wrong, please check it.&quot;);</span>
+      }
+<span class="fc" id="L2071">    } catch (Exception e) {</span>
+<span class="fc" id="L2072">      Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="fc" id="L2073">    }</span>
+<span class="fc" id="L2074">    return decompressData;</span>
+  }
+
+  // derive PBKDF2Key (reference http://www.ietf.org/rfc/rfc2898.txt)
+  byte[] derivePBKDF2Key(byte[] password, byte[] salt, int iterationCount, int keyLength)
+      throws NoSuchAlgorithmException, InvalidKeyException {
+<span class="fc" id="L2080">    SecretKeySpec keyspec = new SecretKeySpec(password, &quot;HmacSHA1&quot;);</span>
+<span class="fc" id="L2081">    Mac hmac = Mac.getInstance(&quot;HmacSHA1&quot;);</span>
+<span class="fc" id="L2082">    hmac.init(keyspec);</span>
+    // length in octets of HmacSHA1 function output, a positive integer
+<span class="fc" id="L2084">    int hmacLen = hmac.getMacLength();</span>
+    // let l be the number of hLen-octet blocks in the derived key, rounding
+    // up,
+    // l = CEIL (dkLen / hLen) Here, CEIL (x) is the smallest integer
+    // greater than, or equal to, x.
+<span class="pc bpc" id="L2089" title="1 of 2 branches missed.">    int l = (keyLength % hmacLen &gt; 0) ? (keyLength / hmacLen + 1) : (keyLength / hmacLen);</span>
+    // let r be the number of octets in the last block: r = dkLen - (l - 1)
+    // * hLen .
+<span class="fc" id="L2092">    int r = keyLength - (l - 1) * hmacLen;</span>
+<span class="fc" id="L2093">    byte T[] = new byte[l * hmacLen];</span>
+<span class="fc" id="L2094">    int offset = 0;</span>
+    // For each block of the derived key apply the function F defined below
+    // to the password P, the salt S, the iteration count c, and
+    // the block index to compute the block:
+<span class="fc bfc" id="L2098" title="All 2 branches covered.">    for (int i = 1; i &lt;= l; i++) {</span>
+<span class="fc" id="L2099">      byte Ur[] = new byte[hmacLen];</span>
+<span class="fc" id="L2100">      byte Ui[] = new byte[salt.length + 4];</span>
+<span class="fc" id="L2101">      System.arraycopy(salt, 0, Ui, 0, salt.length);</span>
+      // Here, INT (i) is a four-octet encoding of the integer i, most
+      // significant octet first.
+<span class="fc" id="L2104">      Ui[salt.length + 0] = (byte) (i &gt;&gt;&gt; 24);</span>
+<span class="fc" id="L2105">      Ui[salt.length + 1] = (byte) (i &gt;&gt;&gt; 16);</span>
+<span class="fc" id="L2106">      Ui[salt.length + 2] = (byte) (i &gt;&gt;&gt; 8);</span>
+<span class="fc" id="L2107">      Ui[salt.length + 3] = (byte) (i);</span>
+      // U_1 \xor U_2 \xor ... \xor U_c
+<span class="fc bfc" id="L2109" title="All 2 branches covered.">      for (int j = 0; j &lt; iterationCount; j++) {</span>
+<span class="fc" id="L2110">        Ui = hmac.doFinal(Ui);</span>
+        // XOR
+<span class="fc bfc" id="L2112" title="All 2 branches covered.">        for (int k = 0; k &lt; T.length; k++) {</span>
+<span class="fc" id="L2113">          Ur[k] ^= Ui[k];</span>
+        }
+      }
+<span class="fc" id="L2116">      System.arraycopy(Ur, 0, T, offset, hmacLen);</span>
+<span class="fc" id="L2117">      offset += hmacLen;</span>
+    }
+<span class="pc bpc" id="L2119" title="1 of 2 branches missed.">    if (r &lt; hmacLen) {</span>
+<span class="fc" id="L2120">      byte DK[] = new byte[keyLength];</span>
+<span class="fc" id="L2121">      System.arraycopy(T, 0, DK, 0, keyLength);</span>
+<span class="fc" id="L2122">      return DK;</span>
+    }
+<span class="nc" id="L2124">    return T;</span>
+  }
+
+  // Serializes a DOM tree into a byte array.
+  // Providing the counterpart of the generic Namespace handling of
+  // OdfFileDom.
+  private byte[] flushDom(Document dom) {
+    // if it is one of our DOM files we may flush all collected namespaces
+    // to the root element
+<span class="pc bpc" id="L2133" title="1 of 2 branches missed.">    if (dom instanceof OdfFileDom) {</span>
+<span class="fc" id="L2134">      OdfFileDom odfDom = (OdfFileDom) dom;</span>
+<span class="fc" id="L2135">      Map&lt;String, String&gt; nsByUri = odfDom.getMapNamespacePrefixByUri();</span>
+<span class="fc" id="L2136">      OdfElement root = odfDom.getRootElement();</span>
+<span class="pc bpc" id="L2137" title="1 of 2 branches missed.">      if (root != null) {</span>
+<span class="fc bfc" id="L2138" title="All 2 branches covered.">        for (Entry&lt;String, String&gt; entry : nsByUri.entrySet()) {</span>
+<span class="fc" id="L2139">          root.setAttributeNS(</span>
+<span class="fc" id="L2140">              &quot;http://www.w3.org/2000/xmlns/&quot;, &quot;xmlns:&quot; + entry.getValue(), entry.getKey());</span>
+<span class="fc" id="L2141">        }</span>
+      }
+    }
+<span class="fc" id="L2144">    ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="fc" id="L2145">    DOMXSImplementationSourceImpl dis = new org.apache.xerces.dom.DOMXSImplementationSourceImpl();</span>
+<span class="fc" id="L2146">    DOMImplementationLS impl = (DOMImplementationLS) dis.getDOMImplementation(&quot;LS&quot;);</span>
+<span class="fc" id="L2147">    LSSerializer writer = impl.createLSSerializer();</span>
+<span class="fc" id="L2148">    LSOutput output = impl.createLSOutput();</span>
+<span class="fc" id="L2149">    output.setByteStream(baos);</span>
+<span class="fc" id="L2150">    writer.write(dom, output);</span>
+<span class="fc" id="L2151">    return baos.toByteArray();</span>
+  }
+
+  /**
+   * Get the latest version of package content as InputStream, as it would be saved. This might not
+   * be the original version once loaded from the package.
+   *
+   * @param internalPath of the desired stream.
+   * @return Inputstream of the ODF file within the package for the given path.
+   */
+  public InputStream getInputStream(String internalPath) {
+<span class="fc" id="L2162">    internalPath = normalizeFilePath(internalPath);</span>
+    // else we always cache here and return a ByteArrayInputStream because
+    // if
+    // we would return ZipFile getInputStream(entry) we would not be
+    // able to read 2 Entries at the same time. This is a limitation of the
+    // ZipFile class.
+    // As it would be quite a common thing to read the content.xml and the
+    // styles.xml
+    // simultanously when using XSLT on OdfPackages we want to circumvent
+    // this limitation
+<span class="fc" id="L2172">    byte[] data = getBytes(internalPath);</span>
+<span class="fc bfc" id="L2173" title="All 4 branches covered.">    if (data != null &amp;&amp; data.length != 0) {</span>
+<span class="fc" id="L2174">      ByteArrayInputStream bais = new ByteArrayInputStream(data);</span>
+<span class="fc" id="L2175">      return bais;</span>
+    }
+<span class="fc" id="L2177">    return null;</span>
+  }
+
+  /**
+   * Get the latest version of package content as InputStream, as it would be saved. This might not
+   * be the original version once loaded from the package.
+   *
+   * @param internalPath of the desired stream.
+   * @param useOriginal true uses the stream as loaded from the ZIP. False will return even modified
+   *     file content as a stream.
+   * @return Inputstream of the ODF file within the package for the given path.
+   */
+  public InputStream getInputStream(String internalPath, boolean useOriginal) {
+<span class="fc" id="L2190">    InputStream stream = null;</span>
+<span class="pc bpc" id="L2191" title="1 of 2 branches missed.">    if (useOriginal) {</span>
+<span class="fc" id="L2192">      ZipArchiveEntry entry = mOriginalZipEntries.get(internalPath);</span>
+<span class="fc bfc" id="L2193" title="All 2 branches covered.">      if (entry != null) {</span>
+        try {
+<span class="fc" id="L2195">          stream = mZipFile.getInputStream(entry);</span>
+<span class="nc" id="L2196">        } catch (IOException ex) {</span>
+          // Catching IOException here should be fine: in-memory operations only
+<span class="nc" id="L2198">          Logger.getLogger(OdfPackage.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L2199">        }</span>
+      }
+<span class="fc" id="L2201">    } else {</span>
+<span class="nc" id="L2202">      stream = getInputStream(internalPath);</span>
+    }
+<span class="fc" id="L2204">    return stream;</span>
+  }
+
+  /**
+   * Gets the InputStream containing whole OdfPackage.
+   *
+   * @return the ODF package as input stream
+   * @throws java.io.IOException - if the package could not be read
+   */
+  public InputStream getInputStream() throws IOException, SAXException {
+<span class="fc" id="L2214">    ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="fc" id="L2215">    save(out, mBaseURI);</span>
+<span class="fc" id="L2216">    return new ByteArrayInputStream(out.toByteArray());</span>
+  }
+
+  /**
+   * Insert the OutputStream for into OdfPackage. An existing file will be replaced.
+   *
+   * @param internalPath - relative documentURL where the DOM tree should be inserted as XML file
+   * @return outputstream for the data of the file to be stored in package
+   * @throws java.lang.Exception when the DOM tree could not be inserted
+   */
+  public OutputStream insertOutputStream(String internalPath) throws Exception {
+<span class="nc" id="L2227">    return insertOutputStream(internalPath, null);</span>
+  }
+
+  /**
+   * Insert the OutputStream - to be filled after method - when stream is closed into OdfPackage. An
+   * existing file will be replaced.
+   *
+   * @param internalPath - relative documentURL where the DOM tree should be inserted as XML file
+   * @param mediaType - media type of stream
+   * @return outputstream for the data of the file to be stored in package
+   * @throws java.io.IOException when the DOM tree could not be inserted
+   */
+  public OutputStream insertOutputStream(String internalPath, String mediaType) throws IOException {
+<span class="nc" id="L2240">    internalPath = normalizeFilePath(internalPath);</span>
+<span class="nc" id="L2241">    final String fPath = internalPath;</span>
+<span class="nc" id="L2242">    final OdfFileEntry fFileEntry = getFileEntry(internalPath);</span>
+<span class="nc" id="L2243">    final String fMediaType = mediaType;</span>
+
+<span class="nc" id="L2245">    ByteArrayOutputStream baos =</span>
+<span class="nc" id="L2246">        new ByteArrayOutputStream() {</span>
+
+          @Override
+          public void close() throws IOException {
+<span class="nc" id="L2250">            byte[] data = this.toByteArray();</span>
+<span class="nc bnc" id="L2251" title="All 4 branches missed.">            if (fMediaType == null || fMediaType.length() == 0) {</span>
+<span class="nc bnc" id="L2252" title="All 2 branches missed.">              insert(data, fPath, fFileEntry == null ? null : fFileEntry.getMediaTypeString());</span>
+            } else {
+<span class="nc" id="L2254">              insert(data, fPath, fMediaType);</span>
+            }
+<span class="nc" id="L2256">            super.close();</span>
+<span class="nc" id="L2257">          }</span>
+        };
+<span class="nc" id="L2259">    return baos;</span>
+  }
+
+  /**
+   * Removes a single file from the package.
+   *
+   * @param internalPath of the file relative to the package root
+   */
+  public void remove(String internalPath) {
+<span class="fc" id="L2268">    internalPath = normalizePath(internalPath);</span>
+<span class="pc bpc" id="L2269" title="1 of 4 branches missed.">    if (mZipEntries != null &amp;&amp; mZipEntries.containsKey(internalPath)) {</span>
+<span class="fc" id="L2270">      mZipEntries.remove(internalPath);</span>
+    }
+<span class="pc bpc" id="L2272" title="1 of 4 branches missed.">    if (mManifestEntries != null &amp;&amp; mManifestEntries.containsKey(internalPath)) {</span>
+      // remove from the manifest Map
+<span class="fc" id="L2274">      OdfFileEntry manifestEntry = mManifestEntries.remove(internalPath);</span>
+      // remove from the manifest DOM
+<span class="fc" id="L2276">      FileEntryElement manifestEle = manifestEntry.getOdfElement();</span>
+<span class="fc" id="L2277">      manifestEle.getParentNode().removeChild(manifestEle);</span>
+    }
+<span class="fc" id="L2279">  }</span>
+
+  /**
+   * Get the size of an internal file from the package.
+   *
+   * @param internalPath of the file relative to the package root
+   * @return the size of the file in bytes or -1 if the size could not be received.
+   */
+  public long getSize(String internalPath) {
+<span class="fc" id="L2288">    long size = -1;</span>
+<span class="fc" id="L2289">    internalPath = normalizePath(internalPath);</span>
+<span class="pc bpc" id="L2290" title="2 of 4 branches missed.">    if (mZipEntries != null &amp;&amp; mZipEntries.containsKey(internalPath)) {</span>
+<span class="fc" id="L2291">      ZipArchiveEntry zipEntry = mZipEntries.get(internalPath);</span>
+<span class="fc" id="L2292">      size = zipEntry.getSize();</span>
+    }
+<span class="fc" id="L2294">    return size;</span>
+  }
+
+  /** Encoded XML Attributes */
+  private String encodeXMLAttributes(String attributeValue) {
+<span class="nc" id="L2299">    String encodedValue = QUOTATION_PATTERN.matcher(attributeValue).replaceAll(ENCODED_QUOTATION);</span>
+<span class="nc" id="L2300">    encodedValue = APOSTROPHE_PATTERN.matcher(encodedValue).replaceAll(ENCODED_APOSTROPHE);</span>
+<span class="nc" id="L2301">    return encodedValue;</span>
+  }
+
+  /**
+   * Get EntityResolver to be used in XML Parsers which can resolve content inside the OdfPackage
+   *
+   * @return a SAX EntityResolver
+   */
+  public EntityResolver getEntityResolver() {
+<span class="fc bfc" id="L2310" title="All 2 branches covered.">    if (mResolver == null) {</span>
+<span class="fc" id="L2311">      mResolver = new Resolver(this);</span>
+    }
+<span class="fc" id="L2313">    return mResolver;</span>
+  }
+
+  /**
+   * Get URIResolver to be used in XSL Transformations which can resolve content inside the
+   * OdfPackage
+   *
+   * @return a TraX Resolver
+   */
+  public URIResolver getURIResolver() {
+<span class="pc bpc" id="L2323" title="1 of 2 branches missed.">    if (mResolver == null) {</span>
+<span class="nc" id="L2324">      mResolver = new Resolver(this);</span>
+    }
+<span class="fc" id="L2326">    return mResolver;</span>
+  }
+
+  private static String getBaseURLFromFile(File file) throws IOException {
+<span class="fc" id="L2330">    String baseURL = Util.toExternalForm(file.getCanonicalFile().toURI());</span>
+<span class="fc" id="L2331">    baseURL = BACK_SLASH_PATTERN.matcher(baseURL).replaceAll(SLASH);</span>
+<span class="fc" id="L2332">    return baseURL;</span>
+  }
+
+  /**
+   * Ensures that the given file path is not null nor empty and not an external reference
+   *
+   * &lt;ol&gt;
+   *   &lt;li&gt;All backslashes &quot;\&quot; are exchanged by slashes &quot;/&quot;
+   *   &lt;li&gt;Any substring &quot;/../&quot;, &quot;/./&quot; or &quot;//&quot; will be removed
+   *   &lt;li&gt;A prefix &quot;./&quot; and &quot;../&quot; will be removed
+   * &lt;/ol&gt;
+   *
+   * @throws IllegalArgumentException If the path is NULL, empty or an external path (e.g. starting
+   *     with &quot;../&quot; is given). None relative URLs will NOT throw an exception.
+   * @return the normalized path or the URL
+   */
+  static String normalizeFilePath(String internalPath) {
+<span class="pc bpc" id="L2349" title="1 of 2 branches missed.">    if (internalPath.equals(EMPTY_STRING)) {</span>
+<span class="nc" id="L2350">      return SLASH;</span>
+    } else {
+<span class="fc" id="L2352">      return normalizePath(internalPath);</span>
+    }
+  }
+
+  /**
+   * Ensures the given directory path is not null nor an external reference to resources outside the
+   * package. An empty path and slash &quot;/&quot; are both mapped to the root directory/document. NOTE:
+   * Although ODF only refer the &quot;/&quot; as root, the empty path aligns more adequate with the file
+   * system concept. To ensure the given directory path within the package can be used as a key (is
+   * unique for the Package) the path will be normalized.
+   *
+   * @see #normalizeFilePath(String) In addition to the file path normalization a trailing slash
+   *     will be used for directories.
+   */
+  static String normalizeDirectoryPath(String directoryPath) {
+<span class="fc" id="L2367">    directoryPath = normalizePath(directoryPath);</span>
+    // if not the root document - which is from ODF view a '/' and no
+    // trailing '/'
+<span class="pc bpc" id="L2370" title="1 of 2 branches missed.">    if (!directoryPath.equals(OdfPackageDocument.ROOT_DOCUMENT_PATH)) {</span>
+<span class="fc bfc" id="L2371" title="All 2 branches covered.">      if (!directoryPath.endsWith(SLASH)) {</span>
+        // add a trailing slash
+<span class="fc" id="L2373">        directoryPath = directoryPath + SLASH;</span>
+      }
+<span class="pc bpc" id="L2375" title="1 of 4 branches missed.">      if (directoryPath.startsWith(SLASH) &amp;&amp; !directoryPath.equals(SLASH)) {</span>
+<span class="nc" id="L2376">        directoryPath = directoryPath.substring(1);</span>
+      }
+    }
+<span class="fc" id="L2379">    return directoryPath;</span>
+  }
+
+  /** 1 Normalizes both directory and file path */
+  static String normalizePath(String path) {
+<span class="pc bpc" id="L2384" title="1 of 2 branches missed.">    if (path == null) {</span>
+<span class="nc" id="L2385">      String errMsg = &quot;The internalPath given by parameter is NULL!&quot;;</span>
+<span class="nc" id="L2386">      Logger.getLogger(OdfPackage.class.getName()).severe(errMsg);</span>
+<span class="nc" id="L2387">      throw new IllegalArgumentException(errMsg);</span>
+<span class="fc bfc" id="L2388" title="All 2 branches covered.">    } else if (!mightBeExternalReference(path)) {</span>
+<span class="fc bfc" id="L2389" title="All 2 branches covered.">      if (path.equals(EMPTY_STRING)) {</span>
+<span class="fc" id="L2390">        path = SLASH;</span>
+      } else {
+        // exchange all backslash &quot;\&quot; with a slash &quot;/&quot;
+<span class="pc bpc" id="L2393" title="1 of 2 branches missed.">        if (path.indexOf('\\') != -1) {</span>
+<span class="nc" id="L2394">          path = BACK_SLASH_PATTERN.matcher(path).replaceAll(SLASH);</span>
+        }
+        // exchange all double slash &quot;//&quot; with a slash &quot;/&quot;
+<span class="fc bfc" id="L2397" title="All 2 branches covered.">        while (path.indexOf(&quot;//&quot;) != -1) {</span>
+<span class="fc" id="L2398">          path = DOUBLE_SLASH_PATTERN.matcher(path).replaceAll(SLASH);</span>
+        }
+        // if directory replacements (e.g. ..) exist, resolve and remove
+        // them
+<span class="fc bfc" id="L2402" title="All 4 branches covered.">        if (path.indexOf(&quot;/.&quot;) != -1 || path.indexOf(&quot;./&quot;) != -1) {</span>
+<span class="fc" id="L2403">          path = removeChangeDirectories(path);</span>
+        }
+<span class="pc bpc" id="L2405" title="1 of 4 branches missed.">        if (path.startsWith(SLASH) &amp;&amp; !path.equals(SLASH)) {</span>
+<span class="nc" id="L2406">          path = path.substring(1);</span>
+        }
+      }
+    }
+<span class="fc" id="L2410">    return path;</span>
+  }
+
+  /** Normalizes both directory and file path */
+  private static boolean mightBeExternalReference(String internalPath) {
+<span class="fc" id="L2415">    boolean isExternalReference = false;</span>
+    // if the fileReference is a external relative documentURL..
+<span class="pc bpc" id="L2417" title="1 of 2 branches missed.">    if (internalPath.startsWith(DOUBLE_DOT)</span>
+        || // or absolute documentURL
+        // AND not root document
+<span class="pc bpc" id="L2420" title="1 of 4 branches missed.">        internalPath.startsWith(SLASH) &amp;&amp; !internalPath.equals(SLASH)</span>
+        || // or
+        // absolute
+        // IRI
+<span class="fc bfc" id="L2424" title="All 2 branches covered.">        internalPath.contains(COLON)) {</span>
+<span class="fc" id="L2425">      isExternalReference = true;</span>
+    }
+<span class="fc" id="L2427">    return isExternalReference;</span>
+  }
+
+  /** Resolving the directory replacements (ie. &quot;/../&quot; and &quot;/./&quot;) with a slash &quot;/&quot; */
+  private static String removeChangeDirectories(String path) {
+<span class="fc" id="L2432">    boolean isDirectory = path.endsWith(SLASH);</span>
+<span class="fc" id="L2433">    StringTokenizer tokenizer = new StringTokenizer(path, SLASH);</span>
+<span class="fc" id="L2434">    int tokenCount = tokenizer.countTokens();</span>
+<span class="fc" id="L2435">    List&lt;String&gt; tokenList = new ArrayList&lt;String&gt;(tokenCount);</span>
+    // add all paths to a list
+<span class="fc bfc" id="L2437" title="All 2 branches covered.">    while (tokenizer.hasMoreTokens()) {</span>
+<span class="fc" id="L2438">      String token = tokenizer.nextToken();</span>
+<span class="fc" id="L2439">      tokenList.add(token);</span>
+<span class="fc" id="L2440">    }</span>
+<span class="fc bfc" id="L2441" title="All 2 branches covered.">    if (!isDirectory) {</span>
+<span class="fc" id="L2442">      String lastPath = tokenList.get(tokenCount - 1);</span>
+<span class="fc bfc" id="L2443" title="All 4 branches covered.">      if (lastPath.equals(DOT) || lastPath.equals(DOUBLE_DOT)) {</span>
+<span class="fc" id="L2444">        isDirectory = true;</span>
+      }
+    }
+    String currentToken;
+<span class="fc" id="L2448">    int removeDirLevel = 0;</span>
+<span class="fc" id="L2449">    StringBuilder out = new StringBuilder();</span>
+    // work on the list from back to front
+<span class="fc bfc" id="L2451" title="All 2 branches covered.">    for (int i = tokenCount - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L2452">      currentToken = tokenList.get(i);</span>
+      // every &quot;..&quot; will remove an upcoming path
+<span class="fc bfc" id="L2454" title="All 2 branches covered.">      if (currentToken.equals(DOUBLE_DOT)) {</span>
+<span class="fc" id="L2455">        removeDirLevel++;</span>
+<span class="fc bfc" id="L2456" title="All 2 branches covered.">      } else if (currentToken.equals(DOT)) {</span>
+      } else // if a path have to be remove, neglect current path
+      {
+<span class="fc bfc" id="L2459" title="All 2 branches covered.">        if (removeDirLevel &gt; 0) {</span>
+<span class="fc" id="L2460">          removeDirLevel--;</span>
+        } else {
+          // add the path segment
+<span class="fc" id="L2463">          out.insert(0, SLASH);</span>
+<span class="fc" id="L2464">          out.insert(0, currentToken);</span>
+        }
+      }
+    }
+<span class="pc bpc" id="L2468" title="1 of 2 branches missed.">    if (removeDirLevel &gt; 0) {</span>
+<span class="nc" id="L2469">      return EMPTY_STRING;</span>
+    } else {
+<span class="fc bfc" id="L2471" title="All 2 branches covered.">      if (!isDirectory) {</span>
+        // remove trailing slash /
+<span class="fc" id="L2473">        out.deleteCharAt(out.length() - 1);</span>
+      }
+<span class="fc" id="L2475">      return out.toString();</span>
+    }
+  }
+
+  /**
+   * Checks if the given reference is a reference, which points outside the ODF package
+   *
+   * @param internalPath the file reference to be checked
+   * @return true if the reference is an package external reference
+   */
+  public static boolean isExternalReference(String internalPath) {
+<span class="nc bnc" id="L2486" title="All 2 branches missed.">    if (mightBeExternalReference(internalPath)) {</span>
+<span class="nc" id="L2487">      return true;</span>
+    } else {
+<span class="nc" id="L2489">      return mightBeExternalReference(normalizePath(internalPath));</span>
+    }
+  }
+
+  /**
+   * Allow an application to register an error event handler.
+   *
+   * &lt;p&gt;If the application does not register an error handler, all error events reported by the
+   * ODFDOM (e.g. the SAX Parser) will be silently ignored; however, normal processing may not
+   * continue. It is highly recommended that all ODF applications implement an error handler to
+   * avoid unexpected bugs.
+   *
+   * &lt;p&gt;Applications may register a new or different handler in the middle of a parse, and the
+   * ODFDOM will begin using the new handler immediately.
+   *
+   * @param handler The error handler.
+   * @see #getErrorHandler
+   */
+  public void setErrorHandler(ErrorHandler handler) {
+<span class="nc" id="L2508">    mErrorHandler = handler;</span>
+<span class="nc" id="L2509">  }</span>
+
+  /**
+   * Return the current error handler used for ODF validation.
+   *
+   * @return The current error handler, or null if none has been registered and validation is
+   *     disabled.
+   * @see #setErrorHandler
+   */
+  public ErrorHandler getErrorHandler() {
+<span class="fc" id="L2519">    return mErrorHandler;</span>
+  }
+
+  void logValidationWarning(ValidationConstraint constraint, String baseURI, Object... o)
+      throws SAXException {
+<span class="pc bpc" id="L2524" title="1 of 2 branches missed.">    if (mErrorHandler == null) {</span>
+<span class="nc" id="L2525">      return;</span>
+    }
+<span class="fc" id="L2527">    int varCount = 0;</span>
+<span class="pc bpc" id="L2528" title="1 of 2 branches missed.">    if (o != null) {</span>
+<span class="fc" id="L2529">      varCount = o.length;</span>
+    }
+<span class="pc bpc" id="L2531" title="2 of 4 branches missed.">    switch (varCount) {</span>
+      case 0:
+<span class="fc" id="L2533">        mErrorHandler.warning(new OdfValidationException(constraint, baseURI, o));</span>
+<span class="fc" id="L2534">        break;</span>
+      case 1:
+<span class="fc" id="L2536">        mErrorHandler.warning(new OdfValidationException(constraint, baseURI, o[0]));</span>
+<span class="fc" id="L2537">        break;</span>
+      case 2:
+<span class="nc" id="L2539">        mErrorHandler.warning(new OdfValidationException(constraint, baseURI, o[0], o[1]));</span>
+        break;
+    }
+<span class="fc" id="L2542">  }</span>
+
+  void logValidationError(ValidationConstraint constraint, String baseURI, Object... o)
+      throws SAXException {
+<span class="fc bfc" id="L2546" title="All 2 branches covered.">    if (mErrorHandler == null) {</span>
+<span class="fc" id="L2547">      return;</span>
+    }
+<span class="fc" id="L2549">    int varCount = 0;</span>
+<span class="pc bpc" id="L2550" title="1 of 2 branches missed.">    if (o != null) {</span>
+<span class="fc" id="L2551">      varCount = o.length;</span>
+    }
+<span class="pc bpc" id="L2553" title="1 of 4 branches missed.">    switch (varCount) {</span>
+      case 0:
+<span class="fc" id="L2555">        mErrorHandler.error(new OdfValidationException(constraint, baseURI, o));</span>
+<span class="fc" id="L2556">        break;</span>
+      case 1:
+<span class="fc" id="L2558">        mErrorHandler.error(new OdfValidationException(constraint, baseURI, o[0]));</span>
+<span class="fc" id="L2559">        break;</span>
+      case 2:
+<span class="fc" id="L2561">        mErrorHandler.error(new OdfValidationException(constraint, baseURI, o[0], o[1]));</span>
+        break;
+    }
+<span class="fc" id="L2564">  }</span>
+
+  /** @param odfVersion parsed from the manifest */
+  void setManifestVersion(String odfVersion) {
+<span class="fc" id="L2568">    mManifestVersion = odfVersion;</span>
+<span class="fc" id="L2569">  }</span>
+
+  /**
+   * @return the ODF version found in the manifest. Meant to be used to reuse when the manifest is
+   *     recreated
+   */
+  String getManifestVersion() {
+<span class="nc" id="L2576">    return mManifestVersion;</span>
+  }
+
+  /**
+   * @return counter for ids that are not allowed to be saved (otherwise it is not guaranteed that
+   *     this id is unique)
+   */
+  public String getNextMarkupId() {
+<span class="nc" id="L2584">    return Integer.toString(mTransientMarkupId++);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

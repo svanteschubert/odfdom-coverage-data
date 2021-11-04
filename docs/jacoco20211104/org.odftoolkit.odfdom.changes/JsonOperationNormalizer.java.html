@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonOperationNormalizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">JsonOperationNormalizer.java</span></div><h1>JsonOperationNormalizer.java</h1><pre class="source lang-java linenums">/*
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANT
+IES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+
+
+    Copyright (c) 2002 JSON.org
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the &quot;Software&quot;), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+    The Software shall be used for Good, not Evil.
+    THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_EDITOR;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_END;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_NAME;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_OPERATIONS;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_START;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_STYLE_ID;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_TYPE;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_VERSION;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_VERSION_BRANCH;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OPK_VERSION_TIME;
+import static org.odftoolkit.odfdom.changes.OperationConstants.OP_STYLE;
+
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONString;
+
+/**
+ * Normalizes the content of JSONObject to make it comparable.
+ *
+ * @author svante.schubertATgmail.com
+ */
+<span class="nc" id="L73">public class JsonOperationNormalizer {</span>
+
+  // If in an operation a map contains one of the following keys, they will be added at the
+  // beginning for better readability!
+<span class="fc" id="L77">  private static final String[] SORTING_SEQUENCE_OF_KEYS = {</span>
+    OPK_NAME, OPK_START, OPK_END, OPK_TYPE, OPK_STYLE_ID
+  };
+<span class="fc" id="L80">  private static final Logger LOG = Logger.getLogger(JsonOperationNormalizer.class.getName());</span>
+
+  /**
+   * Make a JSON text of this JSONObject. For compactness, no whitespace is added. If this would not
+   * result in a syntactically correct JSON text, then null will be returned instead.
+   *
+   * &lt;p&gt;Warning: This method assumes that the data structure is acyclical.
+   *
+   * @return a printable, displayable, portable, transmittable representation of the object,
+   *     beginning with &lt;code&gt;{&lt;/code&gt;&amp;nbsp;&lt;small&gt;(left brace)&lt;/small&gt; and ending with &lt;code&gt;}
+   *     &lt;/code&gt;&amp;nbsp;&lt;small&gt;(right brace)&lt;/small&gt;.
+   */
+  public static String asString(JSONObject jsonObject, Boolean isTest) {
+<span class="fc bfc" id="L93" title="All 2 branches covered.">    if (jsonObject.has(OPK_OPERATIONS)) {</span>
+      // removing for test output &amp; references the most varying attributes to reduce noise
+<span class="fc" id="L95">      jsonObject.remove(OPK_VERSION);</span>
+<span class="fc" id="L96">      jsonObject.remove(OPK_VERSION_TIME);</span>
+<span class="fc" id="L97">      jsonObject.remove(OPK_VERSION_BRANCH);</span>
+<span class="fc" id="L98">      jsonObject.remove(OPK_EDITOR);</span>
+    }
+<span class="fc" id="L100">    StringBuilder sb = new StringBuilder(&quot;{&quot;);</span>
+<span class="fc" id="L101">    Iterator&lt;String&gt; keys = getSortedIterator(jsonObject);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">    while (keys.hasNext()) {</span>
+<span class="fc" id="L103">      String key = keys.next();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">      if (key.equals(OPK_OPERATIONS)) {</span>
+<span class="fc" id="L105">        sb.append(&quot;\&quot;&quot; + OPK_OPERATIONS + &quot;\&quot;:[\n&quot;);</span>
+        try {
+<span class="fc" id="L107">          JSONArray ops = jsonObject.getJSONArray(OPK_OPERATIONS);</span>
+<span class="fc" id="L108">          sb.append(normalizeOperations(ops));</span>
+<span class="nc" id="L109">        } catch (JSONException ex) {</span>
+<span class="nc" id="L110">          Logger.getLogger(JsonOperationNormalizer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L111">        }</span>
+<span class="fc" id="L112">        sb.append(&quot;\n]&quot;);</span>
+      } else {
+        try {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">          if (sb.length() &gt; 1) {</span>
+<span class="fc" id="L116">            sb.append(',');</span>
+          }
+<span class="fc" id="L118">          sb.append('&quot;');</span>
+<span class="fc" id="L119">          sb.append(key);</span>
+<span class="fc" id="L120">          sb.append('&quot;');</span>
+<span class="fc" id="L121">          sb.append(':');</span>
+<span class="fc" id="L122">          Object value = jsonObject.get(key);</span>
+<span class="fc" id="L123">          appendValueAsString(value, sb);</span>
+<span class="nc" id="L124">        } catch (JSONException ex) {</span>
+<span class="nc" id="L125">          LOG.log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L126">        }</span>
+      }
+<span class="fc" id="L128">    }</span>
+<span class="fc" id="L129">    sb.append('}');</span>
+<span class="fc" id="L130">    return sb.toString();</span>
+  }
+
+  /**
+   * Make a JSON text of this JSONObject.For compactness, no whitespace is added. If this would not
+   * result in a syntactically correct JSON text, then null will be returned instead.
+   *
+   * &lt;p&gt;Warning: This method assumes that the data structure is acyclical.
+   *
+   * @param jsonObject the jsonObject to be normalized, with an operation for each line.
+   * @return a printable, displayable, portable, transmittable representation of the object,
+   *     beginning with &lt;code&gt;{&lt;/code&gt;&amp;nbsp;&lt;small&gt;(left brace)&lt;/small&gt; and ending with &lt;code&gt;}
+   *     &lt;/code&gt;&amp;nbsp;&lt;small&gt;(right brace)&lt;/small&gt;.
+   */
+  public static String asString(JSONObject jsonObject) {
+<span class="fc" id="L145">    return JsonOperationNormalizer.asString(jsonObject, Boolean.FALSE);</span>
+  }
+
+  /**
+   * Make a JSON text of this JSONArray. For compactness, no unnecessary whitespace is added. If it
+   * is not possible to produce a syntactically correct JSON text then null will be returned
+   * instead. This could occur if the array contains an invalid number.
+   *
+   * &lt;p&gt;Warning: This method assumes that the data structure is acyclical.
+   *
+   * @return a printable, displayable, transmittable representation of the array.
+   */
+  static String asString(JSONArray array) {
+    try {
+<span class="fc" id="L159">      return '[' + normalizeOperations(array) + ']';</span>
+<span class="nc" id="L160">    } catch (Exception e) {</span>
+<span class="nc" id="L161">      LOG.severe(e.getMessage());</span>
+    }
+<span class="nc" id="L163">    return null;</span>
+  }
+
+  private static Iterator&lt;String&gt; getSortedIterator(JSONObject jsonObject) {
+    // have to duplicate set, as the original set is read-only
+<span class="fc" id="L168">    Set&lt;String&gt; keySet = new HashSet&lt;String&gt;(jsonObject.keySet());</span>
+<span class="fc" id="L169">    List&lt;String&gt; firstListedKeys = null;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">    for (String SORTING_SEQUENCE_OF_KEYS1 : SORTING_SEQUENCE_OF_KEYS) {</span>
+      // do not sort 'name' property
+<span class="fc bfc" id="L172" title="All 2 branches covered.">      if (keySet.contains(SORTING_SEQUENCE_OF_KEYS1)) {</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (firstListedKeys == null) {</span>
+<span class="fc" id="L174">          firstListedKeys = new ArrayList&lt;String&gt;(3);</span>
+        }
+<span class="fc" id="L176">        firstListedKeys.add(SORTING_SEQUENCE_OF_KEYS1);</span>
+<span class="fc" id="L177">        keySet.remove(SORTING_SEQUENCE_OF_KEYS1);</span>
+      }
+    }
+<span class="fc" id="L180">    List&lt;String&gt; list = new ArrayList&lt;String&gt;(keySet);</span>
+    // sort the remaining keys
+<span class="fc" id="L182">    Collections.sort(list);</span>
+
+    // if there are any priority keys
+<span class="fc bfc" id="L185" title="All 2 branches covered.">    if (firstListedKeys != null) {</span>
+      // add them at the beginning of the operation list (being a JSONObject)
+<span class="fc bfc" id="L187" title="All 2 branches covered.">      for (int j = 0; j &lt; firstListedKeys.size(); j++) {</span>
+<span class="fc" id="L188">        list.add(j, firstListedKeys.get(j));</span>
+      }
+    }
+<span class="fc" id="L191">    return list.iterator();</span>
+  }
+
+  /**
+   * Make a JSON text of an Object value. If the object has an value.toJSONString() method, then
+   * that method will be used to produce the JSON text. The method is required to produce a strictly
+   * conforming text. If the object does not contain a toJSONString method (which is the most common
+   * case), then a text will be produced by the rules.
+   *
+   * &lt;p&gt;Warning: This method assumes that the data structure is acyclical.
+   *
+   * @param value The value to be serialized.
+   * @return a printable, displayable, transmittable representation of the object, beginning with
+   *     &lt;code&gt;{&lt;/code&gt;&amp;nbsp;&lt;small&gt;(left brace)&lt;/small&gt; and ending with &lt;code&gt;}&lt;/code&gt;
+   *     &amp;nbsp;&lt;small&gt;(right brace)&lt;/small&gt;.
+   * @throws JSONException If the value is or contains an invalid number.
+   */
+  private static void appendValueAsString(Object value, StringBuilder sb) {
+<span class="fc bfc" id="L209" title="All 2 branches covered.">    if (value instanceof JSONObject) {</span>
+<span class="fc" id="L210">      sb.append(JsonOperationNormalizer.asString((JSONObject) value));</span>
+
+<span class="fc bfc" id="L212" title="All 2 branches covered.">    } else if (value instanceof JSONArray) {</span>
+<span class="fc" id="L213">      sb.append(asString((JSONArray) value));</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">    } else if (value instanceof JSONString) {</span>
+<span class="nc" id="L215">      sb.append(((JSONString) value).toJSONString());</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">    } else if (value instanceof Number) {</span>
+<span class="fc" id="L217">      sb.append(numberToString((Number) value));</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">    } else if (value instanceof Boolean) {</span>
+<span class="fc" id="L219">      sb.append(value.toString());</span>
+<span class="pc bpc" id="L220" title="2 of 4 branches missed.">    } else if (value == null || value == JSONObject.NULL) {</span>
+<span class="nc" id="L221">      sb.append(&quot;null&quot;);</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">    } else if (value instanceof String) {</span>
+<span class="fc" id="L223">      quote(((String) value), sb);</span>
+    } else {
+<span class="nc" id="L225">      sb.append(value.toString());</span>
+    }
+<span class="fc" id="L227">  }</span>
+
+  private static StringBuilder quote(String string, StringBuilder sb) {
+<span class="pc bpc" id="L230" title="1 of 4 branches missed.">    if (string == null || string.isEmpty()) {</span>
+<span class="fc" id="L231">      sb.append(&quot;\&quot;\&quot;&quot;);</span>
+<span class="fc" id="L232">      return sb;</span>
+    }
+
+    char b;
+<span class="fc" id="L236">    char c = 0;</span>
+    String hhhh;
+    int i;
+<span class="fc" id="L239">    int len = string.length();</span>
+
+<span class="fc" id="L241">    sb.append('&quot;');</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">    for (i = 0; i &lt; len; i += 1) {</span>
+<span class="fc" id="L243">      b = c;</span>
+<span class="fc" id="L244">      c = string.charAt(i);</span>
+<span class="pc bpc" id="L245" title="3 of 8 branches missed.">      switch (c) {</span>
+        case '\\':
+        case '&quot;':
+<span class="fc" id="L248">          sb.append('\\');</span>
+<span class="fc" id="L249">          sb.append(c);</span>
+<span class="fc" id="L250">          break;</span>
+        case '/':
+<span class="fc bfc" id="L252" title="All 2 branches covered.">          if (b == '&lt;') {</span>
+<span class="fc" id="L253">            sb.append('\\');</span>
+          }
+<span class="fc" id="L255">          sb.append(c);</span>
+<span class="fc" id="L256">          break;</span>
+        case '\b':
+<span class="nc" id="L258">          sb.append(&quot;\\b&quot;);</span>
+<span class="nc" id="L259">          break;</span>
+        case '\t':
+<span class="fc" id="L261">          sb.append(&quot;\\t&quot;);</span>
+<span class="fc" id="L262">          break;</span>
+        case '\n':
+<span class="fc" id="L264">          sb.append(&quot;\\n&quot;);</span>
+<span class="fc" id="L265">          break;</span>
+        case '\f':
+<span class="nc" id="L267">          sb.append(&quot;\\f&quot;);</span>
+<span class="nc" id="L268">          break;</span>
+        case '\r':
+<span class="nc" id="L270">          sb.append(&quot;\\r&quot;);</span>
+<span class="nc" id="L271">          break;</span>
+        default:
+<span class="pc bpc" id="L273" title="1 of 10 branches missed.">          if (c &lt; ' ' || (c &gt;= '\u0080' &amp;&amp; c &lt; '\u00a0') || (c &gt;= '\u2000' &amp;&amp; c &lt; '\u2100')) {</span>
+<span class="fc" id="L274">            sb.append(&quot;\\u&quot;);</span>
+<span class="fc" id="L275">            hhhh = Integer.toHexString(c);</span>
+<span class="fc" id="L276">            sb.append(&quot;0000&quot;, 0, 4 - hhhh.length());</span>
+<span class="fc" id="L277">            sb.append(hhhh);</span>
+          } else {
+<span class="fc" id="L279">            sb.append(c);</span>
+          }
+      }
+    }
+<span class="fc" id="L283">    sb.append('&quot;');</span>
+<span class="fc" id="L284">    return sb;</span>
+  }
+
+  /**
+   * Produce a string from a Number.
+   *
+   * @param number A Number
+   * @return A String.
+   * @throws JSONException If n is a non-finite number.
+   */
+  private static String numberToString(Number number) throws JSONException {
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">    if (number == null) {</span>
+<span class="nc" id="L296">      throw new JSONException(&quot;Null pointer&quot;);</span>
+    }
+<span class="fc" id="L298">    testValidity(number);</span>
+
+    // Shave off trailing zeros and decimal point, if possible.
+
+<span class="fc" id="L302">    String string = number.toString();</span>
+<span class="pc bpc" id="L303" title="2 of 6 branches missed.">    if (string.indexOf('.') &gt; 0 &amp;&amp; string.indexOf('e') &lt; 0 &amp;&amp; string.indexOf('E') &lt; 0) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">      while (string.endsWith(&quot;0&quot;)) {</span>
+<span class="fc" id="L305">        string = string.substring(0, string.length() - 1);</span>
+      }
+<span class="fc bfc" id="L307" title="All 2 branches covered.">      if (string.endsWith(&quot;.&quot;)) {</span>
+<span class="fc" id="L308">        string = string.substring(0, string.length() - 1);</span>
+      }
+    }
+<span class="fc" id="L311">    return string;</span>
+  }
+
+  /**
+   * Throw an exception if the object is a NaN or infinite number.
+   *
+   * @param o The object to test.
+   * @throws JSONException If o is a non-finite number.
+   */
+  private static void testValidity(Object o) throws JSONException {
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">    if (o != null) {</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">      if (o instanceof Double) {</span>
+<span class="pc bpc" id="L323" title="2 of 4 branches missed.">        if (((Double) o).isInfinite() || ((Double) o).isNaN()) {</span>
+<span class="nc" id="L324">          throw new JSONException(&quot;JSON does not allow non-finite numbers.&quot;);</span>
+        }
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">      } else if (o instanceof Float) {</span>
+<span class="nc bnc" id="L327" title="All 4 branches missed.">        if (((Float) o).isInfinite() || ((Float) o).isNaN()) {</span>
+<span class="nc" id="L328">          throw new JSONException(&quot;JSON does not allow non-finite numbers.&quot;);</span>
+        }
+      }
+    }
+<span class="fc" id="L332">  }</span>
+
+  /**
+   * Make a string from the contents of this JSONArray.
+   *
+   * &lt;p&gt;Currently only adjacent style operations are being sorted.
+   *
+   * &lt;p&gt;Warning: This method assumes that the data structure is acyclical.
+   *
+   * @throws JSONException If the array contains an invalid number.
+   */
+  private static String normalizeOperations(JSONArray array) {
+<span class="fc" id="L344">    int len = array.length();</span>
+<span class="fc" id="L345">    StringBuilder sb = new StringBuilder(len);</span>
+
+    // we will go through all elements of the array
+<span class="fc" id="L348">    boolean opsCollected = false;</span>
+<span class="fc" id="L349">    SortedSet&lt;JSONObject&gt; sameTypOperations = null;</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">    for (int i = 0; i &lt; len; i += 1) {</span>
+<span class="fc bfc" id="L351" title="All 4 branches covered.">      if (i &gt; 0 &amp;&amp; !opsCollected) {</span>
+<span class="fc" id="L352">        sb.append(',');</span>
+      }
+<span class="fc" id="L354">      String lastOperationName = null;</span>
+      try {
+<span class="fc" id="L356">        Object o = array.get(i);</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">        if (o instanceof JSONObject) {</span>
+<span class="fc" id="L358">          JSONObject operation = (JSONObject) o;</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">          if (operation.has(OPK_NAME)) {</span>
+<span class="fc" id="L360">            String newOperationName = operation.getString(OPK_NAME);</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">            if (lastOperationName == null) {</span>
+<span class="fc" id="L362">              lastOperationName = newOperationName;</span>
+            }
+<span class="pc bpc" id="L364" title="1 of 4 branches missed.">            if (newOperationName.equals(OP_STYLE) &amp;&amp; lastOperationName.equals(newOperationName)) {</span>
+              // ADD EQUAL OPERATIONS
+<span class="fc bfc" id="L366" title="All 2 branches covered.">              if (sameTypOperations == null) {</span>
+<span class="fc" id="L367">                sameTypOperations = new TreeSet&lt;&gt;(new OperationSorter());</span>
+              }
+<span class="fc" id="L369">              sameTypOperations.add(operation);</span>
+<span class="fc" id="L370">              opsCollected = true;</span>
+            } else {
+<span class="fc bfc" id="L372" title="All 2 branches covered.">              if (opsCollected) {</span>
+                // FLUSH SORTED OPERATIONS
+<span class="fc bfc" id="L374" title="All 2 branches covered.">                for (JSONObject sortedOperation : sameTypOperations) {</span>
+<span class="fc" id="L375">                  appendValueAsString(sortedOperation, sb);</span>
+<span class="fc" id="L376">                  sb.append(',');</span>
+<span class="fc" id="L377">                }</span>
+<span class="fc" id="L378">                sameTypOperations.clear();</span>
+<span class="fc" id="L379">                opsCollected = false;</span>
+              }
+<span class="fc" id="L381">              appendValueAsString(operation, sb);</span>
+<span class="fc" id="L382">              lastOperationName = null;</span>
+            }
+<span class="fc" id="L384">          } else {</span>
+<span class="fc" id="L385">            appendValueAsString(operation, sb);</span>
+<span class="fc" id="L386">            lastOperationName = null;</span>
+          }
+<span class="fc" id="L388">        } else {</span>
+<span class="fc" id="L389">          appendValueAsString(o, sb);</span>
+        }
+
+<span class="nc" id="L392">      } catch (JSONException ex) {</span>
+<span class="nc" id="L393">        sb.append(&quot;null&quot;);</span>
+<span class="nc" id="L394">        ex.printStackTrace();</span>
+<span class="fc" id="L395">      }</span>
+    }
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">    if (opsCollected) {</span>
+      // FLUSH SORTED OPERATIONS
+<span class="nc bnc" id="L399" title="All 2 branches missed.">      for (Iterator&lt;JSONObject&gt; iter = sameTypOperations.iterator(); iter.hasNext(); ) {</span>
+<span class="nc" id="L400">        appendValueAsString(iter.next(), sb);</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (iter.hasNext()) {</span>
+<span class="nc" id="L402">          sb.append(',');</span>
+        }
+      }
+    }
+<span class="fc" id="L406">    return sb.toString();</span>
+  }
+
+<span class="fc" id="L409">  static class OperationSorter implements Comparator&lt;JSONObject&gt; {</span>
+
+<span class="fc" id="L411">    private static Collator mCollator = null;</span>
+
+    public int compare(JSONObject op1, JSONObject op2) {
+<span class="fc" id="L414">      int returnValue = 0;</span>
+<span class="pc bpc" id="L415" title="2 of 4 branches missed.">      if (op1 instanceof JSONObject &amp;&amp; op2 instanceof JSONObject) {</span>
+        try {
+<span class="fc" id="L417">          String op1Name = op1.getString(OPK_NAME);</span>
+<span class="fc" id="L418">          String op2Name = op2.getString(OPK_NAME);</span>
+<span class="pc bpc" id="L419" title="2 of 4 branches missed.">          if (op1Name.equals(OP_STYLE) &amp;&amp; op1Name.equals(op2Name)) {</span>
+<span class="fc" id="L420">            String uniqueStyleName1 = op1.getString(&quot;type&quot;) + op1.getString(OPK_STYLE_ID);</span>
+<span class="fc" id="L421">            String uniqueStyleName2 = op2.getString(&quot;type&quot;) + op2.getString(OPK_STYLE_ID);</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">            if (mCollator == null) {</span>
+<span class="fc" id="L423">              mCollator = Collator.getInstance(Locale.US);</span>
+            }
+<span class="fc" id="L425">            return mCollator.compare(uniqueStyleName1, uniqueStyleName2);</span>
+          }
+<span class="nc" id="L427">        } catch (JSONException ex) {</span>
+<span class="nc" id="L428">          Logger.getLogger(JsonOperationNormalizer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L429">        }</span>
+      }
+<span class="nc" id="L431">      return returnValue;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

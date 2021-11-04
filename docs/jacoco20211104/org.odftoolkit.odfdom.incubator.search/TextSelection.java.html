@@ -1,0 +1,892 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextSelection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.search</a> &gt; <span class="el_source">TextSelection.java</span></div><h1>TextSelection.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.search;
+
+import java.net.URL;
+import java.util.Map;
+import java.util.TreeMap;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.text.TextAElement;
+import org.odftoolkit.odfdom.dom.element.text.TextSElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextHeading;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextSpan;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfWhitespaceProcessor;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
+/**
+ * A TextSelection can describe a sub element in a mParagraph element or a mHeading element. it is
+ * recognized by the container element(which type should be OdfTextParagraph or OdfTextHeadingt),
+ * the start index of the text content of the container element and the text content of this
+ * selection.
+ */
+public class TextSelection extends Selection {
+
+  private String mMatchedText;
+  private OdfTextParagraph mParagraph;
+  private OdfTextHeading mHeading;
+  private int mIndexInContainer;
+  private boolean mIsInserted;
+
+  /**
+   * Constructor of TextSelection
+   *
+   * @param text the text content of this TextSelection
+   * @param containerElement the mParagraph element or mHeading element that contain this
+   *     TextSelection
+   * @param index the start index of the text content of the container element
+   */
+<span class="fc" id="L65">  TextSelection(String text, OdfElement containerElement, int index) {</span>
+<span class="fc" id="L66">    mMatchedText = text;</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">    if (containerElement instanceof OdfTextParagraph) {</span>
+<span class="fc" id="L68">      mParagraph = (OdfTextParagraph) containerElement;</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">    } else if (containerElement instanceof OdfTextHeading) {</span>
+<span class="nc" id="L70">      mHeading = (OdfTextHeading) containerElement;</span>
+    }
+<span class="fc" id="L72">    mIndexInContainer = index;</span>
+<span class="fc" id="L73">  }</span>
+
+  /**
+   * Get the mParagraph element or mHeading element that contain this TextSelection
+   *
+   * @return OdfElement the container element
+   */
+  @Override
+  public OdfElement getElement() {
+<span class="fc" id="L82">    return getContainerElement();</span>
+  }
+
+  /**
+   * Get the mParagraph element or mHeading element that contain this text
+   *
+   * @return OdfElement
+   */
+  public OdfElement getContainerElement() {
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">    if (mParagraph != null) {</span>
+<span class="fc" id="L92">      return mParagraph;</span>
+    } else {
+<span class="nc" id="L94">      return mHeading;</span>
+    }
+  }
+
+  /**
+   * Get the start index of the text content of its container element
+   *
+   * @return index the start index of the text content of its container element
+   */
+  @Override
+  public int getIndex() {
+<span class="fc" id="L105">    return mIndexInContainer;</span>
+  }
+
+  /**
+   * Get the text content of this TextSelection
+   *
+   * @return text the text content
+   */
+  public String getText() {
+<span class="fc" id="L114">    return mMatchedText;</span>
+  }
+
+  /*
+   * Validate if the selection is still available.
+   * @return true	if the selection is available; false if the selection is not available.
+   */
+  private boolean validate() {
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">    if (getContainerElement() == null) {</span>
+<span class="nc" id="L123">      return false;</span>
+    }
+<span class="fc" id="L125">    OdfElement container = getContainerElement();</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">    if (container == null) {</span>
+<span class="nc" id="L127">      return false;</span>
+    }
+<span class="fc" id="L129">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L130">    String content = textProcessor.getText(container);</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">    if (content.indexOf(mMatchedText, mIndexInContainer) == mIndexInContainer) {</span>
+<span class="fc" id="L132">      return true;</span>
+    } else {
+<span class="nc" id="L134">      return false;</span>
+    }
+  }
+
+  /**
+   * Delete the selection from the document the other matched selection in the same container
+   * element will be updated automatically because the start index of the following selections will
+   * be changed when the previous selection has been deleted
+   *
+   * @throws InvalidNavigationException if the selection is unavailable.
+   */
+  @Override
+  public void cut() throws InvalidNavigationException {
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">    if (validate() == false) {</span>
+<span class="nc" id="L148">      throw new InvalidNavigationException(&quot;No matched string at this position&quot;);</span>
+    }
+<span class="fc" id="L150">    OdfElement container = getContainerElement();</span>
+<span class="fc" id="L151">    delete(mIndexInContainer, mMatchedText.length(), container);</span>
+<span class="fc" id="L152">    SelectionManager.refreshAfterCut(this);</span>
+<span class="fc" id="L153">    mMatchedText = &quot;&quot;;</span>
+<span class="fc" id="L154">  }</span>
+
+  /**
+   * Apply a style to the selection so that the text style of this selection will append the
+   * specified style
+   *
+   * @param style the style can be from the current document or user defined
+   * @throws InvalidNavigationException if the selection is unavailable.
+   */
+  public void applyStyle(OdfStyleBase style) throws InvalidNavigationException {
+    // append the specified style to the selection
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">    if (validate() == false) {</span>
+<span class="nc" id="L166">      throw new InvalidNavigationException(&quot;No matched string at this position&quot;);</span>
+    }
+<span class="fc" id="L168">    OdfElement parentElement = getContainerElement();</span>
+
+<span class="fc" id="L170">    int leftLength = getText().length();</span>
+<span class="fc" id="L171">    int index = mIndexInContainer;</span>
+
+<span class="fc" id="L173">    appendStyle(index, leftLength, parentElement, style);</span>
+<span class="fc" id="L174">  }</span>
+
+  /*
+   * append specified style for a range text of pNode
+   * from 'fromindex' and cover 'leftLength'
+   */
+  private void appendStyle(int fromindex, int leftLength, Node pNode, OdfStyleBase style) {
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">    if ((fromindex == 0) &amp;&amp; (leftLength == 0)) {</span>
+<span class="nc" id="L182">      return;</span>
+    }
+<span class="fc" id="L184">    int nodeLength = 0;</span>
+<span class="fc" id="L185">    Node node = pNode.getFirstChild();</span>
+<span class="fc" id="L186">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+
+<span class="fc bfc" id="L188" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L189" title="All 4 branches covered.">      if ((fromindex == 0) &amp;&amp; (leftLength == 0)) {</span>
+<span class="fc" id="L190">        return;</span>
+      }
+<span class="fc bfc" id="L192" title="All 2 branches covered.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L193">        nodeLength = node.getNodeValue().length();</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+        {
+          try {
+<span class="fc" id="L198">            nodeLength =</span>
+<span class="fc" id="L199">                Integer.parseInt(</span>
+<span class="fc" id="L200">                    ((Element) node).getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;c&quot;));</span>
+<span class="fc" id="L201">          } catch (Exception e) {</span>
+<span class="fc" id="L202">            nodeLength = 1;</span>
+<span class="fc" id="L203">          }</span>
+
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        } else if (node.getLocalName().equals(&quot;line-break&quot;)) {</span>
+<span class="nc" id="L206">          nodeLength = 1;</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        } else if (node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L208">          nodeLength = 1;</span>
+        } else {
+<span class="fc" id="L210">          nodeLength = textProcessor.getText((OdfElement) node).length();</span>
+        }
+      }
+<span class="fc bfc" id="L213" title="All 2 branches covered.">      if (nodeLength &lt;= fromindex) {</span>
+<span class="fc" id="L214">        fromindex -= nodeLength;</span>
+      } else {
+        // the start index is in this node
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L218">          String value = node.getNodeValue();</span>
+<span class="fc" id="L219">          node.setNodeValue(value.substring(0, fromindex));</span>
+<span class="fc" id="L220">          int endLength = fromindex + leftLength;</span>
+<span class="fc" id="L221">          int nextLength = value.length() - endLength;</span>
+
+<span class="fc" id="L223">          Node nextNode = node.getNextSibling();</span>
+<span class="fc" id="L224">          Node parNode = node.getParentNode();</span>
+          // init text:a
+<span class="fc" id="L226">          OdfTextSpan textSpan = new OdfTextSpan((OdfFileDom) node.getOwnerDocument());</span>
+<span class="fc" id="L227">          Node newNode = null;</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">          if (nextLength &gt;= 0) {</span>
+<span class="fc" id="L229">            textSpan.setTextContent(value.substring(fromindex, endLength));</span>
+<span class="fc" id="L230">            newNode = node.cloneNode(true);</span>
+<span class="fc" id="L231">            newNode.setNodeValue(value.substring(endLength, value.length()));</span>
+<span class="fc" id="L232">            leftLength = 0;</span>
+          } else {
+<span class="fc" id="L234">            textSpan.setTextContent(value.substring(fromindex, value.length()));</span>
+<span class="fc" id="L235">            leftLength = endLength - value.length();</span>
+          }
+<span class="fc" id="L237">          textSpan.setProperties(style.getStyleProperties());</span>
+
+<span class="fc bfc" id="L239" title="All 2 branches covered.">          if (nextNode != null) {</span>
+<span class="fc" id="L240">            parNode.insertBefore(textSpan, nextNode);</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            if (newNode != null) {</span>
+<span class="fc" id="L242">              parNode.insertBefore(newNode, nextNode);</span>
+            }
+          } else {
+<span class="fc" id="L245">            parNode.appendChild(textSpan);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">            if (newNode != null) {</span>
+<span class="fc" id="L247">              parNode.appendChild(newNode);</span>
+            }
+          }
+<span class="fc" id="L250">          fromindex = 0;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">          if (nextNode != null) {</span>
+<span class="fc" id="L252">            node = nextNode;</span>
+          } else {
+<span class="fc" id="L254">            node = textSpan;</span>
+          }
+
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+          // if text:s?????????
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">          if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+          {
+            // delete space
+<span class="nc" id="L262">            ((TextSElement) node).setTextCAttribute(new Integer(nodeLength - fromindex));</span>
+<span class="nc" id="L263">            leftLength = leftLength - (nodeLength - fromindex);</span>
+<span class="nc" id="L264">            fromindex = 0;</span>
+
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">          } else if (node.getLocalName().equals(&quot;line-break&quot;)</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">              || node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L268">            fromindex = 0;</span>
+<span class="nc" id="L269">            leftLength--;</span>
+          } else {
+<span class="fc" id="L271">            appendStyle(fromindex, leftLength, node, style);</span>
+<span class="fc" id="L272">            int length = (fromindex + leftLength) - nodeLength;</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            leftLength = length &gt; 0 ? length : 0;</span>
+<span class="fc" id="L274">            fromindex = 0;</span>
+          }
+        }
+      }
+<span class="fc" id="L278">      node = node.getNextSibling();</span>
+    }
+<span class="fc" id="L280">  }</span>
+
+  /**
+   * Replace the text content of selection with a new string
+   *
+   * @param newText the replace text String
+   * @throws InvalidNavigationException if the selection is unavailable.
+   */
+  public void replaceWith(String newText) throws InvalidNavigationException {
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">    if (validate() == false) {</span>
+<span class="nc" id="L290">      throw new InvalidNavigationException(&quot;No matched string at this position&quot;);</span>
+    }
+
+<span class="fc" id="L293">    OdfElement parentElement = getContainerElement();</span>
+
+<span class="fc" id="L295">    int leftLength = getText().length();</span>
+<span class="fc" id="L296">    int index = mIndexInContainer;</span>
+<span class="fc" id="L297">    delete(index, leftLength, parentElement);</span>
+<span class="fc" id="L298">    OdfTextSpan textSpan = new OdfTextSpan((OdfFileDom) parentElement.getOwnerDocument());</span>
+<span class="fc" id="L299">    textSpan.addContentWhitespace(newText);</span>
+    /*if (startElement instanceof OdfStyleBase)
+    textSpan.setProperties(((OdfStyleBase) startElement)
+    .getStyleProperties());*/
+<span class="fc" id="L303">    mIsInserted = false;</span>
+<span class="fc" id="L304">    insertSpan(textSpan, index, parentElement);</span>
+    // optimize the parent element
+<span class="fc" id="L306">    optimize(parentElement);</span>
+<span class="fc" id="L307">    int offset = newText.length() - leftLength;</span>
+<span class="fc" id="L308">    SelectionManager.refresh(this.getContainerElement(), offset, index + getText().length());</span>
+<span class="fc" id="L309">    mMatchedText = newText;</span>
+<span class="fc" id="L310">  }</span>
+
+  /**
+   * Paste this selection just before a specific selection.
+   *
+   * @param positionItem a selection that is used to point out the position
+   * @throws InvalidNavigationException if the selection is unavailable.
+   */
+  @Override
+  public void pasteAtFrontOf(Selection positionItem) throws InvalidNavigationException {
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">    if (validate() == false) {</span>
+<span class="nc" id="L321">      throw new InvalidNavigationException(&quot;No matched string at this position&quot;);</span>
+    }
+<span class="fc" id="L323">    int indexOfNew = 0;</span>
+<span class="fc" id="L324">    OdfElement newElement = positionItem.getElement();</span>
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">    if (positionItem instanceof TextSelection) {</span>
+<span class="fc" id="L326">      indexOfNew = ((TextSelection) positionItem).getIndex();</span>
+<span class="fc" id="L327">      newElement = ((TextSelection) positionItem).getContainerElement();</span>
+    }
+
+<span class="fc" id="L330">    OdfTextSpan textSpan = getSpan((OdfFileDom) positionItem.getElement().getOwnerDocument());</span>
+<span class="fc" id="L331">    mIsInserted = false;</span>
+<span class="fc" id="L332">    insertSpan(textSpan, indexOfNew, newElement);</span>
+<span class="fc" id="L333">    adjustStyle(newElement, textSpan, null);</span>
+<span class="fc" id="L334">    SelectionManager.refreshAfterPasteAtFrontOf(this, positionItem);</span>
+<span class="fc" id="L335">  }</span>
+
+  /**
+   * Paste this selection just after a specific selection.
+   *
+   * @param positionItem a selection that is used to point out the position
+   * @throws InvalidNavigationException if the selection is unavailable.
+   */
+  @Override
+  public void pasteAtEndOf(Selection positionItem) throws InvalidNavigationException {
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">    if (validate() == false) {</span>
+<span class="nc" id="L346">      throw new InvalidNavigationException(&quot;No matched string at this position&quot;);</span>
+    }
+<span class="fc" id="L348">    int indexOfNew = 0; // TODO: think about and test if searchitem is a element selection</span>
+<span class="fc" id="L349">    OdfElement newElement = positionItem.getElement();</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">    if (positionItem instanceof TextSelection) {</span>
+<span class="fc" id="L351">      indexOfNew =</span>
+<span class="fc" id="L352">          ((TextSelection) positionItem).getIndex()</span>
+<span class="fc" id="L353">              + ((TextSelection) positionItem).getText().length();</span>
+<span class="fc" id="L354">      newElement = ((TextSelection) positionItem).getContainerElement();</span>
+    }
+
+<span class="fc" id="L357">    OdfTextSpan textSpan = getSpan((OdfFileDom) positionItem.getElement().getOwnerDocument());</span>
+
+<span class="fc" id="L359">    mIsInserted = false;</span>
+<span class="fc" id="L360">    insertSpan(textSpan, indexOfNew, newElement);</span>
+<span class="fc" id="L361">    adjustStyle(newElement, textSpan, null);</span>
+<span class="fc" id="L362">    SelectionManager.refreshAfterPasteAtEndOf(this, positionItem);</span>
+<span class="fc" id="L363">  }</span>
+
+  /**
+   * Add a hypertext reference to the selection
+   *
+   * @param url the url of the hypertext reference
+   * @throws InvalidNavigationException if the selection is unavailable.
+   */
+  public void addHref(URL url) throws InvalidNavigationException {
+<span class="nc bnc" id="L372" title="All 2 branches missed.">    if (validate() == false) {</span>
+<span class="nc" id="L373">      throw new InvalidNavigationException(&quot;No matched string at this position&quot;);</span>
+    }
+<span class="nc" id="L375">    OdfElement parentElement = getContainerElement();</span>
+
+<span class="nc" id="L377">    int leftLength = getText().length();</span>
+<span class="nc" id="L378">    int index = mIndexInContainer;</span>
+
+<span class="nc" id="L380">    addHref(index, leftLength, parentElement, url.toString());</span>
+<span class="nc" id="L381">  }</span>
+
+  /*
+   * add href for a range text of pNode from the 'fromindex' text, and the href will cover
+   * 'leftLength' text
+   *
+   */
+  private void addHref(int fromindex, int leftLength, Node pNode, String href) {
+<span class="nc bnc" id="L389" title="All 4 branches missed.">    if ((fromindex == 0) &amp;&amp; (leftLength == 0)) {</span>
+<span class="nc" id="L390">      return;</span>
+    }
+<span class="nc" id="L392">    int nodeLength = 0;</span>
+<span class="nc" id="L393">    Node node = pNode.getFirstChild();</span>
+<span class="nc" id="L394">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+
+<span class="nc bnc" id="L396" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc bnc" id="L397" title="All 4 branches missed.">      if ((fromindex == 0) &amp;&amp; (leftLength == 0)) {</span>
+<span class="nc" id="L398">        return;</span>
+      }
+<span class="nc bnc" id="L400" title="All 2 branches missed.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc" id="L401">        nodeLength = node.getNodeValue().length();</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+        {
+          try {
+<span class="nc" id="L406">            nodeLength =</span>
+<span class="nc" id="L407">                Integer.parseInt(</span>
+<span class="nc" id="L408">                    ((Element) node).getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;c&quot;));</span>
+<span class="nc" id="L409">          } catch (Exception e) {</span>
+<span class="nc" id="L410">            nodeLength = 1;</span>
+<span class="nc" id="L411">          }</span>
+
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        } else if (node.getLocalName().equals(&quot;line-break&quot;)) {</span>
+<span class="nc" id="L414">          nodeLength = 1;</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        } else if (node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L416">          nodeLength = 1;</span>
+        } else {
+<span class="nc" id="L418">          nodeLength = textProcessor.getText((OdfElement) node).length();</span>
+        }
+      }
+<span class="nc bnc" id="L421" title="All 2 branches missed.">      if (nodeLength &lt;= fromindex) {</span>
+<span class="nc" id="L422">        fromindex -= nodeLength;</span>
+      } else {
+        // the start index is in this node
+<span class="nc bnc" id="L425" title="All 2 branches missed.">        if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="nc" id="L426">          String value = node.getNodeValue();</span>
+<span class="nc" id="L427">          node.setNodeValue(value.substring(0, fromindex));</span>
+<span class="nc" id="L428">          int endLength = fromindex + leftLength;</span>
+<span class="nc" id="L429">          int nextLength = value.length() - endLength;</span>
+
+<span class="nc" id="L431">          Node nextNode = node.getNextSibling();</span>
+<span class="nc" id="L432">          Node parNode = node.getParentNode();</span>
+          // init text:a
+<span class="nc" id="L434">          TextAElement textLink = new TextAElement((OdfFileDom) node.getOwnerDocument());</span>
+<span class="nc" id="L435">          Node newNode = null;</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">          if (nextLength &gt;= 0) {</span>
+<span class="nc" id="L437">            textLink.setTextContent(value.substring(fromindex, endLength));</span>
+<span class="nc" id="L438">            newNode = node.cloneNode(true);</span>
+<span class="nc" id="L439">            newNode.setNodeValue(value.substring(endLength, value.length()));</span>
+<span class="nc" id="L440">            leftLength = 0;</span>
+          } else {
+<span class="nc" id="L442">            textLink.setTextContent(value.substring(fromindex, value.length()));</span>
+<span class="nc" id="L443">            leftLength = endLength - value.length();</span>
+          }
+<span class="nc" id="L445">          textLink.setXlinkTypeAttribute(&quot;simple&quot;);</span>
+<span class="nc" id="L446">          textLink.setXlinkHrefAttribute(href);</span>
+
+<span class="nc bnc" id="L448" title="All 2 branches missed.">          if (nextNode != null) {</span>
+<span class="nc" id="L449">            parNode.insertBefore(textLink, nextNode);</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">            if (newNode != null) {</span>
+<span class="nc" id="L451">              parNode.insertBefore(newNode, nextNode);</span>
+            }
+          } else {
+<span class="nc" id="L454">            parNode.appendChild(textLink);</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">            if (newNode != null) {</span>
+<span class="nc" id="L456">              parNode.appendChild(newNode);</span>
+            }
+          }
+<span class="nc" id="L459">          fromindex = 0;</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">          if (nextNode != null) {</span>
+<span class="nc" id="L461">            node = nextNode;</span>
+          } else {
+<span class="nc" id="L463">            node = textLink;</span>
+          }
+
+<span class="nc bnc" id="L466" title="All 2 branches missed.">        } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+          // if text:s?????????
+<span class="nc bnc" id="L468" title="All 2 branches missed.">          if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+          {
+            // delete space
+<span class="nc" id="L471">            ((TextSElement) node).setTextCAttribute(new Integer(nodeLength - fromindex));</span>
+<span class="nc" id="L472">            leftLength = leftLength - (nodeLength - fromindex);</span>
+<span class="nc" id="L473">            fromindex = 0;</span>
+
+<span class="nc bnc" id="L475" title="All 2 branches missed.">          } else if (node.getLocalName().equals(&quot;line-break&quot;)</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">              || node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L477">            fromindex = 0;</span>
+<span class="nc" id="L478">            leftLength--;</span>
+          } else {
+<span class="nc" id="L480">            addHref(fromindex, leftLength, node, href);</span>
+<span class="nc" id="L481">            int length = (fromindex + leftLength) - nodeLength;</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">            leftLength = length &gt; 0 ? length : 0;</span>
+<span class="nc" id="L483">            fromindex = 0;</span>
+          }
+        }
+      }
+<span class="nc" id="L487">      node = node.getNextSibling();</span>
+    }
+<span class="nc" id="L489">  }</span>
+  /*
+   * delete the pNode from the fromindex text, and delete leftLength text
+   */
+
+  private void delete(int fromindex, int leftLength, Node pNode) {
+<span class="pc bpc" id="L495" title="1 of 4 branches missed.">    if ((fromindex == 0) &amp;&amp; (leftLength == 0)) {</span>
+<span class="nc" id="L496">      return;</span>
+    }
+<span class="fc" id="L498">    int nodeLength = 0;</span>
+<span class="fc" id="L499">    Node node = pNode.getFirstChild();</span>
+<span class="fc" id="L500">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+
+<span class="fc bfc" id="L502" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L503" title="All 4 branches covered.">      if ((fromindex == 0) &amp;&amp; (leftLength == 0)) {</span>
+<span class="fc" id="L504">        return;</span>
+      }
+<span class="fc bfc" id="L506" title="All 2 branches covered.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L507">        nodeLength = node.getNodeValue().length();</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">        if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+        {
+          try {
+<span class="fc" id="L512">            nodeLength =</span>
+<span class="fc" id="L513">                Integer.parseInt(</span>
+<span class="fc" id="L514">                    ((Element) node).getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;c&quot;));</span>
+<span class="fc" id="L515">          } catch (Exception e) {</span>
+<span class="fc" id="L516">            nodeLength = 1;</span>
+<span class="fc" id="L517">          }</span>
+
+<span class="pc bpc" id="L519" title="1 of 2 branches missed.">        } else if (node.getLocalName().equals(&quot;line-break&quot;)) {</span>
+<span class="nc" id="L520">          nodeLength = 1;</span>
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">        } else if (node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L522">          nodeLength = 1;</span>
+        } else {
+<span class="fc" id="L524">          nodeLength = textProcessor.getText((OdfElement) node).length();</span>
+        }
+      }
+<span class="fc bfc" id="L527" title="All 2 branches covered.">      if (nodeLength &lt;= fromindex) {</span>
+<span class="fc" id="L528">        fromindex -= nodeLength;</span>
+      } else {
+        // the start index is in this node
+<span class="fc bfc" id="L531" title="All 2 branches covered.">        if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L532">          String value = node.getNodeValue();</span>
+<span class="fc" id="L533">          StringBuffer buffer = new StringBuffer();</span>
+<span class="fc" id="L534">          buffer.append(value.substring(0, fromindex));</span>
+<span class="fc" id="L535">          int endLength = fromindex + leftLength;</span>
+<span class="fc" id="L536">          int nextLength = value.length() - endLength;</span>
+<span class="fc" id="L537">          fromindex = 0;</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">          if (nextLength &gt;= 0) {</span>
+            // delete the result
+<span class="fc" id="L540">            buffer.append(value.substring(endLength, value.length()));</span>
+<span class="fc" id="L541">            leftLength = 0;</span>
+          } else {
+<span class="fc" id="L543">            leftLength = endLength - value.length();</span>
+          }
+<span class="fc" id="L545">          node.setNodeValue(buffer.toString());</span>
+
+<span class="pc bpc" id="L547" title="1 of 2 branches missed.">        } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+          // if text:s?????????
+<span class="pc bpc" id="L549" title="1 of 2 branches missed.">          if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+          {
+            // delete space
+<span class="nc" id="L552">            ((TextSElement) node).setTextCAttribute(new Integer(nodeLength - fromindex));</span>
+<span class="nc" id="L553">            leftLength = leftLength - (nodeLength - fromindex);</span>
+<span class="nc" id="L554">            fromindex = 0;</span>
+
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">          } else if (node.getLocalName().equals(&quot;line-break&quot;)</span>
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">              || node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L558">            fromindex = 0;</span>
+<span class="nc" id="L559">            leftLength--;</span>
+          } else {
+<span class="fc" id="L561">            delete(fromindex, leftLength, node);</span>
+<span class="fc" id="L562">            int length = (fromindex + leftLength) - nodeLength;</span>
+<span class="fc bfc" id="L563" title="All 2 branches covered.">            leftLength = length &gt; 0 ? length : 0;</span>
+<span class="fc" id="L564">            fromindex = 0;</span>
+          }
+        }
+      }
+<span class="fc" id="L568">      node = node.getNextSibling();</span>
+    }
+<span class="fc" id="L570">  }</span>
+
+  @Override
+  protected void refreshAfterFrontalDelete(Selection deleteItem) {
+<span class="pc bpc" id="L574" title="1 of 2 branches missed.">    if (deleteItem instanceof TextSelection) {</span>
+<span class="fc" id="L575">      mIndexInContainer -= ((TextSelection) deleteItem).getText().length();</span>
+    }
+<span class="fc" id="L577">  }</span>
+
+  @Override
+  protected void refreshAfterFrontalInsert(Selection pasteItem) {
+<span class="pc bpc" id="L581" title="1 of 2 branches missed.">    if (pasteItem instanceof TextSelection) {</span>
+<span class="fc" id="L582">      mIndexInContainer += ((TextSelection) pasteItem).getText().length();</span>
+    }
+<span class="fc" id="L584">  }</span>
+
+  @Override
+  protected void refresh(int offset) {
+<span class="nc" id="L588">    mIndexInContainer += offset;</span>
+<span class="nc" id="L589">  }</span>
+
+  /**
+   * return a String Object representing this selection value the text content of the selection,
+   * start index in the container element and the text content of the container element will be
+   * provided
+   *
+   * @return a String representation of the value of this TextSelection
+   */
+  @Override
+  public String toString() {
+<span class="fc" id="L600">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+
+<span class="fc" id="L602">    return &quot;[&quot;</span>
+        + mMatchedText
+        + &quot;] started from &quot;
+        + mIndexInContainer
+        + &quot; in paragraph:&quot;
+<span class="fc" id="L607">        + textProcessor.getText(getContainerElement());</span>
+  }
+
+  // return a new span that cover this selection
+  // and keep the original style of this selection
+  private OdfTextSpan getSpan(OdfFileDom ownerDoc) {
+<span class="fc" id="L613">    OdfElement parentElement = getContainerElement();</span>
+
+<span class="pc bpc" id="L615" title="1 of 2 branches missed.">    if (parentElement != null) {</span>
+<span class="fc" id="L616">      Node copyParentNode = parentElement.cloneNode(true);</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">      if (ownerDoc != parentElement.getOwnerDocument()) {</span>
+<span class="fc" id="L618">        copyParentNode = ownerDoc.adoptNode(copyParentNode);</span>
+      }
+<span class="fc" id="L620">      OdfTextSpan textSpan = new OdfTextSpan(ownerDoc);</span>
+<span class="fc" id="L621">      int sIndex = mIndexInContainer;</span>
+<span class="fc" id="L622">      int eIndex = sIndex + mMatchedText.length();</span>
+      // delete the content except the selection string
+      // delete from the end to start, so that the postion will not be
+      // impact by delete action
+<span class="fc" id="L626">      OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L627">      delete(eIndex, textProcessor.getText(copyParentNode).length() - eIndex, copyParentNode);</span>
+<span class="fc" id="L628">      delete(0, sIndex, copyParentNode);</span>
+<span class="fc" id="L629">      optimize(copyParentNode);</span>
+<span class="fc" id="L630">      Node childNode = copyParentNode.getFirstChild();</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">      while (childNode != null) {</span>
+<span class="fc" id="L632">        textSpan.appendChild(childNode.cloneNode(true));</span>
+<span class="fc" id="L633">        childNode = childNode.getNextSibling();</span>
+      }
+      // apply text style for the textSpan
+<span class="pc bpc" id="L636" title="1 of 2 branches missed.">      if (copyParentNode instanceof OdfStylableElement) {</span>
+<span class="fc" id="L637">        applyTextStyleProperties(</span>
+<span class="fc" id="L638">            getTextStylePropertiesDeep((OdfStylableElement) copyParentNode), textSpan);</span>
+      }
+<span class="fc" id="L640">      return textSpan;</span>
+    }
+<span class="nc" id="L642">    return null;</span>
+  }
+
+  /*
+   * optimize the text element by deleting the empty text node
+   *
+   * @param element
+   */
+  private void optimize(Node pNode) {
+    // check if the text:a can be optimized
+<span class="fc" id="L652">    OdfWhitespaceProcessor textProcess = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L653">    Node node = pNode.getFirstChild();</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc" id="L655">      Node nextNode = node.getNextSibling();</span>
+      // if ((node.getNodeType() == Node.ELEMENT_NODE) &amp;&amp; (node.getPrefix().equals(&quot;text&quot;))) {
+<span class="fc bfc" id="L657" title="All 2 branches covered.">      if (node instanceof OdfTextSpan) {</span>
+<span class="fc bfc" id="L658" title="All 2 branches covered.">        if (textProcess.getText(node).length() == 0) {</span>
+<span class="fc" id="L659">          node.getParentNode().removeChild(node);</span>
+        } else {
+<span class="fc" id="L661">          optimize(node);</span>
+        }
+      }
+<span class="fc" id="L664">      node = nextNode;</span>
+<span class="fc" id="L665">    }</span>
+<span class="fc" id="L666">  }</span>
+
+  /*
+   * apply the styleMap to the toElement
+   * reserve the style property of toElement if it is also exist in styleMap
+   */
+
+  private void applyTextStyleProperties(
+      Map&lt;OdfStyleProperty, String&gt; styleMap, OdfStylableElement toElement) {
+<span class="pc bpc" id="L675" title="1 of 2 branches missed.">    if (styleMap != null) {</span>
+      // preserve the style property of toElement if it is also exist in styleMap
+<span class="fc" id="L677">      OdfStyle resultStyleElement =</span>
+<span class="fc" id="L678">          toElement.getOrCreateAutomaticStyles().newStyle(OdfStyleFamily.Text);</span>
+
+<span class="fc bfc" id="L680" title="All 2 branches covered.">      for (Map.Entry&lt;OdfStyleProperty, String&gt; entry : styleMap.entrySet()) {</span>
+<span class="fc bfc" id="L681" title="All 2 branches covered.">        if (toElement.hasProperty(entry.getKey())) {</span>
+<span class="fc" id="L682">          resultStyleElement.setProperty(entry.getKey(), toElement.getProperty(entry.getKey()));</span>
+        } else {
+<span class="fc" id="L684">          resultStyleElement.setProperty(entry.getKey(), entry.getValue());</span>
+        }
+<span class="fc" id="L686">      }</span>
+<span class="fc" id="L687">      toElement.setStyleName(resultStyleElement.getStyleNameAttribute());</span>
+    }
+<span class="fc" id="L689">  }</span>
+
+  /*
+   * insert textSpan into the from index of pNode
+   */
+  private void insertSpan(OdfTextSpan textSpan, int fromindex, Node pNode) {
+<span class="pc bpc" id="L695" title="1 of 2 branches missed.">    if (fromindex &lt; 0) {</span>
+<span class="nc" id="L696">      fromindex = 0;</span>
+    }
+<span class="pc bpc" id="L698" title="1 of 4 branches missed.">    if (fromindex == 0 &amp;&amp; mIsInserted) {</span>
+<span class="nc" id="L699">      return;</span>
+    }
+<span class="fc" id="L701">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L702">    int nodeLength = 0;</span>
+<span class="fc" id="L703">    Node node = pNode.getFirstChild();</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L705" title="All 4 branches covered.">      if (fromindex &lt;= 0 &amp;&amp; mIsInserted) {</span>
+<span class="fc" id="L706">        return;</span>
+      }
+<span class="fc bfc" id="L708" title="All 2 branches covered.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L709">        nodeLength = node.getNodeValue().length();</span>
+<span class="fc bfc" id="L710" title="All 4 branches covered.">        if ((fromindex != 0) &amp;&amp; (nodeLength &lt; fromindex)) {</span>
+<span class="fc" id="L711">          fromindex -= nodeLength;</span>
+        } else {
+          // insert result after node, and insert an new text node
+          // after
+          // the result node
+<span class="fc" id="L716">          String value = node.getNodeValue();</span>
+<span class="fc" id="L717">          StringBuffer buffer = new StringBuffer();</span>
+<span class="fc" id="L718">          buffer.append(value.substring(0, fromindex));</span>
+          // insert the text span in appropriate position
+<span class="fc" id="L720">          node.setNodeValue(buffer.toString());</span>
+<span class="fc" id="L721">          Node nextNode = node.getNextSibling();</span>
+<span class="fc" id="L722">          Node parNode = node.getParentNode();</span>
+
+<span class="fc" id="L724">          Node newNode = node.cloneNode(true);</span>
+<span class="fc" id="L725">          newNode.setNodeValue(value.substring(fromindex, value.length()));</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">          if (nextNode != null) {</span>
+<span class="fc" id="L727">            parNode.insertBefore(textSpan, nextNode);</span>
+<span class="fc" id="L728">            parNode.insertBefore(newNode, nextNode);</span>
+          } else {
+<span class="fc" id="L730">            parNode.appendChild(textSpan);</span>
+<span class="fc" id="L731">            parNode.appendChild(newNode);</span>
+          }
+<span class="fc" id="L733">          mIsInserted = true;</span>
+<span class="fc" id="L734">          return;</span>
+        }
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc bfc" id="L737" title="All 2 branches covered.">        if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+        {
+          try {
+<span class="fc" id="L740">            nodeLength =</span>
+<span class="fc" id="L741">                Integer.parseInt(</span>
+<span class="fc" id="L742">                    ((Element) node).getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;c&quot;));</span>
+<span class="fc" id="L743">          } catch (Exception e) {</span>
+<span class="fc" id="L744">            nodeLength = 1;</span>
+<span class="fc" id="L745">          }</span>
+<span class="fc" id="L746">          fromindex -= nodeLength;</span>
+
+<span class="pc bpc" id="L748" title="1 of 2 branches missed.">        } else if (node.getLocalName().equals(&quot;line-break&quot;)) {</span>
+<span class="nc" id="L749">          nodeLength = 1;</span>
+<span class="nc" id="L750">          fromindex--;</span>
+<span class="pc bpc" id="L751" title="1 of 2 branches missed.">        } else if (node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="nc" id="L752">          nodeLength = 1;</span>
+<span class="nc" id="L753">          fromindex--;</span>
+        } else {
+<span class="fc" id="L755">          nodeLength = textProcessor.getText(node).length();</span>
+<span class="fc" id="L756">          insertSpan(textSpan, fromindex, node);</span>
+<span class="fc" id="L757">          fromindex -= nodeLength;</span>
+        }
+      }
+<span class="fc" id="L760">      node = node.getNextSibling();</span>
+    }
+<span class="fc" id="L762">  }</span>
+
+  /*
+   * the textSpan must be the child element of parentNode
+   * this method is used to keep the style of text span when it has been insert into the parentNode
+   * if we don't deal with the style, the inserted span will also have the style of parentNode
+   *
+   */
+  private void adjustStyle(
+      Node parentNode, OdfTextSpan textSpan, Map&lt;OdfStyleProperty, String&gt; styleMap) {
+<span class="pc bpc" id="L772" title="1 of 2 branches missed.">    if (parentNode instanceof OdfStylableElement) {</span>
+<span class="fc" id="L773">      OdfStylableElement pStyleNode = (OdfStylableElement) parentNode;</span>
+<span class="fc bfc" id="L774" title="All 2 branches covered.">      if (styleMap == null) {</span>
+<span class="fc" id="L775">        styleMap = getTextStylePropertiesDeep(pStyleNode);</span>
+      }
+<span class="fc" id="L777">      Node node = parentNode.getFirstChild();</span>
+<span class="fc bfc" id="L778" title="All 2 branches covered.">      while (node != null) {</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">        if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc bfc" id="L780" title="All 2 branches covered.">          if (node.getTextContent().length() &gt; 0) {</span>
+<span class="fc" id="L781">            Node nextNode = node.getNextSibling();</span>
+<span class="fc" id="L782">            OdfTextSpan span = new OdfTextSpan((OdfFileDom) node.getOwnerDocument());</span>
+<span class="fc" id="L783">            span.appendChild(node);</span>
+<span class="fc bfc" id="L784" title="All 2 branches covered.">            if (nextNode != null) {</span>
+<span class="fc" id="L785">              parentNode.insertBefore(span, nextNode);</span>
+            } else {
+<span class="fc" id="L787">              parentNode.appendChild(span);</span>
+            }
+<span class="fc" id="L789">            node = span;</span>
+<span class="fc" id="L790">            applyTextStyleProperties(styleMap, (OdfStylableElement) node);</span>
+<span class="fc" id="L791">          }</span>
+<span class="fc bfc" id="L792" title="All 2 branches covered.">        } else if ((node instanceof OdfStylableElement)) {</span>
+<span class="fc bfc" id="L793" title="All 2 branches covered.">          if (!node.equals(textSpan)) {</span>
+<span class="fc" id="L794">            Map&lt;OdfStyleProperty, String&gt; styles = getTextStylePropertiesDeep(pStyleNode);</span>
+<span class="fc" id="L795">            Map&lt;OdfStyleProperty, String&gt; styles1 =</span>
+<span class="fc" id="L796">                getTextStylePropertiesDeep((OdfStylableElement) node);</span>
+<span class="pc bpc" id="L797" title="1 of 2 branches missed.">            if (styles == null) {</span>
+<span class="nc" id="L798">              styles = styles1;</span>
+<span class="pc bpc" id="L799" title="1 of 2 branches missed.">            } else if (styles1 != null) {</span>
+<span class="fc" id="L800">              styles.putAll(styles1);</span>
+            }
+<span class="fc" id="L802">            int comp = node.compareDocumentPosition(textSpan);</span>
+            // if node contains textSpan, then recurse the node
+<span class="fc bfc" id="L804" title="All 2 branches covered.">            if ((comp &amp; Node.DOCUMENT_POSITION_CONTAINED_BY) &gt; 0) {</span>
+<span class="fc" id="L805">              adjustStyle(node, textSpan, styles);</span>
+            } else {
+<span class="fc" id="L807">              applyTextStyleProperties(styles, (OdfStylableElement) node);</span>
+            }
+          }
+        }
+<span class="fc" id="L811">        node = node.getNextSibling();</span>
+      }
+      // change the parentNode to default style
+      // here we don't know the default style name, so here just
+      // remove the text:style-name attribute
+<span class="fc" id="L816">      pStyleNode.removeAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;style-name&quot;);</span>
+    }
+<span class="fc" id="L818">  }</span>
+
+  /*
+   * get a map containing text properties of the specified styleable element.
+   * @return  a map of text properties.
+   */
+  private Map&lt;OdfStyleProperty, String&gt; getTextStyleProperties(OdfStylableElement element) {
+<span class="nc" id="L825">    String styleName = element.getStyleName();</span>
+<span class="nc" id="L826">    OdfStyleBase styleElement =</span>
+<span class="nc" id="L827">        element.getOrCreateAutomaticStyles().getStyle(styleName, element.getStyleFamily());</span>
+
+<span class="nc bnc" id="L829" title="All 2 branches missed.">    if (styleElement == null) {</span>
+<span class="nc" id="L830">      styleElement = element.getDocumentStyle();</span>
+    }
+<span class="nc bnc" id="L832" title="All 2 branches missed.">    if (styleElement != null) {</span>
+      // check if it is the style:defaut-style
+<span class="nc bnc" id="L834" title="All 2 branches missed.">      if ((styleElement.getPropertiesElement(OdfStylePropertiesSet.ParagraphProperties) == null)</span>
+<span class="nc bnc" id="L835" title="All 2 branches missed.">          &amp;&amp; (styleElement.getPropertiesElement(OdfStylePropertiesSet.TextProperties) == null)) {</span>
+<span class="nc" id="L836">        styleElement =</span>
+<span class="nc" id="L837">            ((OdfDocument) ((OdfFileDom) styleElement.getOwnerDocument()).getDocument())</span>
+<span class="nc" id="L838">                .getDocumentStyles()</span>
+<span class="nc" id="L839">                .getDefaultStyle(styleElement.getFamily());</span>
+      }
+<span class="nc" id="L841">      TreeMap&lt;OdfStyleProperty, String&gt; result = new TreeMap&lt;OdfStyleProperty, String&gt;();</span>
+<span class="nc" id="L842">      OdfStyleFamily family = OdfStyleFamily.Text;</span>
+<span class="nc bnc" id="L843" title="All 2 branches missed.">      if (family != null) {</span>
+<span class="nc bnc" id="L844" title="All 2 branches missed.">        for (OdfStyleProperty property : family.getProperties()) {</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">          if (styleElement.hasProperty(property)) {</span>
+<span class="nc" id="L846">            result.put(property, styleElement.getProperty(property));</span>
+          }
+<span class="nc" id="L848">        }</span>
+      }
+<span class="nc" id="L850">      return result;</span>
+    }
+<span class="nc" id="L852">    return null;</span>
+  }
+
+  /*
+   * get a map containing text properties of the specified styleable element.
+   * The map will also include any properties set by parent styles
+   * @return  a map of text properties.
+   *
+   */
+  private Map&lt;OdfStyleProperty, String&gt; getTextStylePropertiesDeep(OdfStylableElement element) {
+<span class="fc" id="L862">    String styleName = element.getStyleName();</span>
+<span class="fc" id="L863">    OdfStyleBase styleElement =</span>
+<span class="fc" id="L864">        element.getOrCreateAutomaticStyles().getStyle(styleName, element.getStyleFamily());</span>
+
+<span class="fc bfc" id="L866" title="All 2 branches covered.">    if (styleElement == null) {</span>
+<span class="fc" id="L867">      styleElement = element.getDocumentStyle();</span>
+    }
+<span class="fc" id="L869">    TreeMap&lt;OdfStyleProperty, String&gt; result = new TreeMap&lt;OdfStyleProperty, String&gt;();</span>
+<span class="fc bfc" id="L870" title="All 2 branches covered.">    while (styleElement != null) {</span>
+      // check if it is the style:defaut-style
+<span class="fc bfc" id="L872" title="All 2 branches covered.">      if ((styleElement.getPropertiesElement(OdfStylePropertiesSet.ParagraphProperties) == null)</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">          &amp;&amp; (styleElement.getPropertiesElement(OdfStylePropertiesSet.TextProperties) == null)) {</span>
+<span class="fc" id="L874">        styleElement =</span>
+<span class="fc" id="L875">            ((OdfDocument) ((OdfFileDom) styleElement.getOwnerDocument()).getDocument())</span>
+<span class="fc" id="L876">                .getDocumentStyles()</span>
+<span class="fc" id="L877">                .getDefaultStyle(styleElement.getFamily());</span>
+      }
+<span class="fc" id="L879">      OdfStyleFamily family = OdfStyleFamily.Text;</span>
+<span class="pc bpc" id="L880" title="1 of 2 branches missed.">      if (family != null) {</span>
+<span class="fc bfc" id="L881" title="All 2 branches covered.">        for (OdfStyleProperty property : family.getProperties()) {</span>
+<span class="fc bfc" id="L882" title="All 2 branches covered.">          if (styleElement.hasProperty(property)) {</span>
+<span class="fc" id="L883">            result.put(property, styleElement.getProperty(property));</span>
+          }
+<span class="fc" id="L885">        }</span>
+      }
+<span class="fc" id="L887">      styleElement = styleElement.getParentStyle();</span>
+<span class="fc" id="L888">    }</span>
+<span class="fc" id="L889">    return result;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextListStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfTextListStyle.java</span></div><h1>OdfTextListStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.text.TextListLevelStyleElementBase;
+import org.odftoolkit.odfdom.dom.element.text.TextListStyleElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfListLevelProperties;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/**
+ * Convenient functionalty for the parent ODF OpenDocument element
+ *
+ * &lt;p&gt;List styles require a lot of code to create one level at a time. This class contains
+ * constructors that create an entire OdfListStyle based on a delimited string or an array of
+ * strings. Each item in the string (or array) represents a list level style for levels 1-10.
+ *
+ * &lt;p&gt;If an item contains &lt;code&gt;1&lt;/code&gt;, &lt;code&gt;I&lt;/code&gt;, &lt;code&gt;i&lt;/code&gt;, &lt;code&gt;A&lt;/code&gt;, or &lt;code&gt;a
+ * &lt;/code&gt;, then it is presumed to be a numbering style; otherwise it is a bulleted style.
+ */
+public class OdfTextListStyle extends TextListStyleElement {
+
+  private static final long serialVersionUID = -5493176392198676430L;
+
+  /** Maximum number of levels in a list. */
+  protected static final int MAX_LIST_LEVEL = 10;
+  /** List should show all levels of numbering. */
+  public static final boolean SHOW_ALL_LEVELS = true;
+  /** List should show only one level of numbering. */
+  public static final boolean SHOW_ONE_LEVEL = false;
+
+  public OdfTextListStyle(OdfFileDom ownerDoc) {
+<span class="fc" id="L58">    super(ownerDoc);</span>
+<span class="fc" id="L59">  }</span>
+
+  /**
+   * Creates an OdfListStyle.
+   *
+   * @param ownerDoc the document that this list style belongs to.
+   * @param name the name of this list style.
+   * @param specifiers the string of level specifiers.
+   * @param delim the delimiter for splitting the string into levels.
+   * @param spacing a css &quot;length&quot; telling how far to indent each level; also min. label width
+   * @param showAllLevels true if you want to display all levels of numbering, false otherwise.
+   */
+  public OdfTextListStyle(
+      OdfFileDom ownerDoc,
+      String name,
+      String specifiers,
+      String delim,
+      String spacing,
+      boolean showAllLevels) {
+<span class="fc" id="L78">    super(ownerDoc);</span>
+<span class="fc" id="L79">    String[] specArray = specifiers.split(delim);</span>
+<span class="fc" id="L80">    newListStyle(name, specArray, spacing, showAllLevels);</span>
+<span class="fc" id="L81">  }</span>
+
+  /**
+   * Constructor for OdfEasyListStyle.
+   *
+   * @param ownerDoc the document that this list style belongs to.
+   * @param name the name of this list style.
+   * @param specArray an array of strings of level specifications.
+   * @param spacing a css &quot;length&quot; telling how far to indent each level; also min. label width
+   * @param showAllLevels true if you want to display all levels of numbering, false otherwise.
+   */
+  public OdfTextListStyle(
+      OdfFileDom ownerDoc, String name, String[] specArray, String spacing, boolean showAllLevels) {
+<span class="nc" id="L94">    super(ownerDoc);</span>
+<span class="nc" id="L95">    newListStyle(name, specArray, spacing, showAllLevels);</span>
+<span class="nc" id="L96">  }</span>
+
+  /**
+   * returns the given level or null if it does not exist
+   *
+   * @param level is the level number that should be returned
+   * @return an instance of TextListLevelStyleImageElement, TextListLevelStyleBulletElement,
+   *     TextListLevelStyleNumberElement or null.
+   */
+  public TextListLevelStyleElementBase getLevel(int level) {
+<span class="fc" id="L106">    Node levelElement = this.getFirstChild();</span>
+
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">    while (levelElement != null) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">      if (levelElement instanceof TextListLevelStyleElementBase) {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (level == 1) {</span>
+<span class="fc" id="L111">          return (TextListLevelStyleElementBase) levelElement;</span>
+        } else {
+<span class="fc" id="L113">          --level;</span>
+        }
+      }
+<span class="fc" id="L116">      levelElement = levelElement.getNextSibling();</span>
+    }
+<span class="nc" id="L118">    return null;</span>
+  }
+
+  /**
+   * always returns the given level with the given class. If that level does not exist or has a
+   * different class than it is (re)created.
+   *
+   * @param level is the level number that should be returned
+   * @param clazz is the class of the level, should be TextListLevelStyleImageElement,
+   *     TextListLevelStyleBulletElement or TextListLevelStyleNumberElement.
+   * @return a list level style with the given level and class
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public TextListLevelStyleElementBase getOrCreateListLevel(int level, Class clazz) {
+<span class="nc" id="L132">    TextListLevelStyleElementBase levelStyle = getLevel(level);</span>
+<span class="nc bnc" id="L133" title="All 4 branches missed.">    if ((levelStyle != null) &amp;&amp; clazz.isInstance(levelStyle)) {</span>
+<span class="nc" id="L134">      return levelStyle;</span>
+    }
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">    if (levelStyle != null) {</span>
+<span class="nc" id="L138">      removeChild(levelStyle);</span>
+    }
+
+<span class="nc" id="L141">    levelStyle =</span>
+<span class="nc" id="L142">        (TextListLevelStyleElementBase) ((OdfFileDom) this.ownerDocument).newOdfElement(clazz);</span>
+<span class="nc" id="L143">    levelStyle.setTextLevelAttribute(level);</span>
+<span class="nc" id="L144">    appendChild(levelStyle);</span>
+
+<span class="nc" id="L146">    return levelStyle;</span>
+  }
+
+  @Override
+  public OdfStyleFamily getFamily() {
+<span class="nc" id="L151">    return OdfStyleFamily.List;</span>
+  }
+
+  @Override
+  public OdfStyleBase getParentStyle() {
+<span class="nc" id="L156">    return null;</span>
+  }
+
+  /**
+   * Creates the OdfTextListStyle element. This is a utility routine called by the constructors.
+   *
+   * @param name the &lt;code&gt;style:name&lt;/code&gt; of this list style
+   * @param specArray specifications for each level of the list
+   * @param spacing a CSS length that gives the amount of space before a label and the minimum label
+   *     width
+   * @param showAllLevels if true, display all levels of a numbered list item
+   */
+  private void newListStyle(
+      String name, String[] specArray, String spacing, boolean showAllLevels) {
+<span class="fc" id="L170">    Pattern numFormatPattern = Pattern.compile(&quot;([1IiAa])&quot;);</span>
+<span class="fc" id="L171">    Pattern cssLengthPattern = Pattern.compile(&quot;([^a-z]+)\\s*([a-z]+)?&quot;);</span>
+<span class="fc" id="L172">    String numPrefix = &quot;&quot;;</span>
+<span class="fc" id="L173">    String numSuffix = &quot;&quot;;</span>
+<span class="fc" id="L174">    String numberFormat = &quot;&quot;;</span>
+    Matcher m;
+    double cssLengthNum;
+    String cssLengthUnits;
+    int displayLevels;
+
+    OdfTextListLevelStyleNumber number;
+    OdfTextListLevelStyleBullet bullet;
+    TextListLevelStyleElementBase styleItem;
+
+<span class="fc" id="L184">    this.setStyleNameAttribute(name);</span>
+
+    // split up the spacing into length and units
+<span class="fc" id="L187">    m = cssLengthPattern.matcher(spacing);</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">    if (m.find()) {</span>
+      try {
+<span class="fc" id="L190">        cssLengthNum = Double.parseDouble(m.group(1));</span>
+<span class="nc" id="L191">      } catch (NumberFormatException oops) {</span>
+<span class="nc" id="L192">        cssLengthNum = 0.0;</span>
+<span class="fc" id="L193">      }</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">      cssLengthUnits = (m.group(2) == null) ? &quot;&quot; : m.group(2);</span>
+    } else {
+<span class="nc" id="L196">      cssLengthNum = 0;</span>
+<span class="nc" id="L197">      cssLengthUnits = &quot;&quot;;</span>
+    }
+
+<span class="fc bfc" id="L200" title="All 2 branches covered.">    for (int i = 0; i &lt; Math.min(specArray.length, MAX_LIST_LEVEL); i++) {</span>
+<span class="fc" id="L201">      specArray[i] = specArray[i].trim();</span>
+<span class="fc" id="L202">      m = numFormatPattern.matcher(specArray[i]);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">      if (m.find()) // if it has 1, I, i, A, or a, it's a numbering style</span>
+      {
+<span class="fc" id="L205">        numberFormat = m.group(1);</span>
+<span class="fc" id="L206">        numPrefix = specArray[i].substring(0, m.start(1));</span>
+<span class="fc" id="L207">        numSuffix = specArray[i].substring(m.end(1));</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        displayLevels = (showAllLevels) ? (i + 1) : 1;</span>
+<span class="fc" id="L209">        number = new OdfTextListLevelStyleNumber((OdfFileDom) this.ownerDocument);</span>
+<span class="fc" id="L210">        number.setStyleNumPrefixAttribute(numPrefix);</span>
+<span class="fc" id="L211">        number.setStyleNumFormatAttribute(numberFormat);</span>
+<span class="fc" id="L212">        number.setStyleNumSuffixAttribute(numSuffix);</span>
+<span class="fc" id="L213">        number.setTextDisplayLevelsAttribute(displayLevels);</span>
+<span class="fc" id="L214">        styleItem = number;</span>
+      } else // it's a bullet style
+      {
+<span class="fc" id="L217">        bullet = new OdfTextListLevelStyleBullet((OdfFileDom) this.ownerDocument);</span>
+<span class="fc" id="L218">        bullet.setStyleNumPrefixAttribute(&quot;&quot;);</span>
+<span class="fc" id="L219">        bullet.setStyleNumSuffixAttribute(&quot;&quot;);</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (!specArray[i].equals(&quot;&quot;)) {</span>
+<span class="fc" id="L221">          bullet.setTextBulletCharAttribute(specArray[i].substring(0, 1));</span>
+        } else {
+<span class="nc" id="L223">          bullet.setTextBulletCharAttribute(&quot;&quot;);</span>
+        }
+<span class="fc" id="L225">        styleItem = bullet;</span>
+      }
+
+<span class="fc" id="L228">      styleItem.setTextLevelAttribute(i + 1);</span>
+<span class="fc" id="L229">      styleItem.setProperty(</span>
+          OdfListLevelProperties.SpaceBefore,
+<span class="fc" id="L231">          Double.toString(cssLengthNum * (i + 1)) + cssLengthUnits);</span>
+<span class="fc" id="L232">      styleItem.setProperty(</span>
+<span class="fc" id="L233">          OdfListLevelProperties.MinLabelWidth, Double.toString(cssLengthNum) + cssLengthUnits);</span>
+<span class="fc" id="L234">      this.appendChild(styleItem);</span>
+    }
+<span class="fc" id="L236">  }</span>
+
+  @Override
+  public String toString() {
+<span class="fc" id="L240">    return this.getStyleNameAttribute();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
