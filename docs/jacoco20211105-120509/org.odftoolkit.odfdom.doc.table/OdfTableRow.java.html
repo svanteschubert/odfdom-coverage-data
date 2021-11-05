@@ -1,0 +1,916 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTableRow.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc.table</a> &gt; <span class="el_source">OdfTableRow.java</span></div><h1>OdfTableRow.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc.table;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.table.TableCoveredTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElementBase;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableHeaderRowsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowsElement;
+import org.odftoolkit.odfdom.dom.element.text.TextHElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfTableRowProperties;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfXMLFactory;
+import org.odftoolkit.odfdom.type.Length.Unit;
+import org.odftoolkit.odfdom.type.PositiveLength;
+import org.w3c.dom.Node;
+
+/**
+ * OdfTableRow represents table row feature in ODF document.
+ *
+ * &lt;p&gt;OdfTableRow provides methods to get table cells that belong to this table row.
+ */
+public class OdfTableRow {
+
+  // boolean mbVisible;
+  TableTableRowElement maRowElement;
+  int mnRepeatedIndex;
+<span class="fc" id="L64">  int mRowsRepeatedNumber = -1;</span>
+  private static final String DEFAULT_HEIGHT = &quot;0.30in&quot;;
+  private OdfDocument mDocument;
+
+  /**
+   * Construct the &lt;code&gt;OdfTableRow&lt;/code&gt; feature.
+   *
+   * @param rowElement the row element represent this row
+   * @param repeatedIndex the index in the repeated rows
+   */
+<span class="fc" id="L74">  OdfTableRow(TableTableRowElement rowElement, int repeatedIndex) {</span>
+<span class="fc" id="L75">    maRowElement = rowElement;</span>
+<span class="fc" id="L76">    mnRepeatedIndex = repeatedIndex;</span>
+<span class="fc" id="L77">    mDocument = (OdfDocument) ((OdfFileDom) maRowElement.getOwnerDocument()).getDocument();</span>
+<span class="fc" id="L78">  }</span>
+
+  /**
+   * Get the &lt;code&gt;OdfTableRow&lt;/code&gt; instance from the &lt;code&gt;TableTableRowElement&lt;/code&gt; instance.
+   *
+   * &lt;p&gt;Each &lt;code&gt;TableTableRowElement&lt;/code&gt; instance has a one-to-one relationship to a &lt;code&gt;
+   * OdfTableRow&lt;/code&gt; instance.
+   *
+   * @param rowElement the row element that need to get the corresponding &lt;code&gt;OdfTableRow&lt;/code&gt;
+   *     instance
+   * @return the &lt;code&gt;OdfTableRow&lt;/code&gt; instance represent the specified row element
+   */
+  public static OdfTableRow getInstance(TableTableRowElement rowElement) {
+<span class="fc" id="L91">    TableTableElement tableElement = null;</span>
+<span class="fc" id="L92">    Node node = rowElement.getParentNode();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">      if (node instanceof TableTableElement) {</span>
+<span class="fc" id="L95">        tableElement = (TableTableElement) node;</span>
+      }
+<span class="fc" id="L97">      node = node.getParentNode();</span>
+    }
+<span class="fc" id="L99">    OdfTable table = null;</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">    if (tableElement != null) {</span>
+<span class="fc" id="L101">      table = OdfTable.getInstance(tableElement);</span>
+    } else {
+<span class="nc" id="L103">      throw new IllegalArgumentException(&quot;the rowElement is not in the table dom tree&quot;);</span>
+    }
+
+<span class="fc" id="L106">    OdfTableRow row = table.getRowInstance(rowElement, 0);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">    if (row.getRowsRepeatedNumber() &gt; 1) {</span>
+<span class="nc" id="L108">      Logger.getLogger(OdfTableRow.class.getName())</span>
+<span class="nc" id="L109">          .log(</span>
+              Level.WARNING,
+              &quot;the row has the repeated row number, and puzzled about get which repeated index of the row,&quot;
+                  + &quot;here just return the first row of the repeated rows.&quot;);
+    }
+<span class="fc" id="L114">    return row;</span>
+  }
+
+  /**
+   * Get the &lt;code&gt;TableTableElement&lt;/code&gt; who contains this row.
+   *
+   * @return the table element that contains the row.
+   */
+  private TableTableElement getTableElement() {
+<span class="fc" id="L123">    Node node = maRowElement.getParentNode();</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">    while (node != null) {</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">      if (node instanceof TableTableElement) {</span>
+<span class="fc" id="L126">        return (TableTableElement) node;</span>
+      }
+<span class="fc" id="L128">      node = node.getParentNode();</span>
+    }
+<span class="nc" id="L130">    return null;</span>
+  }
+
+  /**
+   * Get owner table of the current row.
+   *
+   * @return the parent table of this row
+   */
+  public OdfTable getTable() {
+<span class="fc" id="L139">    TableTableElement tableElement = getTableElement();</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">    if (tableElement != null) {</span>
+<span class="fc" id="L141">      return OdfTable.getInstance(tableElement);</span>
+    }
+<span class="nc" id="L143">    return null;</span>
+  }
+
+  /**
+   * Return the height of the row (in Millimeter).
+   *
+   * &lt;p&gt;Return the minimal height, if the row height is not set,
+   *
+   * @return the height of the current row (in Millimeter).
+   */
+  public long getHeight() {
+<span class="fc" id="L154">    String sHeight = maRowElement.getProperty(OdfTableRowProperties.RowHeight);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">    if (sHeight == null) {</span>
+<span class="fc" id="L156">      sHeight = maRowElement.getProperty(OdfTableRowProperties.MinRowHeight);</span>
+    }
+<span class="fc bfc" id="L158" title="All 2 branches covered.">    if (sHeight == null) {</span>
+<span class="fc" id="L159">      sHeight = DEFAULT_HEIGHT;</span>
+    }
+<span class="fc" id="L161">    return PositiveLength.parseLong(sHeight, Unit.MILLIMETER);</span>
+  }
+
+  /**
+   * Set the height/minimal height of the row (in Millimeter) according to the second parameter.
+   *
+   * @param height the height/minimal height that will be set to the row (in Millimeter).
+   * @param isMinHeight if it is true, the row can fit the height to the text, vice versa.
+   */
+  public void setHeight(long height, boolean isMinHeight) {
+<span class="fc" id="L171">    String sHeightMM = String.valueOf(height) + Unit.MILLIMETER.abbr();</span>
+<span class="fc" id="L172">    String sHeightIN = PositiveLength.mapToUnit(sHeightMM, Unit.INCH);</span>
+<span class="fc" id="L173">    splitRepeatedRows();</span>
+<span class="fc" id="L174">    maRowElement.setProperty(OdfTableRowProperties.RowHeight, sHeightIN);</span>
+<span class="fc" id="L175">  }</span>
+
+  // if one of the repeated row want to change something
+  // then this repeated row have to split to repeated number rows
+  // the maRowElement/mnRepeatedIndex should also be updated according to the original index in the
+  // repeated column
+  void splitRepeatedRows() {
+<span class="fc" id="L182">    int repeateNum = getRowsRepeatedNumber();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">    if (repeateNum &gt; 1) {</span>
+<span class="fc" id="L184">      OdfTable table = getTable();</span>
+<span class="fc" id="L185">      TableTableElement tableEle = table.getOdfElement();</span>
+      // change this repeated row to several single rows
+<span class="fc" id="L187">      TableTableRowElement ownerRowElement = null;</span>
+<span class="fc" id="L188">      int repeatedRowIndex = mnRepeatedIndex;</span>
+<span class="fc" id="L189">      Node refElement = maRowElement;</span>
+<span class="fc" id="L190">      Node oldRowElement = maRowElement;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">      for (int i = repeateNum - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L192">        TableTableRowElement newRow = (TableTableRowElement) maRowElement.cloneNode(true);</span>
+<span class="fc" id="L193">        newRow.removeAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;number-rows-repeated&quot;);</span>
+<span class="fc" id="L194">        tableEle.insertBefore(newRow, refElement);</span>
+<span class="fc" id="L195">        refElement = newRow;</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        if (repeatedRowIndex == i) {</span>
+<span class="fc" id="L197">          ownerRowElement = newRow;</span>
+        } else {
+<span class="fc" id="L199">          table.updateRowRepository(maRowElement, i, newRow, 0);</span>
+        }
+      }
+
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">      if (ownerRowElement != null) {</span>
+<span class="fc" id="L204">        table.updateRowRepository(maRowElement, mnRepeatedIndex, ownerRowElement, 0);</span>
+      }
+<span class="fc" id="L206">      tableEle.removeChild(oldRowElement);</span>
+<span class="fc" id="L207">      mRowsRepeatedNumber = -1;</span>
+    }
+<span class="fc" id="L209">  }</span>
+
+  /**
+   * Return if the row always keeps its optimal height.
+   *
+   * @return true if the row always keeps its optimal height; vice versa
+   */
+  public boolean isOptimalHeight() {
+<span class="nc" id="L217">    return Boolean.parseBoolean(</span>
+<span class="nc" id="L218">        maRowElement.getProperty(OdfTableRowProperties.UseOptimalRowHeight));</span>
+  }
+
+  /**
+   * Set if the row always keeps its optimal height.
+   *
+   * @param isUseOptimalHeight the flag that indicate row should keep its optimal height or not
+   */
+  public void setUseOptimalHeight(boolean isUseOptimalHeight) {
+<span class="nc" id="L227">    maRowElement.setProperty(</span>
+<span class="nc" id="L228">        OdfTableRowProperties.UseOptimalRowHeight, String.valueOf(isUseOptimalHeight));</span>
+<span class="nc" id="L229">  }</span>
+
+  /**
+   * Return an instance of &lt;code&gt;TableTableRowElement&lt;/code&gt; which represents this feature.
+   *
+   * @return an instance of &lt;code&gt;TableTableRowElement&lt;/code&gt;
+   */
+  public TableTableRowElement getOdfElement() {
+<span class="fc" id="L237">    return maRowElement;</span>
+  }
+
+  /**
+   * Get a cell with a specific index. The table will be automatically expanded, when the given
+   * index is outside of the original table.
+   *
+   * @param index the cell index in this row
+   * @return the cell object in the given cell index
+   */
+  public OdfTableCell getCellByIndex(int index) {
+<span class="fc" id="L248">    OdfTable table = getTable();</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">    if (index &lt; 0) {</span>
+<span class="nc" id="L250">      throw new IllegalArgumentException(&quot;index should be nonnegative integer.&quot;);</span>
+    }
+    // expand column as needed.
+<span class="fc" id="L253">    int lastColumnIndex = table.getColumnCount() - 1;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">    if (index &gt; lastColumnIndex) {</span>
+      // need clean cell style.
+<span class="fc" id="L256">      table.appendColumns((index - lastColumnIndex), true);</span>
+    }
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">    for (Node n : new DomNodeList(maRowElement.getChildNodes())) {</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">      if (n instanceof TableTableCellElementBase) {</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        if (index == 0) {</span>
+<span class="fc" id="L261">          return table.getCellInstance((TableTableCellElementBase) n, 0, mnRepeatedIndex);</span>
+        } else {
+<span class="fc" id="L263">          int nextIndex =</span>
+              index
+                  - ((TableTableCellElementBase) n)
+<span class="fc" id="L266">                      .getTableNumberColumnsRepeatedAttribute()</span>
+<span class="fc" id="L267">                      .intValue();</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">          if (nextIndex &lt; 0) {</span>
+<span class="fc" id="L269">            OdfTableCell cell =</span>
+<span class="fc" id="L270">                table.getCellInstance((TableTableCellElementBase) n, index, mnRepeatedIndex);</span>
+<span class="fc" id="L271">            return cell;</span>
+          } else {
+<span class="fc" id="L273">            index = nextIndex;</span>
+          }
+        }
+      }
+<span class="fc" id="L277">    }</span>
+<span class="nc" id="L278">    return null;</span>
+  }
+
+  /**
+   * Return the count of real cells in this row. The cells covered by top cells are not counted.
+   *
+   * &lt;p&gt;Please note it might not equal to the column count of the owner table, because some of them
+   * are the covered cells.
+   *
+   * @return the cell count
+   */
+  public int getCellCount() {
+<span class="fc" id="L290">    OdfTable table = getTable();</span>
+<span class="fc" id="L291">    Set&lt;OdfTableCell&gt; realCells = new HashSet&lt;OdfTableCell&gt;();</span>
+<span class="fc" id="L292">    List&lt;CellCoverInfo&gt; coverList =</span>
+<span class="fc" id="L293">        table.getCellCoverInfos(0, 0, table.getColumnCount() - 1, table.getRowCount() - 1);</span>
+<span class="fc" id="L294">    int rowIndex = getRowIndex();</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">    for (int i = 0; i &lt; table.getColumnCount(); i++) {</span>
+<span class="fc" id="L296">      OdfTableCell cell = table.getOwnerCellByPosition(coverList, i, rowIndex);</span>
+<span class="fc" id="L297">      realCells.add(cell);</span>
+    }
+<span class="fc" id="L299">    return realCells.size();</span>
+  }
+
+  /**
+   * Return the previous row of the current row.
+   *
+   * @return the previous row before this row in the owner table
+   */
+  public OdfTableRow getPreviousRow() {
+<span class="fc" id="L308">    OdfTable table = getTable();</span>
+    // the row has repeated row number &gt; 1
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">    if (getRowsRepeatedNumber() &gt; 1) {</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">      if (mnRepeatedIndex &gt; 0) {</span>
+<span class="nc" id="L312">        return table.getRowInstance(maRowElement, mnRepeatedIndex - 1);</span>
+      }
+    }
+    // the row has repeated row number &gt; 1 &amp;&amp; the index is 0
+    // or the row has repeated row num = 1
+<span class="fc" id="L317">    Node aPrevNode = maRowElement.getPreviousSibling();</span>
+<span class="fc" id="L318">    Node aCurNode = maRowElement;</span>
+    TableTableRowElement lastRow;
+    while (true) {
+<span class="fc bfc" id="L321" title="All 2 branches covered.">      if (aPrevNode == null) {</span>
+        // does not have previous sibling, then get the parent
+        // because aCurNode might be the child element of table-header-rows, table-rows,
+        // table-row-group
+<span class="fc" id="L325">        Node parentNode = aCurNode.getParentNode();</span>
+        // if the parent is table, then it means that this row is the first row in this table
+        // it has no previous row
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">        if (parentNode instanceof TableTableElement) {</span>
+<span class="fc" id="L329">          return null;</span>
+        }
+<span class="nc" id="L331">        aPrevNode = parentNode.getPreviousSibling();</span>
+      }
+      // else the previous node might be table-header-rows, table-rows, table-row-group
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">      if (aPrevNode != null) {</span>
+        try {
+<span class="fc bfc" id="L336" title="All 2 branches covered.">          if (aPrevNode instanceof TableTableRowElement) {</span>
+<span class="fc" id="L337">            return table.getRowInstance(</span>
+                (TableTableRowElement) aPrevNode,
+<span class="fc" id="L339">                ((TableTableRowElement) aPrevNode).getTableNumberRowsRepeatedAttribute().intValue()</span>
+                    - 1);
+<span class="pc bpc" id="L341" title="3 of 6 branches missed.">          } else if (aPrevNode instanceof TableTableRowsElement</span>
+              || aPrevNode instanceof TableTableHeaderRowsElement
+              || aPrevNode instanceof TableTableRowGroupElement) {
+<span class="nc" id="L344">            XPath xpath = ((OdfContentDom) aPrevNode.getOwnerDocument()).getXPath();</span>
+<span class="nc" id="L345">            synchronized (mDocument) {</span>
+<span class="nc" id="L346">              lastRow =</span>
+                  (TableTableRowElement)
+<span class="nc" id="L348">                      xpath.evaluate(&quot;.//table:table-row[last()]&quot;, aPrevNode, XPathConstants.NODE);</span>
+<span class="nc" id="L349">            }</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">            if (lastRow != null) {</span>
+<span class="nc" id="L351">              return table.getRowInstance(</span>
+<span class="nc" id="L352">                  lastRow, lastRow.getTableNumberRowsRepeatedAttribute().intValue() - 1);</span>
+            }
+<span class="nc" id="L354">          } else {</span>
+<span class="fc" id="L355">            aCurNode = aPrevNode;</span>
+<span class="fc" id="L356">            aPrevNode = aPrevNode.getPreviousSibling();</span>
+          }
+<span class="nc" id="L358">        } catch (XPathExpressionException e) {</span>
+<span class="nc" id="L359">          Logger.getLogger(OdfTableRow.class.getName()).log(Level.SEVERE, e.getMessage(), e);</span>
+<span class="pc" id="L360">        }</span>
+      }
+    }
+  }
+
+  /**
+   * Return the next row of the current row.
+   *
+   * @return the next row after this row in the owner table
+   */
+  public OdfTableRow getNextRow() {
+<span class="fc" id="L371">    OdfTable table = getTable();</span>
+    // the row has repeated row number &gt; 1
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">    if (getRowsRepeatedNumber() &gt; 1) {</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">      if (mnRepeatedIndex &lt; (getRowsRepeatedNumber() - 1)) {</span>
+<span class="nc" id="L375">        return table.getRowInstance(maRowElement, mnRepeatedIndex + 1);</span>
+      }
+    }
+
+<span class="fc" id="L379">    Node aNextNode = maRowElement.getNextSibling();</span>
+<span class="fc" id="L380">    Node aCurNode = maRowElement;</span>
+    TableTableRowElement firstRow;
+    while (true) {
+<span class="fc bfc" id="L383" title="All 2 branches covered.">      if (aNextNode == null) {</span>
+        // does not have next sibling, then get the parent
+        // because aCurNode might be the child element of table-header-rows, table-rows,
+        // table-row-group
+<span class="fc" id="L387">        Node parentNode = aCurNode.getParentNode();</span>
+        // if the parent is table, then it means that this row is the last row in this table
+        // it has no next row
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        if (parentNode instanceof TableTableElement) {</span>
+<span class="fc" id="L391">          return null;</span>
+        }
+<span class="nc" id="L393">        aNextNode = parentNode.getNextSibling();</span>
+      }
+      // else the next node might be table-header-rows, table-rows, table-row-group
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">      if (aNextNode != null) {</span>
+        try {
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">          if (aNextNode instanceof TableTableRowElement) {</span>
+<span class="fc" id="L399">            return table.getRowInstance((TableTableRowElement) aNextNode, 0);</span>
+<span class="nc bnc" id="L400" title="All 6 branches missed.">          } else if (aNextNode instanceof TableTableRowsElement</span>
+              || aNextNode instanceof TableTableHeaderRowsElement
+              || aNextNode instanceof TableTableRowGroupElement) {
+<span class="nc" id="L403">            XPath xpath = ((OdfContentDom) aNextNode.getOwnerDocument()).getXPath();</span>
+<span class="nc" id="L404">            synchronized (mDocument) {</span>
+<span class="nc" id="L405">              firstRow =</span>
+                  (TableTableRowElement)
+<span class="nc" id="L407">                      xpath.evaluate(&quot;.//table:table-row[first()]&quot;, aNextNode, XPathConstants.NODE);</span>
+<span class="nc" id="L408">            }</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            if (firstRow != null) {</span>
+<span class="nc" id="L410">              return table.getRowInstance(firstRow, 0);</span>
+            }
+<span class="nc" id="L412">          } else {</span>
+<span class="nc" id="L413">            aCurNode = aNextNode;</span>
+<span class="nc" id="L414">            aNextNode = aNextNode.getNextSibling();</span>
+          }
+<span class="nc" id="L416">        } catch (XPathExpressionException e) {</span>
+<span class="nc" id="L417">          Logger.getLogger(OdfTableRow.class.getName()).log(Level.SEVERE, e.getMessage(), e);</span>
+<span class="nc" id="L418">        }</span>
+      }
+    }
+  }
+  /**
+   * Set the default cell style to this row.
+   *
+   * &lt;p&gt;The style should already exist in this document.
+   *
+   * @param style the cell style of the document
+   */
+  public void setDefaultCellStyle(OdfStyle style) {
+<span class="nc" id="L430">    splitRepeatedRows();</span>
+<span class="nc" id="L431">    OdfStyle defaultStyle = getDefaultCellStyle();</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">    if (defaultStyle != null) {</span>
+<span class="nc" id="L433">      defaultStyle.removeStyleUser(maRowElement);</span>
+    }
+
+<span class="nc bnc" id="L436" title="All 2 branches missed.">    if (style != null) {</span>
+<span class="nc" id="L437">      style.addStyleUser(maRowElement);</span>
+<span class="nc" id="L438">      maRowElement.setTableDefaultCellStyleNameAttribute(style.getStyleNameAttribute());</span>
+    }
+<span class="nc" id="L440">  }</span>
+
+  /**
+   * Get the default cell style of this row.
+   *
+   * @return the default cell style of this row
+   */
+  public OdfStyle getDefaultCellStyle() {
+<span class="nc" id="L448">    String styleName = maRowElement.getTableDefaultCellStyleNameAttribute();</span>
+<span class="nc" id="L449">    OdfStyle style =</span>
+<span class="nc" id="L450">        maRowElement.getOrCreateAutomaticStyles().getStyle(styleName, OdfStyleFamily.TableCell);</span>
+
+<span class="nc bnc" id="L452" title="All 2 branches missed.">    if (style == null) {</span>
+<span class="nc" id="L453">      style = mDocument.getDocumentStyles().getStyle(styleName, OdfStyleFamily.TableCell);</span>
+    }
+<span class="nc" id="L455">    return style;</span>
+  }
+
+  /**
+   * Return the index of this row in the owner table.
+   *
+   * @return the index of the row
+   */
+  public int getRowIndex() {
+<span class="fc" id="L464">    int result = 0;</span>
+<span class="fc" id="L465">    TableTableElement mTableElement = getTableElement();</span>
+<span class="fc" id="L466">    TableTableRowElement rowEle = null;</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">    for (Node n : new DomNodeList(mTableElement.getChildNodes())) {</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">      if (n instanceof TableTableHeaderRowsElement) {</span>
+<span class="fc" id="L469">        TableTableHeaderRowsElement headers = (TableTableHeaderRowsElement) n;</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">        for (Node m : new DomNodeList(headers.getChildNodes())) {</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">          if (m instanceof TableTableRowElement) {</span>
+<span class="fc" id="L472">            rowEle = (TableTableRowElement) m;</span>
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">            if (rowEle == getOdfElement()) {</span>
+<span class="nc" id="L474">              return result + mnRepeatedIndex;</span>
+            }
+<span class="fc" id="L476">            result += rowEle.getTableNumberRowsRepeatedAttribute();</span>
+          }
+<span class="fc" id="L478">        }</span>
+      }
+<span class="fc bfc" id="L480" title="All 2 branches covered.">      if (n instanceof TableTableRowElement) {</span>
+<span class="fc" id="L481">        rowEle = (TableTableRowElement) n;</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        if (rowEle == getOdfElement()) {</span>
+<span class="fc" id="L483">          break;</span>
+        }
+<span class="fc" id="L485">        result += ((TableTableRowElement) n).getTableNumberRowsRepeatedAttribute();</span>
+      }
+<span class="fc" id="L487">    }</span>
+<span class="fc" id="L488">    return result + mnRepeatedIndex;</span>
+  }
+
+  // insert count number of cell from index
+  // this is called after insertColumn has been called by OdfTable
+  void insertCellByIndex(int index, int count) {
+<span class="fc" id="L494">    splitRepeatedRows();</span>
+    // all insert the real cell
+<span class="fc" id="L496">    OdfTable table = getTable();</span>
+<span class="fc" id="L497">    List&lt;CellCoverInfo&gt; coverList =</span>
+<span class="fc" id="L498">        table.getCellCoverInfos(0, 0, table.getColumnCount() - 1, table.getRowCount() - 1);</span>
+<span class="fc" id="L499">    int rowIndex = getRowIndex();</span>
+    OdfTableCell preCell;
+<span class="pc bpc" id="L501" title="1 of 2 branches missed.">    if (index == 0) {</span>
+<span class="fc" id="L502">      preCell = table.getOwnerCellByPosition(coverList, 0, rowIndex);</span>
+    } else {
+<span class="nc" id="L504">      preCell = table.getOwnerCellByPosition(coverList, index - 1, rowIndex);</span>
+    }
+<span class="fc" id="L506">    OdfTableCell nextCell = getCellByIndex(index);</span>
+<span class="pc bpc" id="L507" title="1 of 2 branches missed.">    if (nextCell == null) {</span>
+<span class="nc" id="L508">      nextCell = getCellByIndex(getCellCount() - 1);</span>
+    }
+<span class="fc bfc" id="L510" title="All 2 branches covered.">    for (int i = index + count; i &gt; index; i--) {</span>
+<span class="fc" id="L511">      TableTableCellElement newCell =</span>
+          (TableTableCellElement)
+<span class="fc" id="L513">              OdfXMLFactory.newOdfElement(</span>
+<span class="fc" id="L514">                  (OdfFileDom) maRowElement.getOwnerDocument(),</span>
+<span class="fc" id="L515">                  OdfName.newName(OdfDocumentNamespace.TABLE, &quot;table-cell&quot;));</span>
+<span class="fc" id="L516">      newCell.setTableStyleNameAttribute(preCell.getStyleName());</span>
+<span class="fc" id="L517">      maRowElement.insertBefore(newCell, nextCell.getOdfElement());</span>
+    }
+<span class="fc" id="L519">  }</span>
+
+  // note: we have to use this method to modify the row repeated number
+  // in order to update mnRepeatedIndex of the each row
+  void setRowsRepeatedNumber(int num) {
+<span class="fc" id="L524">    mRowsRepeatedNumber = num;</span>
+    // update the mnRepeatedIndex for the ever repeated row
+<span class="fc" id="L526">    maRowElement.setTableNumberRowsRepeatedAttribute(Integer.valueOf(num));</span>
+<span class="fc" id="L527">  }</span>
+
+  int getRowsRepeatedNumber() {
+<span class="fc bfc" id="L530" title="All 2 branches covered.">    if (mRowsRepeatedNumber &lt; 0) {</span>
+<span class="fc" id="L531">      Integer count = maRowElement.getTableNumberRowsRepeatedAttribute();</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">      if (count == null) {</span>
+<span class="nc" id="L533">        mRowsRepeatedNumber = 1;</span>
+      } else {
+<span class="fc" id="L535">        mRowsRepeatedNumber = count.intValue();</span>
+      }
+    }
+<span class="fc" id="L538">    return mRowsRepeatedNumber;</span>
+  }
+
+  /** ************************** Moved from OdfTable */
+  private void insertCellElementBefore(
+      OdfElement parentEle,
+      TableTableCellElementBase positionEle,
+      TableTableCellElementBase cellEle,
+      int count) {
+<span class="pc bpc" id="L547" title="1 of 2 branches missed.">    if (positionEle == null) {</span>
+<span class="nc" id="L548">      parentEle.appendChild(cellEle);</span>
+<span class="nc bnc" id="L549" title="All 2 branches missed.">      for (int i = 1; i &lt; count; i++) {</span>
+<span class="nc" id="L550">        parentEle.appendChild(cellEle.cloneNode(true));</span>
+      }
+    } else {
+<span class="fc" id="L553">      parentEle.insertBefore(cellEle, positionEle);</span>
+<span class="fc bfc" id="L554" title="All 2 branches covered.">      for (int i = 1; i &lt; count; i++) {</span>
+<span class="fc" id="L555">        parentEle.insertBefore(cellEle.cloneNode(true), positionEle);</span>
+      }
+    }
+<span class="fc" id="L558">  }</span>
+
+  void insertCellBefore(OdfTableCell refCell, OdfTableCell positionCell, int count) {
+<span class="fc" id="L561">    splitRepeatedRows();</span>
+<span class="fc" id="L562">    OdfTable ownerTable = getTable();</span>
+
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">    if (positionCell == null) {</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">      if (refCell.isCoveredElement()) {</span>
+<span class="nc" id="L566">        TableTableCellElement coverCellEle =</span>
+<span class="nc" id="L567">            (TableTableCellElement) refCell.getCoverCell().getOdfElement();</span>
+<span class="nc" id="L568">        TableTableCellElement newCellEle = (TableTableCellElement) coverCellEle.cloneNode(true);</span>
+<span class="nc" id="L569">        cleanCell(newCellEle);</span>
+<span class="nc" id="L570">        insertCellElementBefore(getOdfElement(), null, newCellEle, count);</span>
+<span class="nc" id="L571">      } else {</span>
+<span class="nc" id="L572">        TableTableCellElement endCellEle =</span>
+<span class="nc" id="L573">            (TableTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="nc" id="L574">        cleanCell(endCellEle);</span>
+<span class="nc" id="L575">        getOdfElement().appendChild(endCellEle);</span>
+<span class="nc" id="L576">        reviseStyleFromLastColumnToMedium(refCell);</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">        if (count &gt; 1) {</span>
+<span class="nc" id="L578">          TableTableCellElement newCellEle =</span>
+<span class="nc" id="L579">              (TableTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="nc" id="L580">          cleanCell(newCellEle);</span>
+<span class="nc" id="L581">          insertCellElementBefore(getOdfElement(), endCellEle, newCellEle, count - 1);</span>
+        }
+<span class="nc" id="L583">      }</span>
+    } else {
+<span class="fc" id="L585">      TableTableCellElement coverRefCellEle = null;</span>
+<span class="fc" id="L586">      TableTableCellElement coverPosCellEle = null;</span>
+<span class="fc" id="L587">      OdfTableCell coverRefCell = null;</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">      if (refCell.isCoveredElement()) { // get ref cover cell</span>
+<span class="fc" id="L589">        coverRefCell = refCell.getCoverCell();</span>
+<span class="fc" id="L590">        coverRefCellEle = (TableTableCellElement) coverRefCell.getOdfElement();</span>
+      }
+<span class="fc bfc" id="L592" title="All 2 branches covered.">      if (positionCell.isCoveredElement()) // get position cover cell</span>
+      {
+<span class="fc" id="L594">        coverPosCellEle = (TableTableCellElement) positionCell.getCoverCell().getOdfElement();</span>
+      }
+
+<span class="fc bfc" id="L597" title="All 6 branches covered.">      if ((coverRefCellEle != null</span>
+              &amp;&amp; coverRefCellEle == coverPosCellEle) // is cover cell and have the same cover cell
+          || (coverPosCellEle != null
+<span class="pc bpc" id="L600" title="1 of 2 branches missed.">              &amp;&amp; refCell.getOdfElement()</span>
+                  == coverPosCellEle)) // position cell is cover cell and refer cell covers position
+      // cell
+      {
+<span class="fc bfc" id="L604" title="All 2 branches covered.">        if (coverRefCellEle == null) {</span>
+<span class="fc" id="L605">          coverRefCellEle = (TableTableCellElement) refCell.getOdfElement();</span>
+<span class="fc" id="L606">          coverRefCell = refCell;</span>
+        }
+<span class="fc" id="L608">        TableCoveredTableCellElement newCellEle =</span>
+            (TableCoveredTableCellElement)
+<span class="fc" id="L610">                OdfXMLFactory.newOdfElement(</span>
+<span class="fc" id="L611">                    (OdfFileDom) ownerTable.getOdfElement().getOwnerDocument(),</span>
+<span class="fc" id="L612">                    OdfName.newName(OdfDocumentNamespace.TABLE, &quot;covered-table-cell&quot;));</span>
+<span class="fc" id="L613">        insertCellElementBefore(getOdfElement(), positionCell.getOdfElement(), newCellEle, count);</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">        if (refCell.getRowIndex() == coverRefCell.getRowIndex()) // the first cover line</span>
+        {
+<span class="fc" id="L616">          coverRefCell.setColumnSpannedNumber(coverRefCell.getColumnSpannedNumber() + count);</span>
+        }
+<span class="fc bfc" id="L618" title="All 2 branches covered.">      } else if (coverRefCellEle != null) // is cover cell</span>
+      {
+<span class="pc bpc" id="L620" title="1 of 2 branches missed.">        if (refCell.getRowIndex() == coverRefCell.getRowIndex()) { // the first cover line</span>
+<span class="nc" id="L621">          TableTableCellElement newCellEle =</span>
+<span class="nc" id="L622">              (TableTableCellElement) coverRefCellEle.cloneNode(true);</span>
+<span class="nc" id="L623">          cleanCell(newCellEle);</span>
+<span class="nc" id="L624">          insertCellElementBefore(getOdfElement(), positionCell.getOdfElement(), newCellEle, count);</span>
+<span class="nc" id="L625">        } else { // the second and other cover line</span>
+<span class="fc" id="L626">          TableCoveredTableCellElement newCellEle =</span>
+<span class="fc" id="L627">              (TableCoveredTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="fc" id="L628">          newCellEle.removeAttributeNS(</span>
+<span class="fc" id="L629">              OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;);</span>
+<span class="fc" id="L630">          insertCellElementBefore(getOdfElement(), positionCell.getOdfElement(), newCellEle, count);</span>
+<span class="fc" id="L631">        }</span>
+<span class="pc bpc" id="L632" title="1 of 2 branches missed.">      } else if ((refCell.getOdfElement() == positionCell.getOdfElement())</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">          &amp;&amp; (refCell.getColumnsRepeatedNumber() &gt; 1)) // repeated number</span>
+      {
+<span class="nc" id="L635">        int repeatNum = refCell.getColumnsRepeatedNumber();</span>
+        // update the cell that after the ref cell
+<span class="nc bnc" id="L637" title="All 2 branches missed.">        for (int i = repeatNum - 1; i &gt; refCell.mnRepeatedColIndex; i--) {</span>
+<span class="nc" id="L638">          ownerTable.updateCellRepository(</span>
+<span class="nc" id="L639">              refCell.getOdfElement(),</span>
+              i,
+              refCell.mnRepeatedRowIndex,
+<span class="nc" id="L642">              refCell.getOdfElement(),</span>
+              i + count,
+              refCell.mnRepeatedRowIndex);
+        }
+<span class="nc" id="L646">        refCell.getOdfElement().setTableNumberColumnsRepeatedAttribute(repeatNum + count);</span>
+<span class="nc" id="L647">      } else {</span>
+<span class="fc" id="L648">        TableTableCellElement newCellEle =</span>
+<span class="fc" id="L649">            (TableTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="fc" id="L650">        cleanCell(newCellEle);</span>
+<span class="fc" id="L651">        insertCellElementBefore(getOdfElement(), positionCell.getOdfElement(), newCellEle, count);</span>
+      }
+    }
+<span class="fc" id="L654">  }</span>
+
+  /**
+   * This method is to insert a cell same as refCell before positionCell.
+   *
+   * &lt;p&gt;This method is invoked by appendColumn and insertColumnBefore.
+   */
+  OdfTableCell insertCellBefore(OdfTableCell refCell, OdfTableCell positionCell) {
+<span class="fc" id="L662">    splitRepeatedRows();</span>
+<span class="fc" id="L663">    OdfTableCell newCell = null;</span>
+<span class="fc" id="L664">    OdfTable ownerTable = getTable();</span>
+
+<span class="pc bpc" id="L666" title="1 of 2 branches missed.">    if (positionCell == null) {</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">      if (refCell.isCoveredElement()) {</span>
+<span class="fc" id="L668">        TableTableCellElement coverCellEle =</span>
+<span class="fc" id="L669">            (TableTableCellElement) refCell.getCoverCell().getOdfElement();</span>
+<span class="fc" id="L670">        TableTableCellElement newCellEle = (TableTableCellElement) coverCellEle.cloneNode(true);</span>
+<span class="fc" id="L671">        cleanCell(newCellEle);</span>
+<span class="fc" id="L672">        getOdfElement().appendChild(newCellEle);</span>
+<span class="fc" id="L673">        newCell = ownerTable.getCellInstance(newCellEle, 0, 0);</span>
+<span class="fc" id="L674">      } else {</span>
+<span class="fc" id="L675">        TableTableCellElement newCellEle =</span>
+<span class="fc" id="L676">            (TableTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="fc" id="L677">        cleanCell(newCellEle);</span>
+<span class="fc" id="L678">        getOdfElement().appendChild(newCellEle);</span>
+<span class="fc" id="L679">        newCell = ownerTable.getCellInstance(newCellEle, 0, 0);</span>
+<span class="fc" id="L680">        reviseStyleFromLastColumnToMedium(refCell);</span>
+<span class="fc" id="L681">      }</span>
+    } else {
+<span class="nc" id="L683">      TableTableCellElement coverRefCellEle = null;</span>
+<span class="nc" id="L684">      TableTableCellElement coverPosCellEle = null;</span>
+<span class="nc" id="L685">      OdfTableCell coverRefCell = null;</span>
+<span class="nc bnc" id="L686" title="All 2 branches missed.">      if (refCell.isCoveredElement()) { // get ref cover cell</span>
+<span class="nc" id="L687">        coverRefCell = refCell.getCoverCell();</span>
+<span class="nc" id="L688">        coverRefCellEle = (TableTableCellElement) coverRefCell.getOdfElement();</span>
+      }
+<span class="nc bnc" id="L690" title="All 2 branches missed.">      if (positionCell.isCoveredElement()) // get position cover cell</span>
+      {
+<span class="nc" id="L692">        coverPosCellEle = (TableTableCellElement) positionCell.getCoverCell().getOdfElement();</span>
+      }
+
+<span class="nc bnc" id="L695" title="All 6 branches missed.">      if ((coverRefCellEle != null</span>
+              &amp;&amp; coverRefCellEle == coverPosCellEle) // is cover cell and have the same cover cell
+          || (coverPosCellEle != null
+<span class="nc bnc" id="L698" title="All 2 branches missed.">              &amp;&amp; refCell.getOdfElement()</span>
+                  == coverPosCellEle)) // position cell is cover cell and refer cell covers position
+      // cell
+      {
+<span class="nc bnc" id="L702" title="All 2 branches missed.">        if (coverRefCellEle == null) {</span>
+<span class="nc" id="L703">          coverRefCellEle = (TableTableCellElement) refCell.getOdfElement();</span>
+<span class="nc" id="L704">          coverRefCell = refCell;</span>
+        }
+<span class="nc" id="L706">        TableCoveredTableCellElement newCellEle =</span>
+            (TableCoveredTableCellElement)
+<span class="nc" id="L708">                OdfXMLFactory.newOdfElement(</span>
+<span class="nc" id="L709">                    (OdfFileDom) ownerTable.getOdfElement().getOwnerDocument(),</span>
+<span class="nc" id="L710">                    OdfName.newName(OdfDocumentNamespace.TABLE, &quot;covered-table-cell&quot;));</span>
+<span class="nc" id="L711">        getOdfElement().insertBefore(newCellEle, positionCell.getOdfElement());</span>
+<span class="nc bnc" id="L712" title="All 2 branches missed.">        if (refCell.getRowIndex() == coverRefCell.getRowIndex()) // the first cover line</span>
+        {
+<span class="nc" id="L714">          coverRefCell.setColumnSpannedNumber(coverRefCell.getColumnSpannedNumber() + 1);</span>
+        }
+<span class="nc" id="L716">        newCell = ownerTable.getCellInstance(newCellEle, 0, 0);</span>
+<span class="nc bnc" id="L717" title="All 2 branches missed.">      } else if (coverRefCellEle != null) // is cover cell</span>
+      {
+<span class="nc bnc" id="L719" title="All 2 branches missed.">        if (refCell.getRowIndex() == coverRefCell.getRowIndex()) { // the first cover line</span>
+<span class="nc" id="L720">          TableTableCellElement newCellEle =</span>
+<span class="nc" id="L721">              (TableTableCellElement) coverRefCellEle.cloneNode(true);</span>
+<span class="nc" id="L722">          cleanCell(newCellEle);</span>
+<span class="nc" id="L723">          getOdfElement().insertBefore(newCellEle, positionCell.getOdfElement());</span>
+<span class="nc" id="L724">          newCell = ownerTable.getCellInstance(newCellEle, 0, 0);</span>
+<span class="nc" id="L725">        } else { // the second and other cover line</span>
+<span class="nc" id="L726">          TableCoveredTableCellElement newCellEle =</span>
+<span class="nc" id="L727">              (TableCoveredTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="nc" id="L728">          newCellEle.removeAttributeNS(</span>
+<span class="nc" id="L729">              OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;);</span>
+<span class="nc" id="L730">          getOdfElement().insertBefore(newCellEle, positionCell.getOdfElement());</span>
+<span class="nc" id="L731">          newCell = ownerTable.getCellInstance(newCellEle, 0, 0);</span>
+<span class="nc" id="L732">        }</span>
+<span class="nc bnc" id="L733" title="All 2 branches missed.">      } else if ((refCell.getOdfElement() == positionCell.getOdfElement())</span>
+<span class="nc bnc" id="L734" title="All 2 branches missed.">          &amp;&amp; (refCell.getColumnsRepeatedNumber() &gt; 1)) // repeated number</span>
+      {
+<span class="nc" id="L736">        int repeatNum = refCell.getColumnsRepeatedNumber();</span>
+        // update the cell that after the ref cell
+<span class="nc bnc" id="L738" title="All 2 branches missed.">        for (int i = repeatNum - 1; i &gt; refCell.mnRepeatedColIndex; i--) {</span>
+<span class="nc" id="L739">          ownerTable.updateCellRepository(</span>
+<span class="nc" id="L740">              refCell.getOdfElement(),</span>
+              i,
+              refCell.mnRepeatedRowIndex,
+<span class="nc" id="L743">              refCell.getOdfElement(),</span>
+              i + 1,
+              refCell.mnRepeatedRowIndex);
+        }
+<span class="nc" id="L747">        refCell.getOdfElement().setTableNumberColumnsRepeatedAttribute(repeatNum + 1);</span>
+<span class="nc" id="L748">        newCell =</span>
+<span class="nc" id="L749">            ownerTable.getCellInstance(</span>
+<span class="nc" id="L750">                refCell.getOdfElement(),</span>
+                refCell.mnRepeatedColIndex + 1,
+                refCell.mnRepeatedRowIndex);
+<span class="nc" id="L753">      } else {</span>
+<span class="nc" id="L754">        TableTableCellElement newCellEle =</span>
+<span class="nc" id="L755">            (TableTableCellElement) refCell.getOdfElement().cloneNode(true);</span>
+<span class="nc" id="L756">        cleanCell(newCellEle);</span>
+<span class="nc" id="L757">        getOdfElement().insertBefore(newCellEle, positionCell.getOdfElement());</span>
+<span class="nc" id="L758">        newCell = ownerTable.getCellInstance(newCellEle, 0, 0);</span>
+      }
+    }
+<span class="fc" id="L761">    return newCell;</span>
+  }
+
+  private void cleanCell(TableTableCellElement newCellEle) {
+<span class="fc" id="L765">    newCellEle.removeAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;value&quot;);</span>
+<span class="fc" id="L766">    newCellEle.removeAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;date-value&quot;);</span>
+<span class="fc" id="L767">    newCellEle.removeAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;time-value&quot;);</span>
+<span class="fc" id="L768">    newCellEle.removeAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;boolean-value&quot;);</span>
+<span class="fc" id="L769">    newCellEle.removeAttributeNS(OdfDocumentNamespace.OFFICE.getUri(), &quot;string-value&quot;);</span>
+<span class="fc" id="L770">    newCellEle.removeAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;formula&quot;);</span>
+<span class="fc" id="L771">    newCellEle.removeAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;);</span>
+<span class="fc" id="L772">    newCellEle.removeAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-spanned&quot;);</span>
+<span class="pc bpc" id="L773" title="1 of 2 branches missed.">    if (!getTable().isCellStyleInheritance()) {</span>
+<span class="nc" id="L774">      newCellEle.removeAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;style-name&quot;);</span>
+    }
+<span class="fc" id="L776">    Node n = newCellEle.getFirstChild();</span>
+<span class="fc bfc" id="L777" title="All 2 branches covered.">    while (n != null) {</span>
+<span class="fc" id="L778">      Node m = n.getNextSibling();</span>
+<span class="pc bpc" id="L779" title="5 of 6 branches missed.">      if (n instanceof TextPElement || n instanceof TextHElement || n instanceof TextListElement) {</span>
+<span class="fc" id="L780">        newCellEle.removeChild(n);</span>
+      }
+<span class="fc" id="L782">      n = m;</span>
+<span class="fc" id="L783">    }</span>
+<span class="fc" id="L784">  }</span>
+
+  private void reviseStyleFromLastColumnToMedium(OdfTableCell oldLastCell) {
+<span class="fc bfc" id="L787" title="All 2 branches covered.">    if (getTable().mIsSpreadsheet) return;</span>
+
+<span class="fc" id="L789">    OdfStyle styleEle = oldLastCell.getCellStyleElementForWrite();</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">    if (styleEle != null) {</span>
+<span class="fc bfc" id="L791" title="All 2 branches covered.">      if (oldLastCell.getRowIndex() == 0) {</span>
+<span class="fc" id="L792">        OdfTable.setLeftTopBorderStyleProperties(styleEle);</span>
+      } else {
+<span class="fc" id="L794">        OdfTable.setLeftBottomBorderStylesProperties(styleEle);</span>
+      }
+    }
+<span class="fc" id="L797">  }</span>
+
+  private void reviseStyleFromMediumColumnToLast(OdfTableCell newLastCell) {
+<span class="pc bpc" id="L800" title="1 of 2 branches missed.">    if (getTable().mIsSpreadsheet) return;</span>
+
+<span class="fc" id="L802">    OdfStyle styleEle = newLastCell.getCellStyleElementForWrite();</span>
+<span class="pc bpc" id="L803" title="1 of 2 branches missed.">    if (styleEle != null) {</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">      if (newLastCell.getRowIndex() == 0) {</span>
+<span class="fc" id="L805">        OdfTable.setRightTopBorderStyleProperties(styleEle);</span>
+      } else {
+<span class="fc" id="L807">        OdfTable.setRightBottomBorderStylesProperties(styleEle);</span>
+      }
+    }
+<span class="fc" id="L810">  }</span>
+
+  /**
+   * This method is invoked by removeColumnByIndex So we don't need to care about the covered and
+   * spanned cell in a same column
+   */
+  void removeCellByIndex(int nStart, int nCount) {
+<span class="fc" id="L817">    splitRepeatedRows();</span>
+<span class="fc" id="L818">    OdfTableCell startCell = getCellByIndex(nStart);</span>
+<span class="fc" id="L819">    OdfTableCell coverCell = null;</span>
+<span class="fc bfc" id="L820" title="All 2 branches covered.">    if (startCell.isCoveredElement()) {</span>
+<span class="fc" id="L821">      coverCell = startCell.getCoverCellInSameRow();</span>
+    }
+
+<span class="fc" id="L824">    int index = nStart;</span>
+<span class="fc bfc" id="L825" title="All 2 branches covered.">    for (int i = 0; i &lt; nCount; i++) {</span>
+<span class="fc" id="L826">      OdfTableCell cell = getCellByIndex(index);</span>
+<span class="pc bpc" id="L827" title="1 of 2 branches missed.">      if (cell != null) {</span>
+<span class="fc" id="L828">        cell.splitRepeatedCells();</span>
+<span class="fc bfc" id="L829" title="All 4 branches covered.">        if (cell.isCoveredElement() &amp;&amp; coverCell != null) {</span>
+<span class="fc" id="L830">          coverCell.setColumnSpannedNumber(</span>
+<span class="fc" id="L831">              coverCell.getColumnSpannedNumber() - cell.getColumnsRepeatedNumber());</span>
+<span class="fc" id="L832">          maRowElement.removeChild(cell.getOdfElement());</span>
+<span class="fc" id="L833">          i += cell.getColumnsRepeatedNumber() - 1;</span>
+<span class="fc bfc" id="L834" title="All 2 branches covered.">        } else if (cell.isCoveredElement()) {</span>
+<span class="fc" id="L835">          maRowElement.removeChild(cell.getOdfElement());</span>
+<span class="fc" id="L836">          i += cell.getColumnsRepeatedNumber() - 1;</span>
+<span class="pc bpc" id="L837" title="1 of 2 branches missed.">        } else if (!cell.isCoveredElement()) {</span>
+<span class="fc" id="L838">          int columnSpan = cell.getColumnSpannedNumber();</span>
+<span class="fc bfc" id="L839" title="All 2 branches covered.">          if (i + columnSpan &lt;= nCount) {</span>
+<span class="fc" id="L840">            maRowElement.removeChild(cell.getOdfElement());</span>
+<span class="fc" id="L841">            i += columnSpan - 1;</span>
+          } else {
+<span class="fc" id="L843">            cell.setColumnSpannedNumber(columnSpan - 1);</span>
+<span class="fc" id="L844">            OdfElement nextCell = OdfElement.getNextSiblingElement(cell.mCellElement);</span>
+            // Recently some office application do not use &lt;table:covered-table-cell&gt; elements any
+            // longer
+<span class="pc bpc" id="L847" title="1 of 2 branches missed.">            if (nextCell instanceof TableCoveredTableCellElement) {</span>
+              // only delete the next child if the next IS a &lt;table:covered-table-cell&gt; element
+<span class="nc" id="L849">              removeCellByIndex(index + 1, nCount - i);</span>
+            }
+          }
+        }
+      }
+    }
+
+<span class="fc" id="L856">    int clmnum = getTable().getColumnCount();</span>
+<span class="fc bfc" id="L857" title="All 2 branches covered.">    if (nStart + nCount &gt;= clmnum) {</span>
+<span class="fc" id="L858">      OdfTableCell cell = getCellByIndex(nStart - 1);</span>
+<span class="fc" id="L859">      reviseStyleFromMediumColumnToLast(cell);</span>
+    }
+<span class="fc" id="L861">  }</span>
+
+  void removeAllCellsRelationship() {
+<span class="fc" id="L864">    OdfTable table = getTable();</span>
+
+<span class="fc bfc" id="L866" title="All 2 branches covered.">    for (int i = 0; i &lt; table.getColumnCount(); ) {</span>
+<span class="fc" id="L867">      OdfTableCell cell = getCellByIndex(i);</span>
+<span class="pc bpc" id="L868" title="1 of 2 branches missed.">      if (cell.isCoveredElement()) // cell is a cover cell</span>
+      {
+<span class="nc" id="L870">        OdfTableCell coverCell = cell.getCoverCellInSameColumn();</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">        if (coverCell != null) {</span>
+<span class="nc" id="L872">          coverCell.setRowSpannedNumber(coverCell.getRowSpannedNumber() - getRowsRepeatedNumber());</span>
+        }
+<span class="nc" id="L874">        getOdfElement().removeChild(cell.getOdfElement());</span>
+<span class="nc" id="L875">      } else {</span>
+<span class="pc bpc" id="L876" title="1 of 2 branches missed.">        if (cell.getRowSpannedNumber() &gt; 1) // cell is not a cover cell, and it span more rows</span>
+        {
+          // split the cell under this cell to a single cell
+<span class="nc" id="L879">          OdfTableRow nextRow = table.getRowByIndex(getRowIndex() + 1);</span>
+<span class="nc bnc" id="L880" title="All 2 branches missed.">          if (nextRow.getRowsRepeatedNumber() &gt; 1) {</span>
+<span class="nc" id="L881">            nextRow.splitRepeatedRows();</span>
+          }
+<span class="nc" id="L883">          OdfTableCell coveredCell =</span>
+<span class="nc" id="L884">              table.getCellByPosition(cell.getColumnIndex(), getRowIndex() + 1);</span>
+<span class="nc bnc" id="L885" title="All 2 branches missed.">          if (coveredCell.getColumnsRepeatedNumber() &gt; 1) {</span>
+<span class="nc" id="L886">            coveredCell.splitRepeatedCells();</span>
+<span class="nc" id="L887">            coveredCell = table.getCellByPosition(cell.getColumnIndex(), getRowIndex() + 1);</span>
+          }
+
+          // create a new cell
+<span class="nc" id="L891">          TableTableCellElement newCellEle =</span>
+<span class="nc" id="L892">              (TableTableCellElement) cell.getOdfElement().cloneNode(true);</span>
+<span class="nc" id="L893">          newCellEle.setTableNumberRowsSpannedAttribute(</span>
+<span class="nc" id="L894">              cell.getRowSpannedNumber() - getRowsRepeatedNumber());</span>
+          // update repository
+<span class="nc" id="L896">          int startRow = coveredCell.getRowIndex();</span>
+<span class="nc" id="L897">          int endRow = coveredCell.getRowIndex() + newCellEle.getTableNumberRowsSpannedAttribute();</span>
+<span class="nc" id="L898">          int startClm = coveredCell.getColumnIndex();</span>
+<span class="nc" id="L899">          int endClm =</span>
+<span class="nc" id="L900">              coveredCell.getColumnIndex()</span>
+<span class="nc" id="L901">                  + newCellEle.getTableNumberColumnsSpannedAttribute()</span>
+<span class="nc" id="L902">                      * newCellEle.getTableNumberColumnsRepeatedAttribute();</span>
+<span class="nc" id="L903">          coveredCell</span>
+<span class="nc" id="L904">              .getOdfElement()</span>
+<span class="nc" id="L905">              .getParentNode()</span>
+<span class="nc" id="L906">              .replaceChild(newCellEle, coveredCell.getOdfElement());</span>
+
+<span class="nc" id="L908">          table.updateRepositoryWhenCellElementChanged(</span>
+              startRow, endRow, startClm, endClm, newCellEle);
+        }
+      }
+<span class="fc" id="L912">      i += cell.getColumnSpannedNumber();</span>
+<span class="fc" id="L913">    }</span>
+<span class="fc" id="L914">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

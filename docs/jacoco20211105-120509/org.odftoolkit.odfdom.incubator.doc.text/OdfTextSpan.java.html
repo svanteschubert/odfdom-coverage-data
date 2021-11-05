@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextSpan.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfTextSpan.java</span></div><h1>OdfTextSpan.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import org.odftoolkit.odfdom.dom.element.text.TextSpanElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public class OdfTextSpan extends TextSpanElement {
+  public OdfTextSpan(OdfFileDom ownerDoc) {
+<span class="fc" id="L32">    super(ownerDoc);</span>
+<span class="fc" id="L33">  }</span>
+
+  /**
+   * Creates a new instance of this class with the given style name. If the style name is null or
+   * the null string, no style is added.
+   *
+   * @param ownerDoc the XML file the Span belongs to
+   * @param styleName the name of the style to be applied to the span
+   */
+  public OdfTextSpan(OdfFileDom ownerDoc, String styleName) {
+<span class="nc" id="L43">    super(ownerDoc);</span>
+<span class="nc bnc" id="L44" title="All 4 branches missed.">    if (styleName != null &amp;&amp; (!(styleName.equals(&quot;&quot;)))) {</span>
+<span class="nc" id="L45">      this.setStyleName(styleName);</span>
+    }
+<span class="nc" id="L47">  }</span>
+
+  /**
+   * Creates an instance of this class with the given styleName and content. If the style name is
+   * null or the null string, no style is added. If the content is null or the null string, no
+   * content is added.
+   *
+   * @param ownerDoc the owner document DOM
+   * @param styleName the style:style-name value
+   * @param content the span content
+   */
+  public OdfTextSpan(OdfFileDom ownerDoc, String styleName, String content) {
+<span class="fc" id="L59">    super(ownerDoc);</span>
+<span class="fc" id="L60">    this.addStyledContent(styleName, content);</span>
+<span class="fc" id="L61">  }</span>
+
+  /**
+   * Add the given content to the paragraph. If the content is null or the null string, no content
+   * is added.
+   *
+   * @param content the span content
+   * @return the span object
+   */
+  public OdfTextSpan addContent(String content) {
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">    if (content != null &amp;&amp; !content.equals(&quot;&quot;)) {</span>
+<span class="fc" id="L72">      this.appendChild(this.getOwnerDocument().createTextNode(content));</span>
+    }
+<span class="fc" id="L74">    return this;</span>
+  }
+
+  /**
+   * Add the given content to the paragraph. If the content is null or the null string, no content
+   * is added. Embedded \n are converted to &lt;code&gt;&amp;lt;text:line-break&amp;gt;&lt;/code&gt; elements, and
+   * multiple blanks to &lt;code&gt;&amp;lt;text:s&lt;/code&gt;
+   *
+   * @param content the span content
+   * @return the span object
+   */
+  public OdfTextSpan addContentWhitespace(String content) {
+<span class="pc bpc" id="L86" title="2 of 4 branches missed.">    if (content != null &amp;&amp; !content.equals(&quot;&quot;)) {</span>
+<span class="fc" id="L87">      new OdfWhitespaceProcessor().append(this, content);</span>
+    }
+<span class="fc" id="L89">    return this;</span>
+  }
+
+  /**
+   * Set a span to have the given styleName and add the given content. If the style name is null or
+   * the null string, no style is added.
+   *
+   * @param styleName the style:style-name value
+   * @param content the span content
+   * @return the span object
+   */
+  public OdfTextSpan addStyledContent(String styleName, String content) {
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">    if (styleName != null &amp;&amp; (!(styleName.equals(&quot;&quot;)))) {</span>
+<span class="fc" id="L102">      setStyleName(styleName);</span>
+    }
+<span class="fc" id="L104">    return addContent(content);</span>
+  }
+
+  /**
+   * Set a span to have the given styleName and add the given content. If the style name is null or
+   * the null string, no style is added. Embedded \n are converted to &lt;code&gt;&amp;lt;text:line-break&amp;gt;
+   * &lt;/code&gt; elements, and multiple blanks to &lt;code&gt;&amp;lt;text:s&lt;/code&gt;
+   *
+   * @param styleName the style:style-name value
+   * @param content the span content
+   * @return the span object
+   */
+  public OdfTextSpan addStyledContentWhitespace(String styleName, String content) {
+<span class="pc bpc" id="L117" title="2 of 4 branches missed.">    if (styleName != null &amp;&amp; (!(styleName.equals(&quot;&quot;)))) {</span>
+<span class="fc" id="L118">      setStyleName(styleName);</span>
+    }
+<span class="fc" id="L120">    return addContentWhitespace(content);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

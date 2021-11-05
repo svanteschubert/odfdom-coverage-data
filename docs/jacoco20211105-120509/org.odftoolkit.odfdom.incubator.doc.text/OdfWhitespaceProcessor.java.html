@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfWhitespaceProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfWhitespaceProcessor.java</span></div><h1>OdfWhitespaceProcessor.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.text.TextLineBreakElement;
+import org.odftoolkit.odfdom.dom.element.text.TextSElement;
+import org.odftoolkit.odfdom.dom.element.text.TextTabElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
+/**
+ * It's a tool class to help process white space.
+ *
+ * @author J David Eisenberg
+ */
+public class OdfWhitespaceProcessor {
+
+<span class="fc" id="L41">  public OdfWhitespaceProcessor() {}</span>
+
+  /**
+   * Add given text content to an element, handling multiple blanks, tabs, and newlines properly.
+   *
+   * @param element the element to which content is being added
+   * @param content text content including whitespace
+   */
+  public void append(Element element, String content) {
+    char ch;
+<span class="fc" id="L51">    StringBuilder partial = new StringBuilder();</span>
+<span class="fc" id="L52">    int spaces = 0;</span>
+<span class="fc" id="L53">    OdfFileDom owner = (OdfFileDom) element.getOwnerDocument();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">    for (int i = 0; i &lt; content.length(); i++) {</span>
+<span class="fc" id="L55">      ch = content.charAt(i);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">      if (ch == ' ') {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (spaces == 0) {</span>
+<span class="fc" id="L58">          partial.append(' ');</span>
+        }
+<span class="fc" id="L60">        spaces++;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">      } else if (ch == '\n') {</span>
+<span class="fc" id="L62">        emitPartial(element, partial, spaces, owner);</span>
+<span class="fc" id="L63">        spaces = 0;</span>
+<span class="fc" id="L64">        element.appendChild(new TextLineBreakElement(owner));</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">      } else if (ch == '\t') {</span>
+<span class="fc" id="L66">        emitPartial(element, partial, spaces, owner);</span>
+<span class="fc" id="L67">        spaces = 0;</span>
+<span class="fc" id="L68">        element.appendChild(new TextTabElement(owner));</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">      } else if (ch != '\r') // ignore DOS half of CR-LF</span>
+      {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (spaces &gt; 1) {</span>
+<span class="fc" id="L72">          emitPartial(element, partial, spaces, owner);</span>
+        }
+<span class="fc" id="L74">        partial.append(ch);</span>
+<span class="fc" id="L75">        spaces = 0;</span>
+      }
+    }
+<span class="fc" id="L78">    emitPartial(element, partial, spaces, owner);</span>
+<span class="fc" id="L79">  }</span>
+
+  /*
+   * Send out any information that has been buffered
+   */
+  private void emitPartial(Element element, StringBuilder partial, int spaces, OdfFileDom owner) {
+    /*
+     * send out any partial text
+     */
+<span class="fc bfc" id="L88" title="All 2 branches covered.">    if (partial.length() != 0) {</span>
+<span class="fc" id="L89">      element.appendChild(owner.createTextNode(partial.toString()));</span>
+    }
+    /*
+     * and any spaces if necessary
+     */
+<span class="fc bfc" id="L94" title="All 2 branches covered.">    if (spaces &gt; 1) {</span>
+<span class="fc" id="L95">      TextSElement spaceElement = new TextSElement(owner);</span>
+<span class="fc" id="L96">      spaceElement.setTextCAttribute(new Integer(spaces - 1));</span>
+<span class="fc" id="L97">      element.appendChild(spaceElement);</span>
+    }
+    /*
+     * and reset all the counters
+     */
+<span class="fc" id="L102">    partial.delete(0, partial.length());</span>
+<span class="fc" id="L103">  }</span>
+
+  /**
+   * Retrieve the text content of an element. Recursively retrieves all the text nodes, expanding
+   * whitespace where necessary. Ignores any elements except &lt;code&gt;&amp;lt;text:s&amp;gt;&lt;/code&gt;, &lt;code&gt;
+   * &amp;lt;text:line-break&amp;gt;&lt;/code&gt; and &lt;code&gt;&amp;lt;text:tab&amp;gt&lt;/code&gt;.
+   *
+   * @param element an element whose text you want to retrieve
+   * @return the element's text content, with whitespace expanded
+   */
+  public String getText(Node element) {
+<span class="fc" id="L114">    String result = &quot;&quot;;</span>
+    int spaceCount;
+<span class="fc" id="L116">    Node node = element.getFirstChild();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">      if (node.getNodeType() == Node.TEXT_NODE) {</span>
+<span class="fc" id="L119">        result += node.getNodeValue();</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">      } else if (node.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (node.getLocalName().equals(&quot;s&quot;)) // text:s</span>
+        {
+          try {
+<span class="fc" id="L124">            spaceCount =</span>
+<span class="fc" id="L125">                Integer.parseInt(</span>
+<span class="fc" id="L126">                    ((Element) node).getAttributeNS(OdfDocumentNamespace.TEXT.getUri(), &quot;c&quot;));</span>
+<span class="fc" id="L127">          } catch (Exception e) {</span>
+<span class="fc" id="L128">            spaceCount = 1;</span>
+<span class="fc" id="L129">          }</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">          for (int i = 0; i &lt; spaceCount; i++) {</span>
+<span class="fc" id="L131">            result += &quot; &quot;;</span>
+          }
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        } else if (node.getLocalName().equals(&quot;line-break&quot;)) {</span>
+<span class="fc" id="L134">          result += &quot;\n&quot;;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        } else if (node.getLocalName().equals(&quot;tab&quot;)) {</span>
+<span class="fc" id="L136">          result += &quot;\t&quot;;</span>
+        } else {
+<span class="fc" id="L138">          result = result + getText(node);</span>
+        }
+      }
+<span class="fc" id="L141">      node = node.getNextSibling();</span>
+    }
+<span class="fc" id="L143">    return result;</span>
+  }
+
+  /**
+   * Append text content to a given element, handling whitespace properly. This is a static method
+   * that creates its own OdfWhitespaceProcessor, so that you don't have to.
+   *
+   * @param element the element to which content is being added
+   * @param content text content including whitespace
+   */
+  public static void appendText(Element element, String content) {
+<span class="fc" id="L154">    OdfWhitespaceProcessor processor = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L155">    processor.append(element, content);</span>
+<span class="fc" id="L156">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

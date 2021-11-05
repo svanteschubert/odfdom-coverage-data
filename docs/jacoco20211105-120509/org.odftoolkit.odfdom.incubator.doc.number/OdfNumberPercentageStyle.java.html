@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfNumberPercentageStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.number</a> &gt; <span class="el_source">OdfNumberPercentageStyle.java</span></div><h1>OdfNumberPercentageStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.number;
+
+import java.util.List;
+import org.odftoolkit.odfdom.dom.element.number.DataStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberPercentageStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMapElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public class OdfNumberPercentageStyle extends NumberPercentageStyleElement {
+
+  public OdfNumberPercentageStyle(OdfFileDom ownerDoc) {
+<span class="fc" id="L40">    super(ownerDoc);</span>
+<span class="fc" id="L41">  }</span>
+
+  /**
+   * Creates a new instance of OdfNumberPercentageStyle.
+   *
+   * @param ownerDoc document that this format belongs to
+   * @param format format string for the date/time
+   * @param styleName name of this style
+   */
+  public OdfNumberPercentageStyle(OdfFileDom ownerDoc, String format, String styleName) {
+<span class="fc" id="L51">    super(ownerDoc);</span>
+<span class="fc" id="L52">    this.setStyleNameAttribute(styleName);</span>
+<span class="fc" id="L53">    setFormat(format);</span>
+<span class="fc" id="L54">  }</span>
+
+  /**
+   * Get the format string that represents this style.
+   *
+   * @param with capitals
+   * @return the format string
+   */
+  @Override
+  public String getFormat(boolean caps) {
+<span class="nc" id="L64">    String result = &quot;&quot;;</span>
+<span class="nc" id="L65">    String mappedResult = &quot;&quot;;</span>
+<span class="nc" id="L66">    Node m = getFirstChild();</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">    while (m != null) {</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">      if (m instanceof NumberNumberElement) {</span>
+<span class="nc" id="L69">        result += getNumberFormat();</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">      } else if (m instanceof NumberTextElement) {</span>
+<span class="nc" id="L71">        String textcontent = m.getTextContent();</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">        if (textcontent == null || textcontent.length() == 0) {</span>
+<span class="nc" id="L73">          textcontent = &quot; &quot;;</span>
+        }
+<span class="nc" id="L75">        result += textcontent;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">      } else if (m instanceof StyleTextPropertiesElement) {</span>
+<span class="nc" id="L77">        result += getColorFromElement((StyleTextPropertiesElement) m);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">      } else if (m instanceof StyleMapElement) {</span>
+<span class="nc" id="L79">        mappedResult += getMapping((StyleMapElement) m);</span>
+<span class="nc" id="L80">        mappedResult += &quot;;&quot;;</span>
+      }
+<span class="nc" id="L82">      m = m.getNextSibling();</span>
+    }
+<span class="nc bnc" id="L84" title="All 2 branches missed.">    if (!mappedResult.isEmpty()) {</span>
+<span class="nc" id="L85">      result = mappedResult + result;</span>
+    }
+<span class="nc" id="L87">    return result;</span>
+  }
+
+  /**
+   * Creates a &amp;lt;number:number-style&amp;gt; element based upon format.
+   *
+   * @param format the number format string
+   */
+  @Override
+  public void setFormat(String format) {
+<span class="fc" id="L97">    List&lt;StringToken&gt; tokens = tokenize(format, DataStyleElement.NumberFormatType.FORMAT_PERCENT);</span>
+<span class="fc" id="L98">    emitTokens(tokens, DataStyleElement.NumberFormatType.FORMAT_PERCENT);</span>
+<span class="fc" id="L99">  }</span>
+
+  /**
+   * Set &amp;lt;style:map&amp;gt; for positive values to the given style name.
+   *
+   * @param mapName the style name to map to
+   */
+  public void setMapPositive(String mapName) {
+<span class="fc" id="L107">    StyleMapElement map = new StyleMapElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="fc" id="L108">    map.setStyleApplyStyleNameAttribute(mapName);</span>
+<span class="fc" id="L109">    map.setStyleConditionAttribute(&quot;value()&gt;0&quot;);</span>
+<span class="fc" id="L110">    this.appendChild(map);</span>
+<span class="fc" id="L111">  }</span>
+
+  /**
+   * Set &amp;lt;style:map&amp;gt; for negative values to the given style name.
+   *
+   * @param mapName the style name to map to
+   */
+  public void setMapNegative(String mapName) {
+<span class="fc" id="L119">    StyleMapElement map = new StyleMapElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="fc" id="L120">    map.setStyleApplyStyleNameAttribute(mapName);</span>
+<span class="fc" id="L121">    map.setStyleConditionAttribute(&quot;value()&lt;0&quot;);</span>
+<span class="fc" id="L122">    this.appendChild(map);</span>
+<span class="fc" id="L123">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

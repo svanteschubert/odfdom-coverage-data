@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CURIEs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">CURIEs.java</span></div><h1>CURIEs.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype CURIEs} */
+public class CURIEs implements OdfDataType {
+
+  private String mCURIEs;
+
+  /**
+   * Construct CURIEs by the parsing the given string
+   *
+   * @param curies The String to be parsed into CURIEs
+   * @throws IllegalArgumentException if the given argument is not a valid CURIEs
+   */
+<span class="nc" id="L36">  public CURIEs(List&lt;CURIE&gt; curies) throws IllegalArgumentException {</span>
+<span class="nc bnc" id="L37" title="All 4 branches missed.">    if ((curies == null) || (curies.size() == 0)) {</span>
+<span class="nc" id="L38">      throw new IllegalArgumentException(&quot;parameter can not be null for CURIEs&quot;);</span>
+    }
+<span class="nc" id="L40">    StringBuffer aRet = new StringBuffer();</span>
+<span class="nc" id="L41">    Iterator&lt;CURIE&gt; aIter = curies.iterator();</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">    while (aIter.hasNext()) {</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">      if (aRet.length() &gt; 0) {</span>
+<span class="nc" id="L44">        aRet.append(' ');</span>
+      }
+<span class="nc" id="L46">      String aCurie = aIter.next().toString();</span>
+<span class="nc" id="L47">      aRet.append(aCurie);</span>
+<span class="nc" id="L48">    }</span>
+<span class="nc" id="L49">    mCURIEs = aRet.toString();</span>
+<span class="nc" id="L50">  }</span>
+
+  /**
+   * Returns a space separated String Object representing this CURIEs's value
+   *
+   * @return return a string representation of the value of this CURIEs object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L59">    return mCURIEs;</span>
+  }
+
+  /**
+   * Returns a CURIEs instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a CURIEs instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid CURIEs
+   */
+  public static CURIEs valueOf(String stringValue) throws IllegalArgumentException {
+<span class="nc bnc" id="L70" title="All 4 branches missed.">    if ((stringValue == null) || (stringValue.length() == 0)) {</span>
+<span class="nc" id="L71">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype CURIEs&quot;);</span>
+    }
+
+<span class="nc" id="L74">    List&lt;CURIE&gt; aRet = new ArrayList&lt;CURIE&gt;();</span>
+<span class="nc" id="L75">    String[] names = stringValue.split(&quot; &quot;);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">    for (int i = 0; i &lt; names.length; i++) {</span>
+<span class="nc" id="L77">      aRet.add(new CURIE(names[i]));</span>
+    }
+<span class="nc" id="L79">    return new CURIEs(aRet);</span>
+  }
+
+  /**
+   * Returns a list of CURIE from the CURIEs Object
+   *
+   * @return a list of CURIE
+   */
+  public List&lt;CURIE&gt; getCURIEList() {
+<span class="nc" id="L88">    List&lt;CURIE&gt; aRet = new ArrayList&lt;CURIE&gt;();</span>
+<span class="nc" id="L89">    String[] names = mCURIEs.split(&quot; &quot;);</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">    for (int i = 0; i &lt; names.length; i++) {</span>
+<span class="nc" id="L91">      aRet.add(new CURIE(names[i]));</span>
+    }
+<span class="nc" id="L93">    return aRet;</span>
+  }
+
+  /**
+   * check if the specified String is a valid {@odf.datatype CURIEs} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype CURIEs} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L105">      return false;</span>
+    }
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (stringValue.length() == 0) {</span>
+<span class="nc" id="L108">      return false;</span>
+    }
+
+<span class="nc" id="L111">    String[] names = stringValue.split(&quot; &quot;);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    for (int i = 0; i &lt; names.length; i++) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">      if (!CURIE.isValid(names[i])) {</span>
+<span class="nc" id="L114">        return false;</span>
+      }
+    }
+<span class="nc" id="L117">    return true;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

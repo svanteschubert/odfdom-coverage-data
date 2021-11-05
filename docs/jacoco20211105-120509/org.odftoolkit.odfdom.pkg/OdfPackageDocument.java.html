@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfPackageDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfPackageDocument.java</span></div><h1>OdfPackageDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.transform.Templates;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.URIResolver;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.stream.StreamResult;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.util.ResourceUtils;
+import org.odftoolkit.odfdom.pkg.rdfa.Util;
+import org.w3c.dom.Document;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+
+/**
+ * The package layer described by the ODF 1.2 Package specification is independent of the above ODF
+ * XML layer described by the ODF 1.2 XML Schema specification.
+ *
+ * &lt;p&gt;Still the abstract concept of documents exist in the ODF Package layer.
+ */
+public class OdfPackageDocument implements Closeable {
+
+  private static final String TWO_DOTS = &quot;..&quot;;
+  protected static final String SLASH = &quot;/&quot;;
+  private static final String COLON = &quot;:&quot;;
+  private static final String EMPTY_STRING = &quot;&quot;;
+  /** The path of the root document */
+  protected static final String ROOT_DOCUMENT_PATH = EMPTY_STRING;
+
+  private Resolver mResolver;
+  /** The ODF package containing the document */
+  protected OdfPackage mPackage;
+  /** The internal path to the document relative to the ODF package */
+  protected String mDocumentPathInPackage;
+  /**
+   * The media type of the ODF package document. Note: Not necessarily an ODF XML media type as
+   * specified in ODF 1.2 part1
+   */
+  protected String mDocumentMediaType;
+
+  private static Templates mRdfFileExtractionTemplate;
+
+  /**
+   * Creates a new OdfPackageDocument.
+   *
+   * @param pkg - the ODF Package that contains the document. A baseURL is being generated based on
+   *     its location.
+   * @param internalPath - the directory path within the package from where the document should be
+   *     loaded.
+   * @param mediaTypeString - media type of stream. If unknown null can be used.
+   */
+  protected OdfPackageDocument(OdfPackage pkg, String internalPath, String mediaTypeString) {
+<span class="fc" id="L86">    super();</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">    if (pkg != null) {</span>
+<span class="fc" id="L88">      mPackage = pkg;</span>
+<span class="fc" id="L89">      mDocumentPathInPackage = internalPath;</span>
+<span class="fc" id="L90">      this.setMediaTypeString(mediaTypeString);</span>
+<span class="fc" id="L91">      pkg.cacheDocument(this, internalPath);</span>
+    } else {
+<span class="nc" id="L93">      throw new IllegalArgumentException(&quot;No Package provided for new document!&quot;);</span>
+    }
+<span class="fc" id="L95">  }</span>
+
+  /**
+   * Loads an OdfPackageDocument from the provided path.
+   *
+   * &lt;p&gt;OdfPackageDocument relies on the file being available for read access over the whole
+   * life-cycle of OdfDocument.
+   *
+   * @param documentPath - the path from where the document can be loaded
+   * @return the OpenDocument from the given path or NULL if the media type is not supported by
+   *     ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfPackageDocument loadDocument(String documentPath) throws Exception {
+<span class="fc" id="L109">    OdfPackage pkg = OdfPackage.loadPackage(documentPath);</span>
+<span class="fc" id="L110">    return pkg.loadDocument(ROOT_DOCUMENT_PATH);</span>
+  }
+
+  /**
+   * Returns an embedded OdfPackageDocument from the given package path.
+   *
+   * @param documentPath to the document within the package. The path is relative the current
+   *     document path.
+   * @return an embedded OdfPackageDocument
+   */
+  public OdfPackageDocument loadSubDocument(String documentPath) {
+<span class="fc" id="L121">    String internalPath = this.getDocumentPath() + documentPath;</span>
+<span class="fc" id="L122">    internalPath = OdfPackage.normalizeDirectoryPath(internalPath);</span>
+<span class="fc" id="L123">    return mPackage.loadDocument(internalPath);</span>
+  }
+
+  /** @return the media type of this document */
+  public String getMediaTypeString() {
+<span class="fc" id="L128">    return mDocumentMediaType;</span>
+  }
+
+  /** @param mediaTypeString for the media type of this document */
+  protected final void setMediaTypeString(String mediaTypeString) {
+<span class="fc" id="L133">    mDocumentMediaType = mediaTypeString;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">    if (isRootDocument()) {</span>
+<span class="fc" id="L135">      mPackage.setMediaTypeString(mediaTypeString);</span>
+    }
+<span class="fc" id="L137">  }</span>
+
+  /**
+   * Sets the OdfPackage that contains this OdfPackageDocument.
+   *
+   * @param pkg the OdfPackage that contains this OdfPackageDocument
+   */
+  void setPackage(OdfPackage pkg) {
+<span class="fc" id="L145">    mPackage = pkg;</span>
+<span class="fc" id="L146">  }</span>
+
+  /**
+   * Retrieves the OdfPackage for this OdfPackageDocument.
+   *
+   * @return the OdfPackage that contains this OdfPackageDocument.
+   */
+  public OdfPackage getPackage() {
+<span class="fc" id="L154">    return mPackage;</span>
+  }
+
+  /**
+   * Set the relative path for an embedded ODF document.
+   *
+   * @param path to directory of the embedded ODF document (relative to ODF package root).
+   */
+  String setDocumentPath(String path) {
+<span class="fc" id="L163">    mDocumentPathInPackage = normalizeDocumentPath(path);</span>
+<span class="fc" id="L164">    return mDocumentPathInPackage;</span>
+  }
+
+  /**
+   * Get the relative path for an embedded ODF document.
+   *
+   * @return path to the directory of the embedded ODF document (relative to ODF package root).
+   */
+  public String getDocumentPath() {
+<span class="fc" id="L173">    return mDocumentPathInPackage;</span>
+  }
+
+  /**
+   * Removes an embedded ODF document from the ODF Package. All files within the embedded document
+   * directory will be removed.
+   *
+   * @param internDocumentPath path to the directory of the embedded ODF document (always relative
+   *     to the package path of the current document).
+   */
+  public void removeDocument(String internDocumentPath) {
+<span class="fc" id="L184">    mPackage.removeDocument(mDocumentPathInPackage + internDocumentPath);</span>
+<span class="fc" id="L185">  }</span>
+
+  /** @return true if the document is at the root level of the package */
+  public boolean isRootDocument() {
+<span class="fc bfc" id="L189" title="All 2 branches covered.">    if (getDocumentPath().equals(ROOT_DOCUMENT_PATH)) {</span>
+<span class="fc" id="L190">      return true;</span>
+    } else {
+<span class="fc" id="L192">      return false;</span>
+    }
+  }
+
+  /**
+   * Checks if the given reference is a reference, which points outside the ODF package Only
+   * relative path are allowed with the exception of a single slash '/' representing the root
+   * document.
+   *
+   * @param ref the file reference to be checked
+   * @return true if the reference is an package external reference
+   */
+  protected static boolean isExternalReference(String ref) {
+<span class="nc" id="L205">    boolean isExternalReference = false;</span>
+    // if the reference is a external relative filePath..
+<span class="nc bnc" id="L207" title="All 2 branches missed.">    if (ref.startsWith(TWO_DOTS)</span>
+        || // or absolute filePath AND not root document)
+<span class="nc bnc" id="L209" title="All 4 branches missed.">        ref.startsWith(SLASH) &amp;&amp; !ref.equals(SLASH)</span>
+        || // or absolute IRI
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        ref.contains(COLON)) {</span>
+<span class="nc" id="L212">      isExternalReference = true;</span>
+    }
+<span class="nc" id="L214">    return isExternalReference;</span>
+  }
+
+  /**
+   * Ensure the document path for is valid and gurantee unique encoding by normalizing the path.
+   *
+   * @see OdfPackage#normalizeDirectoryPath(java.lang.String)
+   * @param documentPath the destination directory of the document. The path should end with a '/'.
+   * @return the documentPath after normalization.
+   */
+  protected static String normalizeDocumentPath(String documentPath) {
+<span class="fc" id="L225">    String dirPath = OdfPackage.normalizeDirectoryPath(documentPath);</span>
+    // package path should not start with '/'.
+<span class="pc bpc" id="L227" title="1 of 4 branches missed.">    if (dirPath.startsWith(SLASH) &amp;&amp; !dirPath.equals(SLASH)) {</span>
+<span class="nc" id="L228">      dirPath = dirPath.substring(1);</span>
+    }
+<span class="fc" id="L230">    return dirPath;</span>
+  }
+
+  /**
+   * Save the document to given path.
+   *
+   * &lt;p&gt;When save the embedded document to a stand alone document, all the file entries of the
+   * embedded document will be copied to a new document package. If the embedded document is outside
+   * of the current document directory, you have to embed it to the sub directory and refresh the
+   * link of the embedded document. You should reload it from the given path to get the saved
+   * embedded document.
+   *
+   * @param documentPath - the path to the package document
+   * @throws java.lang.Exception if the document could not be saved
+   */
+  public void save(String documentPath) throws Exception {
+<span class="fc" id="L246">    File f = new File(documentPath);</span>
+<span class="fc" id="L247">    save(f);</span>
+<span class="fc" id="L248">  }</span>
+
+  /**
+   * Save the document to a given file.
+   *
+   * &lt;p&gt;If the input file has been cached (this is the case when loading from an InputStream), the
+   * input file can be overwritten.
+   *
+   * &lt;p&gt;Otherwise it's allowed to overwrite the input file as long as the same path name is used
+   * that was used for loading (no symbolic link foo2.odt pointing to the loaded file foo1.odt, no
+   * network path X:\foo.odt pointing to the loaded file D:\foo.odt).
+   *
+   * &lt;p&gt;When saving the embedded document to a stand alone document, all files of the embedded
+   * document will be copied to a new document package. If the embedded document is outside of the
+   * current document directory, you have to embed it to the sub directory and refresh the link of
+   * the embedded document. You should reload it from the given file to get the saved embedded
+   * document.
+   *
+   * @param file - the file to save the document
+   * @throws java.lang.Exception if the document could not be saved
+   */
+  public void save(File file) throws Exception {
+<span class="nc" id="L270">    mPackage.save(file);</span>
+<span class="nc" id="L271">  }</span>
+
+  /**
+   * Flush the existing DOM to the document to get in advantage of the recent changes from the DOM
+   */
+  protected void flushDoms() {
+<span class="fc" id="L277">    mPackage.flushDoms(this);</span>
+<span class="fc" id="L278">  }</span>
+
+  /**
+   * Embed an OdfPackageDocument to the current OdfPackageDocument. All the file entries of child
+   * document will be embedded as well to the current document package.
+   *
+   * @param newDocument the OdfPackageDocument to be embedded.
+   * @param documentPath to the directory the ODF document should be inserted (relative to the root
+   *     of this document).
+   */
+  public void insertDocument(OdfPackageDocument newDocument, String documentPath) {
+<span class="fc" id="L289">    newDocument.flushDoms();</span>
+    // if the existing document already has a subdirtory if had to be added to the absolute
+<span class="fc" id="L291">    mPackage.insertDocument(newDocument, mDocumentPathInPackage + documentPath);</span>
+<span class="fc" id="L292">  }</span>
+
+  /**
+   * @param filePath of the XML relative to the document folder
+   * @return the typed DOM of the given file
+   */
+  public OdfFileDom getFileDom(String internalPath) {
+<span class="fc" id="L299">    String normalizeDocumentPath = getDocumentPath();</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">    if (!isRootDocument()) {</span>
+<span class="nc" id="L301">      normalizeDocumentPath = normalizeDocumentPath(normalizeDocumentPath);</span>
+    }
+<span class="fc" id="L303">    return OdfFileDom.newFileDom(this, normalizeDocumentPath + internalPath);</span>
+  }
+
+  /**
+   * @param relativeFilePath of the file path relative to the document folder
+   * @return the absolute file path relative to the package (i.e. ZIP) root.
+   */
+  public String getAbsoluteFilePath(String relativeFilePath) {
+<span class="fc" id="L311">    String normalizeDocumentPath = getDocumentPath();</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">    if (!isRootDocument()) {</span>
+<span class="fc" id="L313">      normalizeDocumentPath = normalizeDocumentPath(normalizeDocumentPath);</span>
+    }
+<span class="fc" id="L315">    return normalizeDocumentPath + relativeFilePath;</span>
+  }
+
+  /**
+   * Get EntityResolver to be used in XML Parsers which can resolve content inside the OdfPackage
+   */
+  EntityResolver getEntityResolver() {
+<span class="nc bnc" id="L322" title="All 2 branches missed.">    if (mResolver == null) {</span>
+<span class="nc" id="L323">      mResolver = new Resolver(mPackage);</span>
+    }
+<span class="nc" id="L325">    return mResolver;</span>
+  }
+
+  /**
+   * Get URIResolver to be used in XSL Transformations which can resolve content inside the
+   * OdfPackage
+   */
+  URIResolver getURIResolver() {
+<span class="nc bnc" id="L333" title="All 2 branches missed.">    if (mResolver == null) {</span>
+<span class="nc" id="L334">      mResolver = new Resolver(mPackage);</span>
+    }
+<span class="nc" id="L336">    return mResolver;</span>
+  }
+
+  /**
+   * Close the OdfPackageDocument, its OdfPackage and release all temporary created data. After
+   * execution of this method, this class is no longer usable. Do this as the last action to free
+   * resources. Closing an already closed document has no effect.
+   */
+  public void close() {
+<span class="fc" id="L345">    mPackage.close();</span>
+    // set all member variables explicit to null
+<span class="fc" id="L347">    mPackage = null;</span>
+<span class="fc" id="L348">  }</span>
+
+  /**
+   * Helper class to receive an ODF document template for new documents from the environment (ie.
+   * from the JAR via classloader)
+   */
+  protected static class Resource {
+
+    private String name;
+
+<span class="fc" id="L358">    public Resource(String name) {</span>
+<span class="fc" id="L359">      this.name = name;</span>
+<span class="fc" id="L360">    }</span>
+
+    public InputStream createInputStream() {
+<span class="fc" id="L363">      InputStream in = OdfPackageDocument.class.getResourceAsStream(this.name);</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">      if (in == null) {</span>
+<span class="nc" id="L365">        Logger.getLogger(OdfPackageDocument.class.getName())</span>
+<span class="nc" id="L366">            .log(Level.SEVERE, &quot;Could not find resource: {0}&quot;, this.name);</span>
+      }
+<span class="fc" id="L368">      return in;</span>
+    }
+  }
+
+  /**
+   * Extracts RDF Metadata triple from XML files
+   *
+   * @param internalPath path to the XML file relative to package root
+   * @return RDF Metadata through GRDDL XSLT of given XML file
+   */
+  public Model getXMLFileMetadata(String internalPath) {
+<span class="fc" id="L379">    Model rdfModel = null;</span>
+    try {
+<span class="fc" id="L381">      ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="fc" id="L382">      OdfXMLHelper helper = new OdfXMLHelper();</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">      if (mRdfFileExtractionTemplate == null) {</span>
+<span class="fc" id="L384">        String filePath =</span>
+            &quot;file:&quot;
+                + OdfPackageDocument.class
+<span class="fc" id="L387">                    .getClassLoader()</span>
+<span class="fc" id="L388">                    .getResource(&quot;grddl/odf2rdf.xsl&quot;)</span>
+<span class="fc" id="L389">                    .getPath();</span>
+<span class="fc" id="L390">        URI uri = new URI(filePath);</span>
+<span class="fc" id="L391">        InputSource inputSource = new InputSource(uri.toString());</span>
+        mRdfFileExtractionTemplate =
+<span class="fc" id="L393">            TransformerFactory.newInstance().newTemplates(new SAXSource(inputSource));</span>
+      }
+<span class="fc" id="L395">      helper.transform(</span>
+<span class="fc" id="L396">          this.getPackage(), internalPath, mRdfFileExtractionTemplate, new StreamResult(out));</span>
+<span class="fc" id="L397">      String RDFBaseUri = Util.getRDFBaseUri(this.getPackage().getBaseURI(), internalPath);</span>
+<span class="fc" id="L398">      rdfModel = ModelFactory.createDefaultModel();</span>
+<span class="fc" id="L399">      rdfModel.read(</span>
+<span class="fc" id="L400">          new InputStreamReader(new ByteArrayInputStream(out.toByteArray()), &quot;utf-8&quot;), RDFBaseUri);</span>
+      // remove the last SLASH at the end of the RDFBaseUri:
+      // test_rdfmeta.odt/ --&gt; test_rdfmeta.odt
+<span class="fc" id="L403">      ResourceUtils.renameResource(</span>
+<span class="fc" id="L404">          rdfModel.getResource(RDFBaseUri), RDFBaseUri.substring(0, RDFBaseUri.length() - 1));</span>
+<span class="nc" id="L405">    } catch (Exception ex) {</span>
+<span class="nc" id="L406">      Logger.getLogger(OdfPackageDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L407">    }</span>
+<span class="fc" id="L408">    return rdfModel;</span>
+  }
+
+  /** @return the already once parsed XML document */
+  protected Document getCachedDom(String internalPath) {
+<span class="fc" id="L413">    return mPackage.getCachedDom(internalPath);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

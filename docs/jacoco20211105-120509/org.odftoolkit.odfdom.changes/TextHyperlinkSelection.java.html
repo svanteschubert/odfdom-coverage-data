@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextHyperlinkSelection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">TextHyperlinkSelection.java</span></div><h1>TextHyperlinkSelection.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
+import org.odftoolkit.odfdom.dom.element.text.TextAElement;
+
+/** @author svante.schubertATgmail.com */
+public class TextHyperlinkSelection extends TextSelection implements Comparable {
+
+  /**
+   * Constructor.
+   *
+   * @param AnchorElement the AnchorElement of the Anchor element.
+   * @param startPosition the startPosition of the Anchor element.
+   */
+<span class="fc" id="L32">  public TextHyperlinkSelection(TextAElement anchorElement, List&lt;Integer&gt; startPosition) {</span>
+<span class="fc" id="L33">    mUrl = anchorElement.getXlinkHrefAttribute();</span>
+<span class="fc" id="L34">    mSelectionElement = anchorElement;</span>
+<span class="fc" id="L35">    mStartPosition = startPosition;</span>
+<span class="fc" id="L36">  }</span>
+
+  /**
+   * Constructor.
+   *
+   * @param AnchorElement the AnchorElement of the Anchor element.
+   * @param startPosition the startPosition of the Anchor element.
+   */
+  public TextHyperlinkSelection(
+<span class="nc" id="L45">      TextAElement anchorElement, List&lt;Integer&gt; startPosition, List&lt;Integer&gt; endPosition) {</span>
+<span class="nc" id="L46">    mUrl = anchorElement.getXlinkHrefAttribute();</span>
+<span class="nc" id="L47">    mSelectionElement = anchorElement;</span>
+<span class="nc" id="L48">    mStartPosition = startPosition;</span>
+<span class="nc" id="L49">    mEndPosition = endPosition;</span>
+<span class="nc" id="L50">  }</span>
+
+  /**
+   * Returns the AnchorElement of the Anchor element.
+   *
+   * @return the AnchorElement of the Anchor element.
+   */
+  public TextAElement getAElement() {
+<span class="nc" id="L58">    return (TextAElement) mSelectionElement;</span>
+  }
+
+  /**
+   * @param TreeSet of TextSelections, it is assumed there is only one anchor in such set.
+   * @return the first overlapping text Element in the given set (ascending searched).
+   */
+  public TextHyperlinkSelection getOverLappingHyperlinkSelection(TreeSet&lt;TextSelection&gt; set) {
+<span class="fc" id="L66">    TextHyperlinkSelection anchor = null;</span>
+<span class="fc" id="L67">    Iterator&lt;TextSelection&gt; it = set.iterator();</span>
+<span class="fc" id="L68">    TextSelection currentSelection = null;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">    while (it.hasNext()) {</span>
+<span class="fc" id="L70">      currentSelection = it.next();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">      if (currentSelection.mSelectionElement instanceof TextAElement) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (TextSelection.overLapping(this, currentSelection)) {</span>
+<span class="fc" id="L73">          anchor = (TextHyperlinkSelection) currentSelection;</span>
+<span class="fc" id="L74">          break;</span>
+        }
+      }
+    }
+<span class="fc" id="L78">    return anchor;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L83">    return mStartPosition.toString()</span>
+        + &quot;-URL&quot;
+        + mUrl
+        + &quot;-&quot;
+<span class="nc" id="L87">        + mEndPosition.toString()</span>
+<span class="nc" id="L88">        + mSelectionElement.toString()</span>
+<span class="nc" id="L89">        + ((TextAElement) mSelectionElement).getAutomaticStyle().toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Length.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">Length.java</span></div><h1>Length.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
+/**
+ * This class represents the in OpenDocument format used data type {
+ *
+ * @odf.datatype length}
+ */
+public class Length implements OdfDataType {
+
+<span class="fc" id="L36">  private static final Logger LOG = Logger.getLogger(Length.class.getName());</span>
+
+  /** Measurement units for ODF datatype length */
+<span class="fc" id="L39">  public enum Unit {</span>
+    //		TWIP(0.0176389241667372, &quot;twip&quot;), // TWentieth of an Inch Point
+
+<span class="fc" id="L42">    POINT(0.352777778, &quot;pt&quot;), // Pica Point</span>
+<span class="fc" id="L43">    PIXEL(0.28, &quot;px&quot;), // Pixel (see http://www.w3.org/TR/2001/REC-xsl-20011015/slice5.html#pixels)</span>
+    //		DIDOT_POINT(0.375972222, &quot;dpt&quot;), // Didot point (or Point typographique) after the French
+    // typographer Firmin Didot (1764-1836).
+<span class="fc" id="L46">    MILLIMETER(1.0, &quot;mm&quot;), // see http://www.w3.org/TR/2001/REC-xsl-20011015/sliceD.html#ISO31</span>
+<span class="fc" id="L47">    MICROMETER(0.001, &quot;\u00b5m&quot;), // see http://en.wikipedia.org/wiki/Micrometre</span>
+<span class="fc" id="L48">    PICA(4.2176, &quot;pc&quot;), // 1 Inch = 6 Pica = 72 Pica Point</span>
+<span class="fc" id="L49">    CENTIMETER(10.0, &quot;cm&quot;), // see http://www.w3.org/TR/2001/REC-xsl-20011015/sliceD.html#ISO31</span>
+<span class="fc" id="L50">    INCH(25.4, &quot;in&quot;);</span>
+    //		FEET(304.8, &quot;ft&quot;),
+    //		METER(1000.0, &quot;m&quot;),
+    //		KILOMETER(1000000.0, &quot;km&quot;),
+    //		MILES(1609344.0, &quot;mi&quot;);
+    private final double mUnitInMillimiter;
+    private final String mUnitAbbreviation;
+
+<span class="fc" id="L58">    Unit(double unitInMillimiter, String unitAbbreviation) {</span>
+<span class="fc" id="L59">      this.mUnitInMillimiter = unitInMillimiter;</span>
+<span class="fc" id="L60">      this.mUnitAbbreviation = unitAbbreviation;</span>
+<span class="fc" id="L61">    }</span>
+
+    /** @return the length of the Unit in Millimeter */
+    public double unitInMillimiter() {
+<span class="fc" id="L65">      return mUnitInMillimiter;</span>
+    }
+
+    /** @return the abbreviation of the Unit (e.g. cm for Centimeter) */
+    public String abbr() {
+<span class="fc" id="L70">      return mUnitAbbreviation;</span>
+    }
+  }
+
+<span class="fc" id="L74">  private String mLengthString = null;</span>
+<span class="fc" id="L75">  private static final Pattern lengthPattern =</span>
+<span class="fc" id="L76">      Pattern.compile(&quot;^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)((cm)|(mm)|(in)|(pt)|(pc)|(px))$&quot;);</span>
+
+  /**
+   * Construct Length by the parsing the given string
+   *
+   * @param length The String to be parsed into Length
+   * @throws NumberFormatException if the given argument is not a valid Length (an Integer only will
+   *     be presumed to be 'pt')
+   */
+<span class="fc" id="L85">  public Length(String length) throws NumberFormatException {</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">    if (!isValid(length)) {</span>
+      try {
+<span class="nc" id="L88">        Integer.parseInt(length);</span>
+<span class="nc" id="L89">        length = length + Unit.POINT.abbr();</span>
+<span class="nc" id="L90">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L91">        throw new NumberFormatException(</span>
+            &quot;parameter '&quot; + length + &quot;' is invalid for datatype Length&quot;);
+<span class="nc" id="L93">      }</span>
+    }
+<span class="fc" id="L95">    mLengthString = length;</span>
+<span class="fc" id="L96">  }</span>
+
+  /**
+   * Check if the specified String instance is a valid {
+   *
+   * @odf.datatype length} data type
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {
+   * @odf.datatype length} data type false otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">    if ((stringValue == null) || (!lengthPattern.matcher(stringValue).matches())) {</span>
+<span class="fc" id="L108">      return false;</span>
+    } else {
+<span class="fc" id="L110">      return true;</span>
+    }
+  }
+
+  /**
+   * Returns the Unit of the given length.
+   *
+   * @param length the &lt;code&gt;Unit&lt;/code&gt; should be obtained from
+   * @return Returns a &lt;code&gt;Unit&lt;/code&gt; object representing the specified Length unit.
+   */
+  public static Unit parseUnit(String length) {
+<span class="fc" id="L121">    Unit lengthUnit = null;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">    if (length == null) {</span>
+<span class="nc" id="L123">      throw new NumberFormatException(&quot;The input length should not be null!&quot;);</span>
+    } else {
+<span class="fc" id="L125">      boolean identifiedInput = false;</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">      for (Unit unit : Unit.values()) {</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (length.contains(unit.abbr())) {</span>
+<span class="fc" id="L128">          lengthUnit = unit;</span>
+<span class="fc" id="L129">          identifiedInput = true;</span>
+<span class="fc" id="L130">          break;</span>
+        }
+      }
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">      if (!identifiedInput) {</span>
+<span class="nc" id="L134">        throw new NumberFormatException(&quot;The input length &quot; + length + &quot; has no valid Unit!&quot;);</span>
+      }
+    }
+<span class="fc" id="L137">    return lengthUnit;</span>
+  }
+
+  /**
+   * Returns the value of the given length as int.
+   *
+   * @param length the &lt;code&gt;int&lt;/code&gt; value should be obtained from
+   * @return Returns a &lt;code&gt;int&lt;/code&gt; value representing the specified Length value.
+   */
+  public static int parseInt(String length) {
+<span class="nc" id="L147">    return (int) parseDouble(length, null);</span>
+  }
+
+  /**
+   * Returns the value of the given length as int.
+   *
+   * @param length the &lt;code&gt;int&lt;/code&gt; value should be obtained from
+   * @param destinationUnit The unit to be converted to
+   * @return Returns a &lt;code&gt;int&lt;/code&gt; value representing the specified Length value.
+   */
+  public static int parseInt(String length, Unit destinationUnit) {
+<span class="fc" id="L158">    return (int) parseDouble(length, destinationUnit);</span>
+  }
+
+  /**
+   * Returns the value of the given length as long.
+   *
+   * @param length the &lt;code&gt;long&lt;/code&gt; value should be obtained from
+   * @return Returns a &lt;code&gt;long&lt;/code&gt; value representing the specified Length value.
+   */
+  public static long parseLong(String length) {
+<span class="nc" id="L168">    return (long) parseDouble(length, null);</span>
+  }
+
+  /**
+   * Maps the a length string to a different unit
+   *
+   * @param length The value to be mapped
+   * @param destinationUnit The unit to be converted to
+   * @return The converted value without unit suffix as Double
+   */
+  public static long parseLong(String length, Unit destinationUnit) {
+<span class="fc" id="L179">    return (long) parseDouble(length, destinationUnit);</span>
+  }
+
+  /**
+   * Returns the value of the given length as double.
+   *
+   * @param length the &lt;code&gt;double&lt;/code&gt; value should be obtained from
+   * @return Returns a &lt;code&gt;double&lt;/code&gt; value representing the specified Length value.
+   */
+  public static double parseDouble(String length) {
+<span class="nc" id="L189">    return parseDouble(length, null);</span>
+  }
+
+  /**
+   * Maps the a length string to a different unit
+   *
+   * @param length The value to be mapped
+   * @param destinationUnit The unit to be converted to
+   * @return The converted value without unit suffix as double
+   */
+  public static double parseDouble(String length, Unit destinationUnit) {
+<span class="fc" id="L200">    double newValue = 0;</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">    if (length != null) {</span>
+<span class="fc" id="L202">      double roundingFactor = 10000.0;</span>
+<span class="fc" id="L203">      boolean identifiedInput = false;</span>
+
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">      for (Unit unit : Unit.values()) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (length.contains(unit.abbr())) {</span>
+<span class="fc" id="L207">          Double value = Double.valueOf(length.substring(0, length.indexOf(unit.abbr())));</span>
+          // if no destination unit was given the unit remains the same
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">          if (destinationUnit != null) {</span>
+            // using roundfactor proved to be more precise when used with Java XSLT processor
+<span class="fc" id="L211">            newValue =</span>
+<span class="fc" id="L212">                Math.round(</span>
+                        roundingFactor
+<span class="fc" id="L214">                            * value</span>
+<span class="fc" id="L215">                            / destinationUnit.unitInMillimiter()</span>
+                            * unit.mUnitInMillimiter)
+                    / roundingFactor;
+          } else {
+<span class="nc" id="L219">            destinationUnit = unit;</span>
+          }
+<span class="fc" id="L221">          identifiedInput = true;</span>
+<span class="fc" id="L222">          break;</span>
+        }
+      }
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">      if (!identifiedInput) {</span>
+<span class="nc" id="L226">        LOG.warning(</span>
+            &quot;The unit &quot;
+                + length
+                + &quot; could not be transformed to &quot;
+<span class="nc" id="L230">                + destinationUnit.toString()</span>
+                + &quot;!&quot;);
+      }
+<span class="fc" id="L233">    } else {</span>
+<span class="nc" id="L234">      LOG.warning(&quot;The input length should not be null!&quot;);</span>
+    }
+<span class="fc" id="L236">    return newValue;</span>
+  }
+
+  /**
+   * @param destinationUnit The unit to be converted to
+   * @return The converted value as result
+   */
+  public String mapToUnit(Unit destinationUnit) {
+<span class="fc" id="L244">    return mapToUnit(mLengthString, destinationUnit);</span>
+  }
+
+  /** @return The length in Millimeter */
+  public Double getMillimeters() {
+<span class="fc" id="L249">    return getLength(this.mLengthString, Unit.MILLIMETER);</span>
+  }
+
+  /**
+   * WARNING: Not an allowed ODF value, just for interim calculation used!
+   *
+   * @return The length in Micrometer
+   */
+  public Double getMicrometer() {
+<span class="fc" id="L258">    return getLength(this.mLengthString, Unit.MICROMETER);</span>
+  }
+
+  /** @return The length in point */
+  public Double getPoint() {
+<span class="fc" id="L263">    return getLength(this.mLengthString, Unit.POINT);</span>
+  }
+
+  /** @return The length in pixel */
+  public Double getPixel() {
+<span class="nc" id="L268">    return getLength(this.mLengthString, Unit.PIXEL);</span>
+  }
+
+  /** @return The length in pica */
+  public Double getPica() {
+<span class="nc" id="L273">    return getLength(this.mLengthString, Unit.PICA);</span>
+  }
+
+  /** @return The length in inch */
+  public Double getInch() {
+<span class="nc" id="L278">    return getLength(this.mLengthString, Unit.INCH);</span>
+  }
+
+  /** @return The length in centimeter */
+  public Double getCentimeter() {
+<span class="nc" id="L283">    return getLength(this.mLengthString, Unit.CENTIMETER);</span>
+  }
+
+  /**
+   * Maps the a length string to a different unit
+   *
+   * @param length The value to be mapped
+   * @param destinationUnit The unit to be converted to
+   * @return The converted value without unit suffix as Integer
+   */
+  public static Double getLength(String length, Unit destinationUnit) {
+<span class="fc" id="L294">    double newValue = 0.0;</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">    if (length != null) {</span>
+<span class="fc" id="L296">      double roundingFactor = 10000.0;</span>
+<span class="fc" id="L297">      boolean identifiedInput = false;</span>
+
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">      for (Unit unit : Unit.values()) {</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (length.contains(unit.abbr())) {</span>
+<span class="fc" id="L301">          Double value = Double.valueOf(length.substring(0, length.indexOf(unit.abbr())));</span>
+          // if no destination unit was given the unit remains the same
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">          if (destinationUnit != null) {</span>
+            // using roundfactor proved to be more precise when used with Java XSLT processor
+<span class="fc" id="L305">            newValue =</span>
+<span class="fc" id="L306">                Math.round(</span>
+                        roundingFactor
+<span class="fc" id="L308">                            * value</span>
+<span class="fc" id="L309">                            / destinationUnit.unitInMillimiter()</span>
+                            * unit.mUnitInMillimiter)
+                    / roundingFactor;
+          } else {
+<span class="nc" id="L313">            destinationUnit = unit;</span>
+          }
+<span class="fc" id="L315">          identifiedInput = true;</span>
+<span class="fc" id="L316">          break;</span>
+        }
+      }
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">      if (!identifiedInput) {</span>
+<span class="nc" id="L320">        LOG.warning(</span>
+            &quot;The unit &quot;
+                + length
+                + &quot; could not be transformed to &quot;
+<span class="nc" id="L324">                + destinationUnit.toString()</span>
+                + &quot;!&quot;);
+      }
+<span class="fc" id="L327">    } else {</span>
+<span class="nc" id="L328">      LOG.warning(&quot;The input length should not be null!&quot;);</span>
+    }
+<span class="fc" id="L330">    return newValue;</span>
+  }
+
+  /**
+   * Maps the a length string to a different unit
+   *
+   * @param length The value to be mapped
+   * @param destinationUnit The unit to be converted to
+   * @return The converted value with unit suffix as String
+   */
+  public static String mapToUnit(String length, Unit destinationUnit) {
+<span class="fc" id="L341">    Double newValue = getLength(length, destinationUnit);</span>
+<span class="fc" id="L342">    return String.valueOf(newValue) + destinationUnit.abbr();</span>
+  }
+
+  /**
+   * Returns a Length instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a Length instance representing stringValue
+   * @throws NumberFormatException if the given argument is not a valid Length
+   */
+  public static Length valueOf(String stringValue) throws NumberFormatException {
+<span class="nc" id="L353">    return new Length(stringValue);</span>
+  }
+
+  /**
+   * Returns a String Object representing this Length's value
+   *
+   * @return return a string representation of the value of this Length object
+   */
+  @Override
+  public String toString() {
+<span class="fc" id="L363">    return mLengthString;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

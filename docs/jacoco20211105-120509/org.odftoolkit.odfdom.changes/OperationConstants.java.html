@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OperationConstants.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">OperationConstants.java</span></div><h1>OperationConstants.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.io.File;
+
+public interface OperationConstants {
+
+  // *** SUPPORTED USER OPERATIONS ***
+  public static final String OP_PARAGRAPH = &quot;addParagraph&quot;;
+  public static final String OP_PARAGRAPH_SPLIT = &quot;splitParagraph&quot;;
+  public static final String OP_PARAGRAPH_MERGE = &quot;mergeParagraph&quot;;
+  public static final String OP_TEXT = &quot;addText&quot;;
+  public static final String OP_TAB = &quot;addTab&quot;;
+  public static final String OP_LINE_BREAK = &quot;addLineBreak&quot;;
+  public static final String OP_STYLE = &quot;addStyle&quot;;
+  public static final String OP_STYLE_CHANGE = &quot;changeStyle&quot;;
+  public static final String OP_STYLE_DELETE = &quot;deleteStyle&quot;;
+  public static final String OP_LIST_STYLE = &quot;addListStyle&quot;;
+  public static final String OP_FIELD = &quot;addField&quot;;
+  public static final String OP_FIELD_UPDATE =
+      &quot;updateField&quot;; // only update, no creation, no range yet supported
+  public static final String OP_DRAWING = &quot;addDrawing&quot;; // only text frame, no shape
+  public static final String OP_DOCUMENT_LAYOUT = &quot;documentLayout&quot;;
+  public static final String OP_HEADER_FOOTER = &quot;addHeaderFooter&quot;; // 2DO: no editing test
+  public static final String OP_HEADER_FOOTER_DELETE =
+      &quot;deleteHeaderFooterContent&quot;; // 2DO: no editing test
+  public static final String OP_NOTE = &quot;addNote&quot;; // 2DO: no note on text &amp; a note can not be edited
+  public static final String OP_NOTE_SELECTION = &quot;addNoteSelection&quot;; // see above..
+  public static final String OP_FONT_DECL = &quot;addFontDecl&quot;; // no binary font data being added
+
+  public static final String OP_TABLE = &quot;addTable&quot;;
+  public static final String OP_COLUMN = &quot;addColumn&quot;;
+  public static final String OP_COLUMNS_DELETE =
+      &quot;deleteColumns&quot;; // 2DO: no editing test - pos=Table start,optional end of columns!
+  public static final String OP_ROWS = &quot;addRows&quot;;
+  public static final String OP_CELLS = &quot;addCells&quot;;
+
+  public static final String OP_MOVE = &quot;move&quot;; // only single component can be moved
+  public static final String OP_FORMAT = &quot;format&quot;;
+  public static final String OP_DELETE = &quot;delete&quot;; // works also for text
+
+  // Operation only for testing
+  public static final String OP_ERROR = &quot;createError&quot;;
+
+  /** OPERATION PARAMETER (KEYS)* */
+  public static final String OPK_OPERATIONS = &quot;changes&quot;;
+
+  public static final String OPK_NAME = &quot;name&quot;;
+
+  public static final String OPK_START = &quot;start&quot;;
+  public static final String OPK_END = &quot;end&quot;;
+  public static final String OPK_POSITION = &quot;position&quot;;
+  public static final String OPK_ID = &quot;id&quot;;
+  public static final String OPK_TYPE = &quot;type&quot;;
+  public static final String OPK_ATTRS = &quot;attrs&quot;;
+  public static final String OPK_STYLE_ID = &quot;styleId&quot;;
+  public static final String OPK_CONTEXT = &quot;context&quot;;
+  public static final String OPK_EDITOR = &quot;editor&quot;;
+  public static final String OPK_VERSION = &quot;version&quot;;
+  public static final String OPK_VERSION_TIME = &quot;version-time&quot;;
+  public static final String OPK_VERSION_BRANCH = &quot;version-branch&quot;;
+  public static final String OPK_SHEET = &quot;sheet&quot;;
+
+  // *** MAXIMUM SIZE OF TABLE SUPPORT *** //
+  /**
+   * Number of cells, which are being dispatched as JSON until a table is being omitted (replaced by
+   * placeholder). 0 represents no max.
+   */
+<span class="fc" id="L83">  static final Integer MAX_SUPPORTED_CELLS_NUMBER = 0;</span>
+  /**
+   * Number of columns, which are being dispatched as JSON until a table is being omitted (replaced
+   * by placeholder). 0 represents no max.
+   */
+<span class="fc" id="L88">  static final Integer MAX_SUPPORTED_COLUMNS_NUMBER = 0;</span>
+  /**
+   * Number of rows, which are being dispatched as JSON until a table is being omitted (replaced by
+   * placeholder). 0 represents no max.
+   */
+<span class="fc" id="L93">  static final Integer MAX_SUPPORTED_ROWS_NUMBER = 0;</span>
+
+  static final String CONFIG_MAX_TABLE_COLUMNS = &quot;maxTableColumns&quot;;
+  static final String CONFIG_MAX_TABLE_ROWS = &quot;maxTableRows&quot;;
+  static final String CONFIG_MAX_TABLE_CELLS = &quot;maxTableCells&quot;;
+  static final String CONFIG_MAX_SHEETS = &quot;maxSheets&quot;;
+  static final String CONFIG_DEBUG_OPERATIONS = &quot;debugoperations&quot;;
+  // Internal names to cache operations until considered if a table is too big
+  static final String SHAPE = &quot;Shape&quot;;
+  static final String SHAPE_GROUP = &quot;Group&quot;;
+  static final String CELLS = &quot;Cells&quot;;
+  static final String TABLE = &quot;Table&quot;;
+  static final String EXCEEDEDTABLE = &quot;ExceededTable&quot;;
+  static final String ROWS = &quot;Rows&quot;;
+  static final String COLUMNS = &quot;Columns&quot;;
+  static final String PARAGRAPH = &quot;Paragraph&quot;;
+  static final String IMAGE = &quot;Image&quot;;
+  static final String LINE_BREAK = &quot;LineBreak&quot;;
+  static final String TAB = &quot;Tab&quot;;
+  static final String TEXT = &quot;Text&quot;;
+  static final String FIELD = &quot;Field&quot;;
+  static final String ATTRIBUTES = &quot;Attributes&quot;;
+  static final String FORMATROWS = &quot;FormatRows&quot;;
+  static final String FORMATCOLUMNS = &quot;FormatColumns&quot;;
+  static final String MERGECELLS = &quot;MergeCells&quot;;
+  static final String COMMENTRANGE = &quot;CommentRange&quot;;
+  static final String COMMENT = &quot;Comment&quot;;
+
+  // OUTPUT DIRECTORY NAME
+<span class="fc" id="L122">  static final String OPERATION_OUTPUT_DIR = &quot;operations&quot; + File.separator;</span>
+  static final String ODT_SUFFIX = &quot;.odt&quot;;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,597 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfOfficeAutomaticStyles.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.office</a> &gt; <span class="el_source">OdfOfficeAutomaticStyles.java</span></div><h1>OdfOfficeAutomaticStyles.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.office;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import org.odftoolkit.odfdom.changes.MapHelper;
+import org.odftoolkit.odfdom.dom.DefaultElementVisitor;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.attribute.office.OfficeValueTypeAttribute;
+import org.odftoolkit.odfdom.dom.attribute.office.OfficeValueTypeAttribute.Value;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.number.DataStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberBooleanStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberCurrencyStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberDateStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberPercentageStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTimeStyleElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleMapElement;
+import org.odftoolkit.odfdom.dom.element.style.StylePageLayoutElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleStyleElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListStyleElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberCurrencyStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberDateStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberPercentageStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberTimeStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStylePageLayout;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextListStyle;
+import org.odftoolkit.odfdom.pkg.ElementVisitor;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/** Convenient functionality for the parent ODF OpenDocument element */
+public abstract class OdfOfficeAutomaticStyles extends OdfStylesBase {
+
+<span class="fc" id="L68">  public static final OdfName ELEMENT_NAME =</span>
+<span class="fc" id="L69">      OdfName.newName(OdfDocumentNamespace.OFFICE, &quot;automatic-styles&quot;);</span>
+
+  private static final long serialVersionUID = -2925910664631016175L;
+  // styles that are only in OdfAutomaticStyles
+  private HashMap&lt;String, OdfStylePageLayout&gt; mPageLayouts;
+  // styles that are common for OdfStyles and OdfAutomaticStyles
+
+  public OdfOfficeAutomaticStyles(OdfFileDom ownerDoc) {
+<span class="fc" id="L77">    super(ownerDoc, ELEMENT_NAME);</span>
+    //        mStylesBaseImpl = new OdfStylesBase();
+<span class="fc" id="L79">  }</span>
+
+  public OdfName getOdfName() {
+<span class="nc" id="L82">    return ELEMENT_NAME;</span>
+  }
+
+  /**
+   * Create an &lt;code&gt;OdfStyle&lt;/code&gt; element with style family
+   *
+   * @param styleFamily The &lt;code&gt;OdfStyleFamily&lt;/code&gt; element
+   * @return an &lt;code&gt;OdfStyle&lt;/code&gt; element
+   */
+  public OdfStyle newStyle(OdfStyleFamily styleFamily) {
+<span class="fc" id="L92">    OdfFileDom dom = (OdfFileDom) this.ownerDocument;</span>
+<span class="fc" id="L93">    OdfStyle newStyle = dom.newOdfElement(OdfStyle.class);</span>
+<span class="fc" id="L94">    newStyle.setStyleFamilyAttribute(styleFamily.getName());</span>
+
+<span class="fc" id="L96">    newStyle.setStyleNameAttribute(newUniqueStyleName(styleFamily));</span>
+    // &lt;style:style&gt; elements are the first type of elements within the automatic styles parent
+<span class="fc" id="L98">    OdfElement firstChild = this.getFirstChildElement();</span>
+    // if there another child, add the new &lt;style:style&gt; ahead
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    if (firstChild != null) {</span>
+<span class="fc" id="L101">      this.insertBefore(newStyle, firstChild);</span>
+    } else {
+      // otherwise append the &lt;style:style&gt; as first child
+<span class="fc" id="L104">      this.appendChild(newStyle);</span>
+    }
+<span class="fc" id="L106">    return newStyle;</span>
+  }
+
+  protected &lt;T extends OdfElement&gt; T getStylesElement(OdfFileDom dom, Class&lt;T&gt; clazz)
+      throws Exception {
+<span class="nc" id="L111">    OdfElement stylesRoot = dom.getRootElement();</span>
+
+<span class="nc" id="L113">    OdfOfficeAutomaticStyles contentBody =</span>
+<span class="nc" id="L114">        OdfElement.findFirstChildNode(OdfOfficeAutomaticStyles.class, stylesRoot);</span>
+<span class="nc" id="L115">    NodeList childs = contentBody.getChildNodes();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">    for (int i = 0; i &lt; childs.getLength(); i++) {</span>
+<span class="nc" id="L117">      Node cur = childs.item(i);</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">      if ((cur != null) &amp;&amp; clazz.isInstance(cur)) {</span>
+<span class="nc" id="L119">        return (T) cur;</span>
+      }
+    }
+<span class="nc" id="L122">    return null;</span>
+  }
+
+  /**
+   * Create an &lt;code&gt;OdfTextListStyle&lt;/code&gt; element
+   *
+   * @return an &lt;code&gt;OdfTextListStyle&lt;/code&gt; element
+   */
+  public OdfTextListStyle newListStyle() {
+<span class="nc" id="L131">    return newListStyle(newUniqueStyleName(OdfStyleFamily.List));</span>
+  }
+
+  /**
+   * Create an &lt;code&gt;OdfStylePageLayout&lt;/code&gt; element
+   *
+   * @return an &lt;code&gt;OdfStylePageLayout&lt;/code&gt; element
+   */
+  public OdfStylePageLayout newPageLayout() {
+<span class="fc" id="L140">    return newPageLayout(newUniqueStyleName(null));</span>
+  }
+
+  /**
+   * Create an &lt;code&gt;OdfStylePageLayout&lt;/code&gt; element
+   *
+   * @return an &lt;code&gt;OdfStylePageLayout&lt;/code&gt; element
+   */
+  public OdfStylePageLayout newPageLayout(String pageLayoutName) {
+<span class="fc" id="L149">    OdfFileDom dom = (OdfFileDom) this.ownerDocument;</span>
+<span class="fc" id="L150">    OdfStylePageLayout newPageLayout = dom.newOdfElement(OdfStylePageLayout.class);</span>
+
+<span class="fc" id="L152">    newPageLayout.setStyleNameAttribute(pageLayoutName);</span>
+    // &lt;style:page-layout always last in automatic styles
+    // append it to the automatic styles parent
+<span class="fc" id="L155">    this.appendChild(newPageLayout);</span>
+<span class="fc" id="L156">    return newPageLayout;</span>
+  }
+
+  /**
+   * Create an &lt;code&gt;OdfTextListStyle&lt;/code&gt; element
+   *
+   * @param listStyleName the name of the new list style
+   * @return an &lt;code&gt;OdfTextListStyle&lt;/code&gt; element
+   */
+  public OdfTextListStyle newListStyle(String listStyleName) {
+<span class="fc" id="L166">    OdfFileDom dom = (OdfFileDom) this.ownerDocument;</span>
+<span class="fc" id="L167">    OdfTextListStyle newStyle = dom.newOdfElement(OdfTextListStyle.class);</span>
+
+<span class="fc" id="L169">    newStyle.setStyleNameAttribute(listStyleName);</span>
+    // &lt;text:list-style are always the second after the &lt;style:style&gt; elements
+<span class="fc" id="L171">    OdfElement child = this.getFirstChildElement();</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">    if (child != null) {</span>
+      // check if the first element is of &lt;style:style&gt;
+<span class="fc bfc" id="L174" title="All 2 branches covered.">      if (child instanceof StyleStyleElement) {</span>
+        // search for a following sibling not being a &lt;style:style&gt; element
+<span class="fc bfc" id="L176" title="All 4 branches covered.">        while (child != null &amp;&amp; child instanceof StyleStyleElement) {</span>
+<span class="fc" id="L177">          child = OdfElement.getNextSiblingElement(child);</span>
+        }
+      }
+      // if such a none &lt;style:style&gt; element exists
+<span class="fc bfc" id="L181" title="All 2 branches covered.">      if (child != null) {</span>
+        // check if a style by that name already exists
+<span class="fc" id="L183">        OdfElement removeChild = child;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        while (removeChild != null) {</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">          if (removeChild instanceof OdfTextListStyle</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">              &amp;&amp; ((OdfTextListStyle) removeChild).getStyleNameAttribute().equals(listStyleName)) {</span>
+<span class="fc" id="L187">            break;</span>
+          }
+<span class="fc" id="L189">          removeChild = OdfElement.getNextSiblingElement(removeChild);</span>
+        }
+        // add the list style before of this
+<span class="fc" id="L192">        this.insertBefore(newStyle, child);</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        if (removeChild != null) this.removeChild(removeChild);</span>
+<span class="fc" id="L194">      } else {</span>
+        // otherwise add the list style after the &lt;style:style&gt;
+<span class="fc" id="L196">        this.appendChild(newStyle);</span>
+      }
+    } else {
+      // add the list style to this element, the empty automatic styles parent
+<span class="fc" id="L200">      this.appendChild(newStyle);</span>
+    }
+
+<span class="fc" id="L203">    return newStyle;</span>
+  }
+
+  /**
+   * Returns the &lt;code&gt;OdfStylePageLayout&lt;/code&gt; element with the given name.
+   *
+   * @param name is the name of the page layout
+   * @return the page layout or null if there is no such page layout
+   */
+  public OdfStylePageLayout getPageLayout(String name) {
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">    if (mPageLayouts != null) {</span>
+<span class="fc" id="L214">      return mPageLayouts.get(name);</span>
+    } else {
+<span class="nc" id="L216">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns the &lt;code&gt;OdfStylePageLayout&lt;/code&gt; element with the given name.
+   *
+   * @param name is the name of the page layout
+   * @return the page layout
+   */
+  public OdfStylePageLayout getOrCreatePageLayout(String name) {
+<span class="fc" id="L227">    OdfStylePageLayout pageLayout = getPageLayout(name);</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">    if (pageLayout == null) {</span>
+<span class="fc" id="L229">      OdfFileDom dom = (OdfFileDom) this.ownerDocument;</span>
+<span class="fc" id="L230">      pageLayout = dom.newOdfElement(OdfStylePageLayout.class);</span>
+<span class="fc" id="L231">      pageLayout.setStyleNameAttribute(name);</span>
+<span class="fc" id="L232">      this.appendChild(pageLayout);</span>
+    }
+<span class="fc" id="L234">    return pageLayout;</span>
+  }
+
+  @Override
+  public void onOdfNodeInserted(OdfElement node, Node refNode) {
+<span class="fc bfc" id="L239" title="All 2 branches covered.">    if (node instanceof OdfStylePageLayout) {</span>
+<span class="fc" id="L240">      OdfStylePageLayout pageLayout = (OdfStylePageLayout) node;</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">      if (mPageLayouts == null) {</span>
+<span class="fc" id="L242">        mPageLayouts = new HashMap&lt;String, OdfStylePageLayout&gt;();</span>
+      }
+
+<span class="fc" id="L245">      mPageLayouts.put(pageLayout.getStyleNameAttribute(), pageLayout);</span>
+<span class="fc" id="L246">    } else {</span>
+<span class="fc" id="L247">      super.onOdfNodeInserted(node, refNode);</span>
+    }
+<span class="fc" id="L249">  }</span>
+
+  @Override
+  public void onOdfNodeRemoved(OdfElement node) {
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">    if (node instanceof OdfStylePageLayout) {</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">      if (mPageLayouts != null) {</span>
+<span class="nc" id="L255">        OdfStylePageLayout pageLayout = (OdfStylePageLayout) node;</span>
+<span class="nc" id="L256">        mPageLayouts.remove(pageLayout.getStyleNameAttribute());</span>
+<span class="nc" id="L257">      }</span>
+    } else {
+<span class="fc" id="L259">      super.onOdfNodeRemoved(node);</span>
+    }
+<span class="fc" id="L261">  }</span>
+
+  /**
+   * This methods removes all automatic styles that are currently not used by any styleable element.
+   * Additionally all duplicate automatic styles will be removed.
+   */
+  public void optimize() {
+<span class="fc" id="L268">    Iterator&lt;OdfStyle&gt; iter = getAllStyles().iterator();</span>
+<span class="fc" id="L269">    SortedSet&lt;OdfStyle&gt; stylesSet = new TreeSet&lt;OdfStyle&gt;();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">    while (iter.hasNext()) {</span>
+<span class="fc" id="L271">      OdfStyle cur = iter.next();</span>
+
+      // skip styles which are not in use:
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">      if (cur.getStyleUserCount() &lt; 1) {</span>
+<span class="nc" id="L275">        continue;</span>
+      }
+
+<span class="fc" id="L278">      SortedSet&lt;OdfStyle&gt; tail = stylesSet.tailSet(cur);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">      OdfStyle found = tail.size() &gt; 0 ? tail.first() : null;</span>
+<span class="pc bpc" id="L280" title="1 of 4 branches missed.">      if (found != null &amp;&amp; found.equals(cur)) {</span>
+        // cur already in set. Replace all usages of cur by found:
+<span class="fc" id="L282">        Iterator&lt;OdfStylableElement&gt; styleUsersIter = cur.getStyleUsers().iterator();</span>
+<span class="fc" id="L283">        ArrayList&lt;OdfStylableElement&gt; styleUsers = new ArrayList&lt;OdfStylableElement&gt;();</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        while (styleUsersIter.hasNext()) {</span>
+<span class="fc" id="L285">          styleUsers.add(styleUsersIter.next());</span>
+        }
+<span class="fc" id="L287">        styleUsersIter = styleUsers.iterator();</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        while (styleUsersIter.hasNext()) {</span>
+<span class="fc" id="L289">          OdfStylableElement elem = styleUsersIter.next();</span>
+<span class="fc" id="L290">          OdfStyle autoStyle = elem.getAutomaticStyle();</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">          if (autoStyle != null) {</span>
+<span class="fc" id="L292">            elem.setStyleName(found.getStyleNameAttribute());</span>
+          }
+<span class="fc" id="L294">        }</span>
+<span class="fc" id="L295">      } else {</span>
+<span class="fc" id="L296">        stylesSet.add(cur);</span>
+      }
+<span class="fc" id="L298">    }</span>
+
+<span class="fc" id="L300">    OdfStyle style = OdfElement.findFirstChildNode(OdfStyle.class, this);</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">    while (style != null) {</span>
+<span class="fc" id="L302">      OdfStyle nextStyle = OdfElement.findNextChildNode(OdfStyle.class, style);</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">      if (style.getStyleUserCount() &lt; 1) {</span>
+<span class="fc" id="L304">        this.removeChild(style);</span>
+      }
+
+<span class="fc" id="L307">      style = nextStyle;</span>
+<span class="fc" id="L308">    }</span>
+<span class="fc" id="L309">  }</span>
+
+  /**
+   * This method makes the style unique
+   *
+   * @param referenceStyle The reference &lt;code&gt;OdfStyle&lt;/code&gt; element to create a new automatic
+   *     style
+   * @return an &lt;code&gt;OdfStyle&lt;/code&gt; element
+   */
+  public OdfStyle makeStyleUnique(OdfStyle referenceStyle) {
+<span class="fc" id="L319">    OdfStyle newStyle = null;</span>
+
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">    if (referenceStyle.getOwnerDocument() != this.getOwnerDocument()) {</span>
+      // import style from a different dom
+<span class="nc" id="L323">      newStyle = (OdfStyle) this.getOwnerDocument().importNode(referenceStyle, true);</span>
+    } else {
+      // just clone
+<span class="fc" id="L326">      newStyle = (OdfStyle) referenceStyle.cloneNode(true);</span>
+    }
+
+<span class="fc" id="L329">    newStyle.setStyleNameAttribute(newUniqueStyleName(newStyle.getFamily()));</span>
+<span class="fc" id="L330">    appendChild(newStyle);</span>
+
+<span class="fc" id="L332">    return newStyle;</span>
+  }
+
+  private String newUniqueStyleName(OdfStyleFamily styleFamily) {
+    String unique_name;
+
+<span class="pc bpc" id="L338" title="1 of 4 branches missed.">    if (styleFamily != null &amp;&amp; styleFamily.equals(OdfStyleFamily.List)) {</span>
+      do {
+<span class="nc" id="L340">        unique_name = String.format(&quot;l%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">      } while (getListStyle(unique_name) != null);</span>
+    } else {
+      do {
+<span class="fc" id="L344">        unique_name = String.format(&quot;a%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">      } while (getStyle(unique_name, styleFamily) != null);</span>
+    }
+<span class="fc" id="L347">    return unique_name;</span>
+  }
+
+  private DataStyleElement createDataStyleElement(
+      Value type, String numberFormatCode, String newDataStyleName) {
+<span class="fc" id="L352">    Value t = type;</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">    if (t == OfficeValueTypeAttribute.Value.VOID) {</span>
+<span class="fc" id="L354">      t = MapHelper.detectFormatType(numberFormatCode);</span>
+    }
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">    if (t == OfficeValueTypeAttribute.Value.VOID) {</span>
+<span class="nc" id="L357">      return null;</span>
+    }
+<span class="fc" id="L359">    OdfFileDom fileDom = (OdfFileDom) getOwnerDocument();</span>
+<span class="fc" id="L360">    DataStyleElement newStyle = null;</span>
+<span class="pc bpc" id="L361" title="4 of 8 branches missed.">    switch (t) {</span>
+      case DATE:
+<span class="fc" id="L363">        newStyle = new OdfNumberDateStyle(fileDom, numberFormatCode, newDataStyleName);</span>
+<span class="fc" id="L364">        break;</span>
+      case BOOLEAN:
+<span class="nc" id="L366">        newStyle = new NumberBooleanStyleElement(fileDom, newDataStyleName);</span>
+<span class="nc" id="L367">        break;</span>
+      case CURRENCY:
+<span class="fc" id="L369">        newStyle = new OdfNumberCurrencyStyle(fileDom, numberFormatCode, newDataStyleName);</span>
+<span class="fc" id="L370">        break;</span>
+      case FLOAT:
+<span class="fc" id="L372">        newStyle = new OdfNumberStyle(fileDom, numberFormatCode, newDataStyleName);</span>
+<span class="fc" id="L373">        break;</span>
+      case PERCENTAGE:
+<span class="nc" id="L375">        newStyle = new OdfNumberPercentageStyle(fileDom, numberFormatCode, newDataStyleName);</span>
+<span class="nc" id="L376">        break;</span>
+      case STRING:
+<span class="fc" id="L378">        newStyle = new NumberTextStyleElement(fileDom, numberFormatCode, newDataStyleName);</span>
+<span class="fc" id="L379">        break;</span>
+      case TIME:
+<span class="nc" id="L381">        newStyle = new OdfNumberTimeStyle(fileDom, numberFormatCode, newDataStyleName);</span>
+<span class="nc" id="L382">        break;</span>
+      case VOID:
+        // can never happen, already blocked above
+        break;
+    }
+<span class="fc" id="L387">    return newStyle;</span>
+  }
+
+  public DataStyleElement createDataStyle(
+      Value type, String numberFormatCode, String newDataStyleName) {
+    /* conditional formats:
+    - default conditions:
+        tow parts: &quot;value()&gt;=0&quot;;&quot;value()&lt;0&quot;
+        three parts: &quot;value()&gt;0&quot;;&quot;value()&lt;0&quot;;value()==0
+        The last one is in general
+    */
+<span class="fc" id="L398">    ArrayList&lt;String&gt; partArray = new ArrayList&lt;String&gt;();</span>
+    // TODO: skip quoted parts - check fails if semicolon is in quotes
+<span class="fc bfc" id="L400" title="All 2 branches covered.">    while (numberFormatCode.contains(&quot;;&quot;)) {</span>
+<span class="fc" id="L401">      int partStart = numberFormatCode.lastIndexOf(&quot;;&quot;, numberFormatCode.length());</span>
+<span class="fc" id="L402">      String part = numberFormatCode.substring(partStart + 1);</span>
+<span class="fc" id="L403">      partArray.add(0, part);</span>
+<span class="fc" id="L404">      numberFormatCode = numberFormatCode.substring(0, partStart);</span>
+<span class="fc" id="L405">    }</span>
+<span class="fc" id="L406">    partArray.add(0, numberFormatCode);</span>
+
+    // this is the anchor style in case multiple parts are required
+<span class="fc" id="L409">    DataStyleElement newStyle =</span>
+<span class="fc" id="L410">        createDataStyleElement(type, partArray.get(partArray.size() - 1), newDataStyleName);</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">    if (partArray.size() &gt; 1) {</span>
+<span class="fc" id="L412">      OdfFileDom fileDom = (OdfFileDom) getOwnerDocument();</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">      for (int partIndex = 0; partIndex &lt; partArray.size() - 1; ++partIndex) {</span>
+<span class="fc" id="L414">        String partStyleName = newDataStyleName + &quot;P&quot; + partIndex;</span>
+<span class="fc" id="L415">        String part = partArray.get(partIndex);</span>
+<span class="fc" id="L416">        DataStyleElement partStyle = createDataStyleElement(Value.VOID, part, partStyleName);</span>
+        // generate an appropriate condition and add this style as sub style and make part style a
+        // volatile style
+<span class="fc" id="L419">        String condition = &quot;value()&quot;;</span>
+        // TODO: extract condition if available (e.g. '[&gt;5]')
+<span class="pc bpc" id="L421" title="2 of 4 branches missed.">        condition += partArray.size() == 1 ? &quot;&gt;=0&quot; : partIndex == 0 ? &quot;&gt;0&quot; : &quot;&lt;0&quot;;</span>
+
+<span class="fc" id="L423">        StyleMapElement styleMap = fileDom.newOdfElement(StyleMapElement.class);</span>
+<span class="fc" id="L424">        styleMap.setStyleApplyStyleNameAttribute(partStyleName);</span>
+<span class="fc" id="L425">        styleMap.setStyleConditionAttribute(condition);</span>
+<span class="fc" id="L426">        newStyle.appendChild(styleMap);</span>
+<span class="fc" id="L427">        partStyle.setAttributeNS(OdfDocumentNamespace.STYLE.getUri(), &quot;style:volatile&quot;, &quot;true&quot;);</span>
+<span class="fc" id="L428">        appendChild(partStyle);</span>
+      }
+    }
+<span class="fc" id="L431">    return (DataStyleElement) appendChild(newStyle);</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:boolean-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:boolean-style}
+   */
+  public NumberBooleanStyleElement newNumberBooleanStyleElement(String styleNameValue) {
+<span class="nc" id="L442">    NumberBooleanStyleElement numberBooleanStyle =</span>
+<span class="nc" id="L443">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberBooleanStyleElement.class);</span>
+<span class="nc" id="L444">    numberBooleanStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L445">    this.appendChild(numberBooleanStyle);</span>
+<span class="nc" id="L446">    return numberBooleanStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:currency-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:currency-style}
+   */
+  public NumberCurrencyStyleElement newNumberCurrencyStyleElement(String styleNameValue) {
+<span class="nc" id="L457">    NumberCurrencyStyleElement numberCurrencyStyle =</span>
+<span class="nc" id="L458">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberCurrencyStyleElement.class);</span>
+<span class="nc" id="L459">    numberCurrencyStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L460">    this.appendChild(numberCurrencyStyle);</span>
+<span class="nc" id="L461">    return numberCurrencyStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:date-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:date-style}
+   */
+  public NumberDateStyleElement newNumberDateStyleElement(String styleNameValue) {
+<span class="nc" id="L472">    NumberDateStyleElement numberDateStyle =</span>
+<span class="nc" id="L473">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberDateStyleElement.class);</span>
+<span class="nc" id="L474">    numberDateStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L475">    this.appendChild(numberDateStyle);</span>
+<span class="nc" id="L476">    return numberDateStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:number-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:number-style}
+   */
+  public NumberNumberStyleElement newNumberNumberStyleElement(String styleNameValue) {
+<span class="nc" id="L487">    NumberNumberStyleElement numberNumberStyle =</span>
+<span class="nc" id="L488">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberNumberStyleElement.class);</span>
+<span class="nc" id="L489">    numberNumberStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L490">    this.appendChild(numberNumberStyle);</span>
+<span class="nc" id="L491">    return numberNumberStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:percentage-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:percentage-style}
+   */
+  public NumberPercentageStyleElement newNumberPercentageStyleElement(String styleNameValue) {
+<span class="nc" id="L502">    NumberPercentageStyleElement numberPercentageStyle =</span>
+<span class="nc" id="L503">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberPercentageStyleElement.class);</span>
+<span class="nc" id="L504">    numberPercentageStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L505">    this.appendChild(numberPercentageStyle);</span>
+<span class="nc" id="L506">    return numberPercentageStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:text-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:text-style}
+   */
+  public NumberTextStyleElement newNumberTextStyleElement(String styleNameValue) {
+<span class="nc" id="L517">    NumberTextStyleElement numberTextStyle =</span>
+<span class="nc" id="L518">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberTextStyleElement.class);</span>
+<span class="nc" id="L519">    numberTextStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L520">    this.appendChild(numberTextStyle);</span>
+<span class="nc" id="L521">    return numberTextStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element number:time-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element number:time-style}
+   */
+  public NumberTimeStyleElement newNumberTimeStyleElement(String styleNameValue) {
+<span class="nc" id="L532">    NumberTimeStyleElement numberTimeStyle =</span>
+<span class="nc" id="L533">        ((OdfFileDom) this.ownerDocument).newOdfElement(NumberTimeStyleElement.class);</span>
+<span class="nc" id="L534">    numberTimeStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L535">    this.appendChild(numberTimeStyle);</span>
+<span class="nc" id="L536">    return numberTimeStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element style:page-layout}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element style:page-layout}
+   */
+  public StylePageLayoutElement newStylePageLayoutElement(String styleNameValue) {
+<span class="nc" id="L547">    StylePageLayoutElement stylePageLayout =</span>
+<span class="nc" id="L548">        ((OdfFileDom) this.ownerDocument).newOdfElement(StylePageLayoutElement.class);</span>
+<span class="nc" id="L549">    stylePageLayout.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L550">    this.appendChild(stylePageLayout);</span>
+<span class="nc" id="L551">    return stylePageLayout;</span>
+  }
+
+  /**
+   * Create child element {@odf.element style:style}.
+   *
+   * @param styleFamilyValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleFamilyAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:family} at specification
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element style:style}
+   */
+  public StyleStyleElement newStyleStyleElement(String styleFamilyValue, String styleNameValue) {
+<span class="nc" id="L564">    StyleStyleElement styleStyle =</span>
+<span class="nc" id="L565">        ((OdfFileDom) this.ownerDocument).newOdfElement(StyleStyleElement.class);</span>
+<span class="nc" id="L566">    styleStyle.setStyleFamilyAttribute(styleFamilyValue);</span>
+<span class="nc" id="L567">    styleStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L568">    this.appendChild(styleStyle);</span>
+<span class="nc" id="L569">    return styleStyle;</span>
+  }
+
+  /**
+   * Create child element {@odf.element text:list-style}.
+   *
+   * @param styleNameValue the &lt;code&gt;String&lt;/code&gt; value of &lt;code&gt;StyleNameAttribute&lt;/code&gt;, see
+   *     {@odf.attribute style:name} at specification
+   * @return the element {@odf.element text:list-style}
+   */
+  public TextListStyleElement newTextListStyleElement(String styleNameValue) {
+<span class="nc" id="L580">    TextListStyleElement textListStyle =</span>
+<span class="nc" id="L581">        ((OdfFileDom) this.ownerDocument).newOdfElement(TextListStyleElement.class);</span>
+<span class="nc" id="L582">    textListStyle.setStyleNameAttribute(styleNameValue);</span>
+<span class="nc" id="L583">    this.appendChild(textListStyle);</span>
+<span class="nc" id="L584">    return textListStyle;</span>
+  }
+
+  @Override
+  public void accept(ElementVisitor visitor) {
+<span class="nc bnc" id="L589" title="All 2 branches missed.">    if (visitor instanceof DefaultElementVisitor) {</span>
+<span class="nc" id="L590">      DefaultElementVisitor defaultVisitor = (DefaultElementVisitor) visitor;</span>
+<span class="nc" id="L591">      defaultVisitor.visit(this);</span>
+<span class="nc" id="L592">    } else {</span>
+<span class="nc" id="L593">      visitor.visit(this);</span>
+    }
+<span class="nc" id="L595">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfPackageConstraint.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.pkg</a> &gt; <span class="el_source">OdfPackageConstraint.java</span></div><h1>OdfPackageConstraint.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.pkg;
+
+import org.odftoolkit.odfdom.pkg.OdfPackage.OdfFile;
+
+/**
+ * This class is used for validation of the ODF Package. It contains the constraint messages are
+ * taken from the OASIS ODF 1.2 part 3, the ODF package specification. These messages are used by
+ * the &lt;code&gt;ValidationException&lt;/code&gt; for ODF validation. The validation is enabled, when an
+ * &lt;code&gt;ErrorHandler&lt;/code&gt; was provided to the &lt;code&gt;OdfPackage&lt;/code&gt;.
+ */
+<span class="fc" id="L34">public enum OdfPackageConstraint implements ValidationConstraint {</span>
+  // NOTE FOLLOWING CODE CONVENTION:
+  // The first parameter is ALWAYS the source path. The OdfValidationException adds a preceding
+  // whitespace in case the source is not null.
+
+  /** In case a ZIP entry is using neither STORED and DEFLATED as compression method. */
+<span class="fc" id="L40">  PACKAGE_ENTRY_USING_INVALID_COMPRESSION(</span>
+      &quot;The compression method of the ZIP entry '%2$s' is not allowed within the%1$s ODF package file!&quot;),
+  /** The ODF package shall contain the \&quot;/META-INF/manifest.xml\&quot; file. */
+<span class="fc" id="L43">  MANIFEST_NOT_IN_PACKAGE(</span>
+<span class="fc" id="L44">      &quot;The ODF package%1$s shall contain the '&quot; + OdfFile.MANIFEST.getPath() + &quot;' file!&quot;),</span>
+  /**
+   * A directory is not a sub-document and should not be listed in the \&quot;/META-INF/manifest.xml\&quot;
+   * file of ODF package.
+   */
+<span class="fc" id="L49">  MANIFEST_LISTS_DIRECTORY(</span>
+      &quot;The directory '%2$s' is not a sub-document and should not be listed in the '&quot;
+<span class="fc" id="L51">          + OdfFile.MANIFEST.getPath()</span>
+          + &quot;' file of ODF package%1$s!&quot;),
+  /**
+   * A directory is a document and should be listed in the \&quot;/META-INF/manifest.xml\&quot; file of ODF
+   * package.
+   */
+<span class="fc" id="L57">  MANIFEST_DOES_NOT_LIST_DIRECTORY(</span>
+      &quot;The directory of the sub-document '%2$s' should be listed in the '&quot;
+<span class="fc" id="L59">          + OdfFile.MANIFEST.getPath()</span>
+          + &quot;' file of ODF package%1$s!&quot;),
+  /**
+   * A file shall not be listed in the \&quot;/META-INF/manifest.xml\&quot; file as it does not exist in the
+   * ODF package.
+   */
+<span class="fc" id="L65">  MANIFEST_LISTS_NONEXISTENT_FILE(</span>
+      &quot;The file '%2$s' shall not be listed in the '&quot;
+<span class="fc" id="L67">          + OdfFile.MANIFEST.getPath()</span>
+          + &quot;' file as it does not exist in the ODF package%1$s!&quot;),
+  /**
+   * A file shall be listed in the \&quot;/META-INF/manifest.xml\&quot; file as it exists in the ODF package.
+   */
+<span class="fc" id="L72">  MANIFEST_DOES_NOT_LIST_FILE(</span>
+      &quot;The file '%2$s' shall be listed in the '&quot;
+<span class="fc" id="L74">          + OdfFile.MANIFEST.getPath()</span>
+          + &quot;' file as it exists in the ODF package%1$s!&quot;),
+  /**
+   * The ODF package contains a \&quot;mediatype\&quot; file, which content differs from the mediatype of the
+   * root document!&quot;
+   */
+<span class="fc" id="L80">  MIMETYPE_DIFFERS_FROM_PACKAGE(</span>
+      &quot;The ODF package%1$s contains a '&quot;
+<span class="fc" id="L82">          + OdfFile.MEDIA_TYPE.getPath()</span>
+          + &quot;' file containing '%2$s', which differs from the mediatype of the root document '%3$s'!&quot;),
+  /**
+   * The ODF package contains a \&quot;mediatype\&quot; file, but no mediatype its root document in the
+   * \&quot;/META-INF/manifest.xml\&quot; file of ODF package!
+   */
+<span class="fc" id="L88">  MIMETYPE_WITHOUT_MANIFEST_MEDIATYPE(</span>
+      &quot;The ODF package%1$s contains a '&quot;
+<span class="fc" id="L90">          + OdfFile.MEDIA_TYPE.getPath()</span>
+          + &quot;' file containing '%2$s', but no mediatype for its root document in its '&quot;
+<span class="fc" id="L92">          + OdfFile.MANIFEST.getPath()</span>
+          + &quot;'!&quot;),
+  /**
+   * The root document shall be listed in the \&quot;/META-INF/manifest.xml\&quot; file using a '/' as path
+   * within the ODF package.
+   */
+<span class="fc" id="L98">  MANIFEST_WITH_EMPTY_PATH(</span>
+      &quot;The root document shall be listed in the '&quot;
+<span class="fc" id="L100">          + OdfFile.MANIFEST.getPath()</span>
+          + &quot;' file using a '/' as path within the ODF package%1$s!&quot;),
+  /** There shall be no extra field for the \&quot;mediatype\&quot; file of ODF package. */
+<span class="fc" id="L103">  MIMETYPE_HAS_EXTRA_FIELD(</span>
+      &quot;There shall be no extra field for the '&quot;
+<span class="fc" id="L105">          + OdfFile.MEDIA_TYPE.getPath()</span>
+          + &quot;' file of ODF package%1$s!&quot;),
+  /** The file \&quot;mediatype\&quot; shall not be compressed in the ODF package. */
+<span class="fc" id="L108">  MIMETYPE_IS_COMPRESSED(</span>
+      &quot;The file '&quot;
+<span class="fc" id="L110">          + OdfFile.MEDIA_TYPE.getPath()</span>
+          + &quot;' shall not be compressed in the ODF package%1$s!&quot;),
+  /** The file \&quot;mediatype\&quot; is not the first file in the ODF package. */
+<span class="fc" id="L113">  MIMETYPE_NOT_FIRST_IN_PACKAGE(</span>
+      &quot;The file '&quot;
+<span class="fc" id="L115">          + OdfFile.MEDIA_TYPE.getPath()</span>
+          + &quot;' is not the first file in the ODF package%1$s!&quot;),
+  /** The ODF package contains no \&quot;mediatype\&quot; file. */
+<span class="fc" id="L118">  MIMETYPE_NOT_IN_PACKAGE(</span>
+<span class="fc" id="L119">      &quot;The ODF package%1$s contains no '&quot; + OdfFile.MEDIA_TYPE.getPath() + &quot;' file!&quot;),</span>
+  /** The ODF package shall be a ZIP file. */
+<span class="fc" id="L121">  PACKAGE_IS_NO_ZIP(&quot;The ODF package%1$s shall be a ZIP file!&quot;);</span>
+  private final String mMessage;
+
+  /**
+   * Creates a ODF Package constraint
+   *
+   * @param message of the constraint
+   */
+<span class="fc" id="L129">  OdfPackageConstraint(String message) {</span>
+<span class="fc" id="L130">    mMessage = message;</span>
+<span class="fc" id="L131">  }</span>
+
+  /**
+   * Creates a localized description of a Constraint. Subclasses may override this method in order
+   * to produce a locale-specific message. For subclasses that do not override this method, the
+   * default implementation returns the same result as &lt;code&gt;getMessage()&lt;/code&gt;.
+   *
+   * @return The localized description of this constraint.
+   */
+  public String getLocalizedMessage() {
+    //    FUTURE FEATUE: LOCALIZATION:
+    //    =============================
+    //    There should be a property files e.g. OdfPackageConstraint_de_DE.properties Sourcecode:
+    //    PACKAGE_IS_NO_ZIP=%s muss eine ZIP Datei sein, wie in [ZIP] definiert. Alle Dateien
+    // innerhalbe des ZIPS muessen entwder unkomprimiert (STORED) oder komprimiert sein (DEFLATED)
+    // und den DEFLATE aloritmus verwenden.
+    //    MANIFEST_NOT_IN_PACKAGE=.....
+    //    ResourceBundle bundle = ResourceBundle.getBundle(OdfPackageConstraint.class.getName());
+    //    return bundle.getString(this.name());
+<span class="nc" id="L150">    return mMessage;</span>
+  }
+
+  /**
+   * Returns the detail message string of this Constraint.
+   *
+   * @return the detail message string of this &lt;tt&gt;Constraint&lt;/tt&gt; instance (which may be
+   *     &lt;tt&gt;null&lt;/tt&gt;).
+   */
+  public String getMessage() {
+<span class="fc" id="L160">    return mMessage;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
