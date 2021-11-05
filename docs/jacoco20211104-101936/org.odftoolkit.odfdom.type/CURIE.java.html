@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CURIE.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">CURIE.java</span></div><h1>CURIE.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.regex.Pattern;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype CURIE} */
+public class CURIE implements OdfDataType {
+
+  private String mCURIE;
+<span class="nc" id="L27">  private static final Pattern curiePattern = Pattern.compile(&quot;^(([\\i-[:]][\\c-[:]]*)?:)?.+$&quot;);</span>
+
+  /**
+   * Construct CURIE by the parsing the given string
+   *
+   * @param curie The String to be parsed into CURIE
+   * @throws IllegalArgumentException if the given argument is not a valid CURIE
+   */
+<span class="nc" id="L35">  public CURIE(String curie) throws IllegalArgumentException {</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">    if (!isValid(curie)) {</span>
+<span class="nc" id="L37">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype CURIE&quot;);</span>
+    }
+<span class="nc" id="L39">    mCURIE = curie;</span>
+<span class="nc" id="L40">  }</span>
+
+  /**
+   * Returns a String Object representing this CURIE's value
+   *
+   * @return return a string representation of the value of this CURIE object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L49">    return mCURIE;</span>
+  }
+
+  /**
+   * Returns a CURIE instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a CURIE instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid CURIE
+   */
+  public static CURIE valueOf(String stringValue) throws IllegalArgumentException {
+<span class="nc" id="L60">    return new CURIE(stringValue);</span>
+  }
+
+  /**
+   * check if the specified String is a valid {@odf.datatype CURIE} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype CURIE} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    if ((stringValue == null)</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">        || (!curiePattern.matcher(stringValue).matches() || stringValue.length() &lt; 1)) {</span>
+<span class="nc" id="L73">      return false;</span>
+    } else {
+<span class="nc" id="L75">      return true;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

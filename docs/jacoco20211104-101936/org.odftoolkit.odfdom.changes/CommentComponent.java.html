@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommentComponent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">CommentComponent.java</span></div><h1>CommentComponent.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.LinkedList;
+import java.util.List;
+
+/** The comment component. */
+class CommentComponent extends CachedComponent {
+
+  private static final long serialVersionUID = 1L;
+  private String mCommentName;
+  private String mAuthor;
+  private String mDate;
+  private LinkedList&lt;Integer&gt; mCommentPosition;
+<span class="fc" id="L37">  private boolean isInHeaderFooter = false;</span>
+
+  public boolean isInHeaderFooter() {
+<span class="fc" id="L40">    return isInHeaderFooter;</span>
+  }
+
+  public void setInHeaderFooter() {
+<span class="nc" id="L44">    isInHeaderFooter = true;</span>
+<span class="nc" id="L45">  }</span>
+
+<span class="fc" id="L47">  public CommentComponent(List&lt;Integer&gt; start, String commentName) {</span>
+<span class="fc" id="L48">    mCommentPosition = new LinkedList&lt;Integer&gt;(start);</span>
+<span class="fc" id="L49">    mCommentName = commentName;</span>
+<span class="fc" id="L50">  }</span>
+
+  public LinkedList&lt;Integer&gt; getComponentPosition() {
+<span class="fc" id="L53">    return mCommentPosition;</span>
+  }
+
+  public String getCommentName() {
+<span class="fc" id="L57">    return mCommentName;</span>
+  }
+
+  public void setAuthor(String a) {
+<span class="fc" id="L61">    mAuthor = a;</span>
+<span class="fc" id="L62">  }</span>
+
+  public void setDate(String a) {
+<span class="fc" id="L65">    mDate = a;</span>
+<span class="fc" id="L66">  }</span>
+
+  public String getAuthor() {
+<span class="fc" id="L69">    return mAuthor;</span>
+  }
+
+  public String getDate() {
+<span class="fc" id="L73">    return mDate;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

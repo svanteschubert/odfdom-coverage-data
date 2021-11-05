@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Table.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">Table.java</span></div><h1>Table.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.doc.table.OdfTable;
+import org.odftoolkit.odfdom.doc.table.OdfTableRow;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.OdfStylableElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTableColumnPropertiesElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTablePropertiesElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableHeaderColumnsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableHeaderRowsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowsElement;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.type.Length;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * A MultiCoomponent uses a single XML element to represent multiple components. This container can
+ * be used for spreadsheet row and cell components using repeated elements via an attribute.
+ *
+ * @author svante.schubertATgmail.com
+ */
+public class Table&lt;T&gt; extends Component {
+
+  public Table(OdfElement componentElement, Component parent) {
+<span class="fc" id="L55">    super(componentElement, parent);</span>
+<span class="fc" id="L56">  }</span>
+
+<span class="fc" id="L58">  private static final Logger LOG = Logger.getLogger(Table.class.getName());</span>
+  /** Used to indicate that the end position is not existing */
+  public static final int ETERNITY = -1;
+  /**
+   * Used to indicate that the start position is before the table If a column is inserted in the
+   * first place, there is no prior column to inherit styles from.
+   */
+  static final int BEFORE_START = -1;
+
+  /**
+   * The maximal number of rows being generated. Unspecified by ODF but commonly used. Counting
+   * starts with 0.
+   */
+<span class="fc" id="L71">  public static final Integer MAX_ROW_NUMBER = 1048576;</span>
+
+  /**
+   * The maximal number of columns being generated. Unspecified by ODF but commonly used. Counting
+   * starts with 0.
+   */
+<span class="fc" id="L77">  public static final Integer MAX_COLUMN_NUMBER_CALC =</span>
+<span class="fc" id="L78">      1024; // 2^10 There is only a flag in Calc that was changed for having Excel Size.</span>
+
+<span class="fc" id="L80">  public static final Integer MAX_COLUMN_NUMBER_EXCEL = 16384; // 2^16</span>
+
+  /**
+   * A multiple components can be represented by a single XML element
+   *
+   * @return the number of components the elements represents
+   */
+  @Override
+  public int repetition() {
+<span class="nc" id="L89">    return mRootElement.getRepetition();</span>
+  }
+
+  @Override
+  // TABLE ONLY -- Svante REMOVE THIS LATER AS THIS IT IS ONLY USED BY TABLES
+  public List getChildren() {
+<span class="nc" id="L95">    return list(this);</span>
+  }
+
+  // Svante ToDo: After all the refactoring this looks like something to change after the release as
+  // well.
+  private List&lt;Component&gt; list(final Table tableComponent) {
+<span class="nc" id="L101">    return new AbstractList&lt;Component&gt;() {</span>
+      @Override
+      public int size() {
+<span class="nc" id="L104">        return tableComponent.size();</span>
+      }
+
+      @Override
+      public Component get(int index) {
+<span class="nc" id="L109">        Component c = null;</span>
+<span class="nc" id="L110">        TableTableElement tableRoot = (TableTableElement) tableComponent.getRootElement();</span>
+<span class="nc" id="L111">        OdfTable table = OdfTable.getInstance(tableRoot);</span>
+<span class="nc" id="L112">        OdfTableRow row = table.getRowByIndex(index);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (row != null) {</span>
+<span class="nc" id="L114">          c = row.getOdfElement().getComponent();</span>
+        }
+<span class="nc" id="L116">        return c;</span>
+      }
+    };
+  }
+
+  /**
+   * Adds the given component to the root element
+   *
+   * @param c the component of the row to be added
+   */
+  @Override
+  public void addChild(int index, Component c) {
+<span class="nc" id="L128">    mRootElement.insert(c.getRootElement(), index);</span>
+    // 2DO: Svante: ARE THE ABOVE AND THE BELOW EQUIVALENT?
+    //		OdfElement rootElement = c.getRootElement();
+    //		if (index &gt;= 0) {
+    //			mRootElement.insertBefore(rootElement, ((OdfElement) mRootElement).receiveNode(index));
+    //		} else {
+    //			mRootElement.appendChild(rootElement);
+    //		}
+<span class="nc" id="L136">  }</span>
+
+  /**
+   * @param index the position of the row being returned
+   * @return either a text node of size 1 or an element being the root element of a component
+   */
+  @Override
+  public Node getChildNode(int index) {
+<span class="fc" id="L144">    return mRootElement.receiveNode(index);</span>
+  }
+
+  /**
+   * Removes a component from the text element container. Removes either an element representing a
+   * component or text node of size 1
+   *
+   * @param index row position to be removed
+   * @return the row being removed
+   */
+  @Override
+  public Node remove(int index) {
+<span class="nc" id="L156">    Node node = this.getChildNode(index);</span>
+<span class="nc" id="L157">    return mRootElement.removeChild(node);</span>
+  }
+
+  /**
+   * All children of the root element will be traversed. If it is a text node the size is added, if
+   * it is an element and a component a size of one is added, if it is a marker, for known text
+   * marker elements (text:span, text:bookmark) the children are recursive checked
+   *
+   * @return the number of child components
+   */
+  @Override
+  public int size() {
+<span class="nc" id="L169">    OdfTable table = OdfTable.getInstance((TableTableElement) mRootElement);</span>
+<span class="nc" id="L170">    return table.getRowCount();</span>
+  }
+
+  /** @return a property value. */
+  //	private String getPropertyValue(OdfStyleProperty prop) {
+  //		String value = null;
+  //
+  //		OdfStylePropertiesBase properties = getPropertiesElement(prop.getPropertySet());
+  //		if (properties != null) {
+  //			if (properties.hasAttributeNS(prop.getName().getUri(), prop.getName().getLocalName())) {
+  //				return properties.getOdfAttribute(prop.getName()).getValue();
+  //			}
+  //		}
+  //
+  //		OdfStyleBase parent = getParentStyle();
+  //		if (parent != null) {
+  //			return parent.getProperty(prop);
+  //		}
+  //
+  //		return value;
+  //	}
+  public static String getProperty(OdfStyleProperty prop, OdfStylableElement element) {
+<span class="fc" id="L192">    String value = null;</span>
+<span class="fc" id="L193">    OdfStyle style = element.getAutomaticStyle();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">    if (style == null) {</span>
+<span class="fc" id="L195">      element.getOrCreateUnqiueAutomaticStyle();</span>
+<span class="fc" id="L196">      style = element.getAutomaticStyle();</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">      if (style == null) {</span>
+<span class="nc" id="L198">        style = element.getDocumentStyle();</span>
+      }
+    }
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">    if (style != null) {</span>
+<span class="fc" id="L202">      value = style.getProperty(prop);</span>
+    }
+<span class="fc" id="L204">    return value;</span>
+  }
+
+  private static Length getPropertyLength(OdfStyleProperty prop, OdfStylableElement element) {
+<span class="fc" id="L208">    Length length = null;</span>
+<span class="fc" id="L209">    String propValue = getProperty(prop, element);</span>
+<span class="fc bfc" id="L210" title="All 4 branches covered.">    if (propValue != null &amp;&amp; !propValue.isEmpty()) {</span>
+<span class="fc" id="L211">      length = new Length(propValue);</span>
+    }
+<span class="fc" id="L213">    return length;</span>
+  }
+
+  public static List&lt;Integer&gt; collectColumnWidths(
+      TableTableElement tableElement, List&lt;TableTableColumnElement&gt; columns) {
+<span class="fc" id="L218">    boolean hasRelColumnWidth = false;</span>
+<span class="fc" id="L219">    boolean hasAbsColumnWidth = false;</span>
+<span class="fc" id="L220">    boolean hasColumnWithoutWidth = false;</span>
+<span class="fc" id="L221">    List&lt;Integer&gt; columnRelWidths = new ArrayList();</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">    for (TableTableColumnElement column : columns) {</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">      if (column.hasAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;style-name&quot;)) {</span>
+<span class="fc" id="L224">        Length tableWidth = getPropertyLength(StyleTablePropertiesElement.Width, tableElement);</span>
+
+<span class="fc" id="L226">        int repeatedColumns = 1;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (column.hasAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;)) {</span>
+<span class="fc" id="L228">          repeatedColumns =</span>
+<span class="fc" id="L229">              Integer.parseInt(</span>
+<span class="fc" id="L230">                  column.getAttributeNS(</span>
+<span class="fc" id="L231">                      OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;));</span>
+        }
+
+<span class="fc" id="L234">        String columnRelWidth =</span>
+<span class="fc" id="L235">            getProperty(StyleTableColumnPropertiesElement.RelColumnWidth, column);</span>
+
+        // it is being assumed, when the columnRelWidth is once set, it is always set
+<span class="pc bpc" id="L238" title="1 of 4 branches missed.">        if (columnRelWidth != null &amp;&amp; !columnRelWidth.isEmpty()) {</span>
+<span class="fc" id="L239">          hasRelColumnWidth = true;</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">          if (hasAbsColumnWidth) {</span>
+<span class="nc" id="L241">            LOG.warning(</span>
+                &quot;******* BEWARE: Absolute and relative width are not supposed to be mixed!! ***********&quot;);
+          }
+<span class="fc" id="L244">          columnRelWidth = columnRelWidth.substring(0, columnRelWidth.indexOf('*'));</span>
+<span class="fc" id="L245">          Integer relWidth = Integer.parseInt(columnRelWidth);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">          for (int i = 0; i &lt; repeatedColumns; i++) {</span>
+<span class="fc" id="L247">            columnRelWidths.add(relWidth);</span>
+          }
+<span class="fc" id="L249">        } else { // if there is no relative column width</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">          if (hasRelColumnWidth) {</span>
+<span class="nc" id="L251">            LOG.warning(</span>
+                &quot;******* BEWARE: Absolute and relative width are not supposed to be mixed!! ***********&quot;);
+          }
+
+<span class="fc" id="L255">          Length columnWidth =</span>
+<span class="fc" id="L256">              getPropertyLength(StyleTableColumnPropertiesElement.ColumnWidth, column);</span>
+          // there can be only table width and ..
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">          if (tableWidth != null) {</span>
+            // columnwidth, with a single one missing
+<span class="fc bfc" id="L260" title="All 2 branches covered.">            if (columnWidth != null) {</span>
+<span class="fc" id="L261">              hasAbsColumnWidth = true;</span>
+<span class="fc" id="L262">              int widthFactor =</span>
+                  (int)
+<span class="fc" id="L264">                      Math.round(</span>
+<span class="fc" id="L265">                          (columnWidth.getMillimeters() * 100) / tableWidth.getMillimeters());</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">              for (int i = 0; i &lt; repeatedColumns; i++) {</span>
+<span class="fc" id="L267">                columnRelWidths.add(widthFactor);</span>
+              }
+<span class="fc" id="L269">            } else {</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">              if (hasColumnWithoutWidth) {</span>
+<span class="fc" id="L271">                LOG.warning(</span>
+                    &quot;******* BEWARE: Two columns without width and no column width are not expected!! ***********&quot;);
+              }
+<span class="fc" id="L274">              hasColumnWithoutWidth = true;</span>
+            }
+            // if the table is not set, it will always be unset..
+          } else {
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            if (columnWidth != null) {</span>
+<span class="nc" id="L279">              hasAbsColumnWidth = true;</span>
+<span class="nc" id="L280">              int widthFactor = (int) Math.round((columnWidth.getMicrometer() * 10));</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">              for (int i = 0; i &lt; repeatedColumns; i++) {</span>
+<span class="nc" id="L282">                columnRelWidths.add(widthFactor);</span>
+              }
+<span class="nc" id="L284">            } else {</span>
+<span class="nc" id="L285">              LOG.warning(</span>
+                  &quot;******* BEWARE: Two columns without width and no column width are not expected!! ***********&quot;);
+            }
+          }
+        }
+      }
+<span class="fc" id="L291">    }</span>
+<span class="fc" id="L292">    return columnRelWidths;</span>
+  }
+
+  static void stashColumnWidths(TableTableElement tableElement) {
+<span class="fc" id="L296">    List&lt;TableTableColumnElement&gt; existingColumnList =</span>
+<span class="fc" id="L297">        Table.getTableColumnElements(tableElement, new LinkedList&lt;TableTableColumnElement&gt;());</span>
+<span class="fc" id="L298">    List&lt;Integer&gt; tableColumWidths = collectColumnWidths(tableElement, existingColumnList);</span>
+<span class="fc" id="L299">    tableElement.pushTableGrid(tableColumWidths);</span>
+<span class="fc" id="L300">  }</span>
+
+  /**
+   * Returns all TableTableColumn descendants that exist within the tableElement, even within
+   * groups, columns and header elements
+   */
+  public static List&lt;TableTableColumnElement&gt; getTableColumnElements(Element parent, List columns) {
+<span class="fc" id="L307">    NodeList children = parent.getChildNodes();</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">    for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L309">      Node child = children.item(i);</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">      if (child instanceof Element) {</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        if (child instanceof TableTableColumnElement) {</span>
+<span class="fc" id="L312">          columns.add(child);</span>
+<span class="pc bpc" id="L313" title="2 of 6 branches missed.">        } else if (child instanceof TableTableColumnGroupElement</span>
+            || child instanceof TableTableHeaderColumnsElement
+            || child instanceof TableTableColumnsElement) {
+<span class="fc" id="L316">          columns = getTableColumnElements((Element) child, columns);</span>
+<span class="pc bpc" id="L317" title="5 of 8 branches missed.">        } else if (child instanceof TableTableRowGroupElement</span>
+            || child instanceof TableTableHeaderRowsElement
+            || child instanceof TableTableRowElement
+            || child instanceof TableTableRowsElement) {
+<span class="nc" id="L321">          break;</span>
+        }
+      }
+    }
+<span class="fc" id="L325">    return columns;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

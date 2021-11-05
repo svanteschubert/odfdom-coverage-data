@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Duration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">Duration.java</span></div><h1>Duration.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype duration} */
+public class Duration implements OdfFieldDataType, OdfDataType {
+
+  private javax.xml.datatype.Duration mDurationType;
+
+  /**
+   * Construct DurationType by the parsing the given string
+   *
+   * @param duration The String to be parsed into DurationType
+   * @throws IllegalArgumentException if the given argument is not a valid Duration
+   */
+<span class="fc" id="L42">  public Duration(javax.xml.datatype.Duration duration) throws IllegalArgumentException {</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">    if (duration == null) {</span>
+<span class="nc" id="L44">      throw new IllegalArgumentException(&quot;parameter can not be null for duration&quot;);</span>
+    }
+
+    // validate 'duration' type which is defined in W3C schema
+    // http://www.w3.org/TR/xmlschema-2/#duration
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">    if (!W3CSchemaType.isValid(&quot;duration&quot;, duration.toString())) {</span>
+<span class="nc" id="L50">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype duration&quot;);</span>
+    }
+<span class="fc" id="L52">    mDurationType = duration;</span>
+<span class="fc" id="L53">  }</span>
+
+  /**
+   * Returns a String Object representing this DurationType's value
+   *
+   * @return return a string representation of the value of this DurationType object
+   */
+  @Override
+  public String toString() {
+<span class="fc" id="L62">    return mDurationType.toString();</span>
+  }
+
+  /**
+   * Returns a DurationType instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a DurationType instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid Duration
+   */
+  public static Duration valueOf(String stringValue) throws IllegalArgumentException {
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L74">      throw new IllegalArgumentException(&quot;parameter can not be null for Duration&quot;);</span>
+    }
+
+    try {
+<span class="fc" id="L78">      DatatypeFactory aFactory = DatatypeFactory.newInstance();</span>
+<span class="fc" id="L79">      return new Duration(aFactory.newDuration(stringValue));</span>
+<span class="nc" id="L80">    } catch (DatatypeConfigurationException ex1) {</span>
+<span class="nc" id="L81">      Logger.getLogger(Duration.class.getName())</span>
+<span class="nc" id="L82">          .log(Level.SEVERE, &quot;DatatypeFactory can not be instanced&quot;, ex1);</span>
+<span class="nc" id="L83">      return null;</span>
+<span class="nc" id="L84">    } catch (IllegalArgumentException ex2) {</span>
+<span class="nc" id="L85">      Logger.getLogger(Duration.class.getName())</span>
+<span class="nc" id="L86">          .log(Level.SEVERE, &quot;parameter is invalid for datatype Duration&quot;, ex2);</span>
+<span class="nc" id="L87">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype Duration&quot;);</span>
+    }
+  }
+
+  /**
+   * Returns the value of this DurationType object as an Duration
+   *
+   * @return the Duration value of this DurationType object.
+   */
+  public javax.xml.datatype.Duration getValue() {
+<span class="nc" id="L97">    return mDurationType;</span>
+  }
+
+  /**
+   * check if the specified Duration instance is a valid {@odf.datatype duration} data type
+   *
+   * @param duration the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype duration} data type false
+   *     otherwise
+   */
+  public static boolean isValid(javax.xml.datatype.Duration duration) {
+<span class="nc" id="L108">    boolean isDuration = false;</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">    if (duration != null) {</span>
+<span class="nc" id="L110">      isDuration = W3CSchemaType.isValid(&quot;duration&quot;, duration.toString());</span>
+    }
+<span class="nc" id="L112">    return isDuration;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

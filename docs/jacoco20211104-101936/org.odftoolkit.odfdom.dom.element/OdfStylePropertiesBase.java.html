@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStylePropertiesBase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom.element</a> &gt; <span class="el_source">OdfStylePropertiesBase.java</span></div><h1>OdfStylePropertiesBase.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom.element;
+
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.w3c.dom.DOMException;
+
+/**
+ * Base class for those ODF element having several ODF style attributes. NOTE: We call style
+ * attribute commonly style properties.
+ */
+public abstract class OdfStylePropertiesBase extends OdfElement {
+  /** Base class for all ODF elements having style attributes (we call properties). */
+  private static final long serialVersionUID = -6575728390842696683L;
+
+  /** Creates a new instance of OdfStyleProperties */
+  public OdfStylePropertiesBase(OdfFileDom ownerDocument, String namespaceURI, String qualifiedName)
+      throws DOMException {
+<span class="nc" id="L42">    super(ownerDocument, namespaceURI, qualifiedName);</span>
+<span class="nc" id="L43">  }</span>
+
+  /** Creates a new instance of OdfStyleProperties */
+  public OdfStylePropertiesBase(OdfFileDom ownerDocument, OdfName aName) throws DOMException {
+<span class="fc" id="L47">    super(ownerDocument, aName);</span>
+<span class="fc" id="L48">  }</span>
+
+  @Override
+  public int hashCode() {
+<span class="fc" id="L52">    return getOdfName().hashCode() + 7;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

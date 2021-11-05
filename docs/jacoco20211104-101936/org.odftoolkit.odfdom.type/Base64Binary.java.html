@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Base64Binary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">Base64Binary.java</span></div><h1>Base64Binary.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import org.apache.xerces.impl.dv.util.Base64;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype base64Binary} */
+public class Base64Binary implements OdfDataType {
+
+  private byte[] mByteList;
+
+  /**
+   * Construct an newly Base64Binary object that represents the specified byte[] value
+   *
+   * @param bytes the value to be represented by the Base64Binary Object
+   * @throws NumberFormatException If the parameter is not a valid Base64Binary.
+   */
+<span class="fc" id="L34">  public Base64Binary(byte[] bytes) throws NumberFormatException {</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">    if (bytes == null) {</span>
+<span class="nc" id="L36">      throw new NumberFormatException(&quot;parameter can not be null for Base64Binary&quot;);</span>
+    }
+
+    // validate 'base64Binary' type which is defined in W3C schema
+    // http://www.w3.org/TR/xmlschema-2/#base64Binary
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">    if (!W3CSchemaType.isValid(&quot;base64Binary&quot;, Base64.encode(bytes))) {</span>
+<span class="nc" id="L42">      throw new NumberFormatException(&quot;parameter is invalid for datatype base64Binary&quot;);</span>
+    }
+<span class="fc" id="L44">    mByteList = bytes;</span>
+<span class="fc" id="L45">  }</span>
+
+  /**
+   * Returns a String Object representing this Base64Binary's value
+   *
+   * @return return a string representation of the value of this Base64Binary object
+   */
+  @Override
+  public String toString() {
+<span class="fc" id="L54">    return Base64.encode(mByteList);</span>
+  }
+
+  /**
+   * Returns a Base64Binary instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a Base64Binary instance representing stringValue
+   * @throws NumberFormatException If the parameter is not a valid Base64Binary.
+   */
+  public static Base64Binary valueOf(String stringValue) throws NumberFormatException {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L66">      throw new NumberFormatException(&quot;parameter can not be null for Base64Binary&quot;);</span>
+    }
+<span class="fc" id="L68">    return new Base64Binary(Base64.decode(stringValue));</span>
+  }
+
+  /**
+   * get byte[] from Base64Binary
+   *
+   * @return byte[] returned from this Base64Binary instance
+   */
+  public byte[] getBytes() {
+<span class="fc" id="L77">    return mByteList;</span>
+  }
+
+  /**
+   * check if the specified String is a valid {@odf.datatype base64Binary} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype base64Binary} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L89">      return false;</span>
+    } else {
+<span class="fc" id="L91">      return W3CSchemaType.isValid(&quot;base64Binary&quot;, stringValue);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

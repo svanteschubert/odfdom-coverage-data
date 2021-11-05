@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValueType.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">ValueType.java</span></div><h1>ValueType.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype valueType} */
+<span class="nc" id="L22">public enum ValueType implements OdfDataType {</span>
+<span class="nc" id="L23">  STRING(&quot;string&quot;),</span>
+<span class="nc" id="L24">  TIME(&quot;time&quot;),</span>
+<span class="nc" id="L25">  CURRENCY(&quot;currency&quot;),</span>
+<span class="nc" id="L26">  FLOAT(&quot;float&quot;),</span>
+<span class="nc" id="L27">  DATE(&quot;date&quot;),</span>
+<span class="nc" id="L28">  BOOLEAN(&quot;boolean&quot;),</span>
+<span class="nc" id="L29">  PERCENTAGE(&quot;percentage&quot;);</span>
+  private String mValue;
+
+<span class="nc" id="L32">  ValueType(String aValue) {</span>
+<span class="nc" id="L33">    mValue = aValue;</span>
+<span class="nc" id="L34">  }</span>
+
+  /**
+   * gets the name of this enum.
+   *
+   * @return return the name of ValueType
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L43">    return mValue;</span>
+  }
+
+  /**
+   * enum to String, gets the name of this enum constant as a string.
+   *
+   * @param aEnum the constant of ValueType
+   * @return return the name of ValueType
+   */
+  public static String toString(ValueType aEnum) {
+<span class="nc" id="L53">    return aEnum.toString();</span>
+  }
+
+  /**
+   * String to enum, turns a String into its corresponding enum constant
+   *
+   * @param stringValue the name of ValueType
+   * @return return the constant of ValueType
+   */
+  public static ValueType enumValueOf(String stringValue) {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    for (ValueType aIter : values()) {</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">      if (stringValue.equals(aIter.toString())) {</span>
+<span class="nc" id="L65">        return aIter;</span>
+      }
+    }
+<span class="nc" id="L68">    return null;</span>
+  }
+
+  /**
+   * check if the specified String is a valid {@odf.datatype valueType} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype valueType} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    if (stringValue == null) {</span>
+<span class="nc" id="L80">      return false;</span>
+    }
+
+<span class="nc bnc" id="L83" title="All 2 branches missed.">    if (ValueType.enumValueOf(stringValue) != null) {</span>
+<span class="nc" id="L84">      return true;</span>
+    } else {
+<span class="nc" id="L86">      return false;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfStylesDom.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom</a> &gt; <span class="el_source">OdfStylesDom.java</span></div><h1>OdfStylesDom.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom;
+
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
+import org.odftoolkit.odfdom.changes.ChangesFileSaxHandler;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.doc.OdfTextDocument;
+import org.odftoolkit.odfdom.dom.element.office.OfficeAutomaticStylesElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeDocumentStylesElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeMasterStylesElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeStylesElement;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeMasterStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.pkg.NamespaceName;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfFileSaxHandler;
+import org.odftoolkit.odfdom.pkg.OdfPackageDocument;
+import org.odftoolkit.odfdom.pkg.OdfValidationException;
+import org.w3c.dom.Node;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+
+/** The DOM representation of the ODF styles.xml file of an ODF document. */
+public class OdfStylesDom extends OdfFileDom {
+
+  private static final long serialVersionUID = 766167617530147886L;
+
+  /**
+   * Creates the DOM representation of an XML file of an Odf document.
+   *
+   * @param odfDocument the document the XML files belongs to
+   * @param packagePath the internal package path to the XML file
+   */
+  public OdfStylesDom(OdfSchemaDocument odfDocument, String packagePath) {
+<span class="fc" id="L64">    super(odfDocument, packagePath);</span>
+<span class="fc" id="L65">  }</span>
+
+  /** Might be used to initialize specific XML Namespace prefixes/URIs for this XML file */
+  @Override
+  protected void initialize() throws SAXException, IOException, ParserConfigurationException {
+<span class="fc bfc" id="L70" title="All 2 branches covered.">    for (NamespaceName name : OdfDocumentNamespace.values()) {</span>
+<span class="fc" id="L71">      mUriByPrefix.put(name.getPrefix(), name.getUri());</span>
+<span class="fc" id="L72">      mPrefixByUri.put(name.getUri(), name.getPrefix());</span>
+    }
+    try {
+<span class="fc bfc" id="L75" title="All 2 branches covered.">      if (mPackageDocument instanceof OdfTextDocument</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">          &amp;&amp; ((OdfDocument) mPackageDocument).hasCollaboration()) {</span>
+<span class="fc" id="L77">        super.initialize(new ChangesFileSaxHandler(this), this);</span>
+      } else {
+<span class="fc" id="L79">        super.initialize(new OdfFileSaxHandler(this), this);</span>
+      }
+<span class="nc" id="L81">    } catch (IOException | ParserConfigurationException | SAXException ex) {</span>
+<span class="nc" id="L82">      Logger.getLogger(OdfPackageDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L83">      OdfValidationException ve =</span>
+          new OdfValidationException(
+              OdfSchemaConstraint.DOCUMENT_WITH_EXISTENT_BUT_UNREADABLE_CONTENT_OR_STYLES_XML,
+<span class="nc" id="L86">              mPackage.getBaseURI(),</span>
+              ex,
+<span class="nc" id="L88">              OdfSchemaDocument.OdfXMLFile.STYLES.getFileName());</span>
+<span class="nc" id="L89">      ErrorHandler eh = mPackage.getErrorHandler();</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">      if (eh != null) {</span>
+        try {
+<span class="nc" id="L92">          eh.error(ve);</span>
+<span class="nc" id="L93">        } catch (SAXException ex1) {</span>
+<span class="nc" id="L94">          Logger.getLogger(OdfStylesDom.class.getName()).log(Level.SEVERE, null, ex1);</span>
+<span class="nc" id="L95">          throw ex1;</span>
+<span class="nc" id="L96">        }</span>
+      }
+<span class="fc" id="L98">    }</span>
+<span class="fc" id="L99">  }</span>
+
+  /**
+   * Retrieves the Odf Document
+   *
+   * @return The &lt;code&gt;OdfDocument&lt;/code&gt;
+   */
+  @Override
+  public OdfSchemaDocument getDocument() {
+<span class="fc" id="L108">    return (OdfSchemaDocument) mPackageDocument;</span>
+  }
+
+  /**
+   * * @return The root element &lt;office:document-styles&gt; of the styles.xml file as &lt;code&gt;
+   * OfficeDocumentStylesElement&lt;/code&gt;.
+   */
+  @Override
+  public OfficeDocumentStylesElement getRootElement() {
+<span class="fc" id="L117">    return (OfficeDocumentStylesElement) getDocumentElement();</span>
+  }
+
+  /**
+   * Creates an JDK &lt;code&gt;XPath&lt;/code&gt; instance. Initialized with ODF namespaces from &lt;code&gt;
+   * OdfDocumentNamespace&lt;/code&gt;. Updated with all namespace of the XML file.
+   *
+   * @return an XPath instance with namespace context set to include the standard ODFDOM prefixes.
+   */
+  @Override
+  public XPath getXPath() {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">    if (mXPath == null) {</span>
+<span class="fc" id="L129">      mXPath = XPathFactory.newInstance().newXPath();</span>
+<span class="fc" id="L130">      mXPath.setNamespaceContext(this);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">      for (NamespaceName name : OdfDocumentNamespace.values()) {</span>
+<span class="fc" id="L132">        mUriByPrefix.put(name.getPrefix(), name.getUri());</span>
+<span class="fc" id="L133">        mPrefixByUri.put(name.getUri(), name.getPrefix());</span>
+      }
+    }
+<span class="fc" id="L136">    return mXPath;</span>
+  }
+
+  // ToDo bug 72 - STYLE REFACTORING - THE FOLLOWING METHODS WILL BE RE/MOVED
+  // As Package layer should not refer to DOM/DOC layer and DOM files should not
+  // handle automatic styles the upcoming DOM Document should capsulate this.
+  /**
+   * @return the style:office-styles element of this dom. May return null if there is not yet such
+   *     element in this dom.
+   * @see #getOrCreateAutomaticStyles()
+   */
+  public OdfOfficeStyles getOfficeStyles() {
+<span class="fc" id="L148">    return OdfElement.findFirstChildNode(OdfOfficeStyles.class, getFirstChild());</span>
+  }
+
+  /**
+   * Retrieve the ODF OfficeStyles
+   *
+   * @return the {
+   * @odf.element office:styles} element of this dom or creates a new one.
+   */
+  public OdfOfficeStyles getOrCreateOfficeStyles() {
+<span class="fc" id="L158">    OdfOfficeStyles officeStyles = getOfficeStyles();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">    if (officeStyles == null) {</span>
+<span class="fc" id="L160">      officeStyles = newOdfElement(OfficeStylesElement.class);</span>
+
+<span class="fc" id="L162">      Node parent = getFirstChild();</span>
+
+      /* from the ODF 1.2 schema
+          &lt;define name=&quot;office-document-styles&quot;&gt;
+              &lt;element name=&quot;office:document-styles&quot;&gt;
+                  &lt;ref name=&quot;office-document-common-attrs&quot;/&gt;
+                  &lt;ref name=&quot;office-font-face-decls&quot;/&gt;
+                  &lt;ref name=&quot;office-styles&quot;/&gt;
+                  &lt;ref name=&quot;office-automatic-styles&quot;/&gt;
+                  &lt;ref name=&quot;office-master-styles&quot;/&gt;
+              &lt;/element&gt;
+          &lt;/define&gt;
+      */
+<span class="fc" id="L175">      OdfElement sibling = OdfElement.findFirstChildNode(OdfOfficeAutomaticStyles.class, parent);</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">      if (sibling != null) {</span>
+<span class="nc" id="L177">        parent.insertBefore(officeStyles, sibling);</span>
+      } else {
+<span class="fc" id="L179">        sibling = OdfElement.findFirstChildNode(OdfOfficeMasterStyles.class, parent);</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (sibling != null) {</span>
+<span class="nc" id="L181">          parent.insertBefore(officeStyles, sibling);</span>
+        } else {
+<span class="fc" id="L183">          parent.appendChild(officeStyles);</span>
+        }
+      }
+    }
+<span class="fc" id="L187">    return officeStyles;</span>
+  }
+
+  /**
+   * Retrieve the ODF AutomaticStyles
+   *
+   * @return the {
+   * @odf.element office:automatic-styles} element of this dom. May return null if there is not yet
+   *     such element in this dom.
+   * @see #getOrCreateAutomaticStyles()
+   */
+  public OfficeAutomaticStylesElement getAutomaticStyles() {
+<span class="fc" id="L199">    return OdfElement.findFirstChildNode(OfficeAutomaticStylesElement.class, getFirstChild());</span>
+  }
+
+  /**
+   * Retrieve the ODF MasterStyles
+   *
+   * @return the {
+   * @odf.element office:master-styles} element of this dom. May return null if there is not yet
+   *     such element in this dom.
+   */
+  public OfficeMasterStylesElement getMasterStyles() {
+<span class="fc" id="L210">    return OdfElement.findFirstChildNode(OfficeMasterStylesElement.class, getFirstChild());</span>
+  }
+
+  /**
+   * Retrieve the ODF MasterStyles
+   *
+   * @return the {
+   * @odf.element office:master-styles} element of this dom or creates a new one.
+   */
+  public OfficeMasterStylesElement getOrCreateMasterStyles() {
+<span class="fc" id="L220">    OfficeMasterStylesElement masterStyles = getMasterStyles();</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">    if (masterStyles == null) {</span>
+<span class="fc" id="L222">      masterStyles = newOdfElement(OfficeMasterStylesElement.class);</span>
+<span class="fc" id="L223">      Node parent = getFirstChild();</span>
+      /* from the ODF 1.2 schema
+          &lt;define name=&quot;office-document-styles&quot;&gt;
+              &lt;element name=&quot;office:document-styles&quot;&gt;
+                  &lt;ref name=&quot;office-document-common-attrs&quot;/&gt;
+                  &lt;ref name=&quot;office-font-face-decls&quot;/&gt;
+                  &lt;ref name=&quot;office-styles&quot;/&gt;
+                  &lt;ref name=&quot;office-automatic-styles&quot;/&gt;
+                  &lt;ref name=&quot;office-master-styles&quot;/&gt;
+              &lt;/element&gt;
+          &lt;/define&gt;
+      */
+<span class="fc" id="L235">      parent.appendChild(masterStyles);</span>
+    }
+<span class="fc" id="L237">    return masterStyles;</span>
+  }
+
+  /**
+   * @return the {
+   * @odf.element style:automatic-styles} element of this dom. If it does not yet exists, a new one
+   *     is inserted into the dom and returned.
+   */
+  public OdfOfficeAutomaticStyles getOrCreateAutomaticStyles() {
+
+<span class="fc" id="L247">    OdfOfficeAutomaticStyles automaticStyles = getAutomaticStyles();</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">    if (automaticStyles == null) {</span>
+<span class="fc" id="L249">      automaticStyles = newOdfElement(OfficeAutomaticStylesElement.class);</span>
+
+<span class="fc" id="L251">      Node parent = getFirstChild();</span>
+
+      /* from the ODF 1.2 schema
+          &lt;define name=&quot;office-document-styles&quot;&gt;
+              &lt;element name=&quot;office:document-styles&quot;&gt;
+                  &lt;ref name=&quot;office-document-common-attrs&quot;/&gt;
+                  &lt;ref name=&quot;office-font-face-decls&quot;/&gt;
+                  &lt;ref name=&quot;office-styles&quot;/&gt;
+                  &lt;ref name=&quot;office-automatic-styles&quot;/&gt;
+                  &lt;ref name=&quot;office-master-styles&quot;/&gt;
+              &lt;/element&gt;
+          &lt;/define&gt;
+      */
+<span class="fc" id="L264">      OdfElement sibling = OdfElement.findFirstChildNode(OdfOfficeMasterStyles.class, parent);</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">      if (sibling != null) {</span>
+<span class="fc" id="L266">        parent.insertBefore(automaticStyles, sibling);</span>
+      } else {
+<span class="nc" id="L268">        parent.appendChild(automaticStyles);</span>
+      }
+    }
+<span class="fc" id="L271">    return automaticStyles;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

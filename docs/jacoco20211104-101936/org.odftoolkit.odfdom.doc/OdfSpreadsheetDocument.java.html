@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfSpreadsheetDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc</a> &gt; <span class="el_source">OdfSpreadsheetDocument.java</span></div><h1>OdfSpreadsheetDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.List;
+import org.odftoolkit.odfdom.doc.table.OdfTable;
+import org.odftoolkit.odfdom.dom.element.office.OfficeSpreadsheetElement;
+import org.odftoolkit.odfdom.pkg.MediaType;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.xml.sax.SAXException;
+
+/** This class represents an empty ODF spreadsheet document. */
+public class OdfSpreadsheetDocument extends OdfDocument {
+
+  private static final String EMPTY_SPREADSHEET_DOCUMENT_PATH = &quot;/OdfSpreadsheetDocument.ods&quot;;
+<span class="fc" id="L39">  static final Resource EMPTY_SPREADSHEET_DOCUMENT_RESOURCE =</span>
+      new Resource(EMPTY_SPREADSHEET_DOCUMENT_PATH);
+
+  /** This enum contains all possible media types of OdfSpreadsheetDocument documents. */
+<span class="fc" id="L43">  public enum OdfMediaType implements MediaType {</span>
+<span class="fc" id="L44">    SPREADSHEET(OdfDocument.OdfMediaType.SPREADSHEET),</span>
+<span class="fc" id="L45">    SPREADSHEET_TEMPLATE(OdfDocument.OdfMediaType.SPREADSHEET_TEMPLATE);</span>
+    private final OdfDocument.OdfMediaType mMediaType;
+
+<span class="fc" id="L48">    OdfMediaType(OdfDocument.OdfMediaType mediaType) {</span>
+<span class="fc" id="L49">      this.mMediaType = mediaType;</span>
+<span class="fc" id="L50">    }</span>
+
+    /** @return the mediatype of this document */
+    public String getMediaTypeString() {
+<span class="nc" id="L54">      return mMediaType.getMediaTypeString();</span>
+    }
+
+    /** @return the ODF filesuffix of this document */
+    public String getSuffix() {
+<span class="nc" id="L59">      return mMediaType.getSuffix();</span>
+    }
+
+    /**
+     * @param mediaType string defining an ODF document
+     * @return the according OdfMediatype encapuslating the given string and the suffix
+     */
+    public static OdfDocument.OdfMediaType getOdfMediaType(String mediaType) {
+<span class="nc" id="L67">      return OdfDocument.OdfMediaType.getOdfMediaType(mediaType);</span>
+    }
+  }
+
+  /**
+   * Creates an empty spreadsheet document.
+   *
+   * @return ODF spreadsheet document based on a default template*
+   * @throws java.lang.Exception - if the document could not be created
+   */
+  public static OdfSpreadsheetDocument newSpreadsheetDocument() throws Exception {
+<span class="fc" id="L78">    return (OdfSpreadsheetDocument)</span>
+<span class="fc" id="L79">        OdfDocument.loadTemplate(</span>
+            EMPTY_SPREADSHEET_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.SPREADSHEET);
+  }
+
+  /**
+   * Creates an empty spreadsheet template.
+   *
+   * @return ODF spreadsheet template based on a default
+   * @throws java.lang.Exception - if the template could not be created
+   */
+  public static OdfSpreadsheetDocument newSpreadsheetTemplateDocument() throws Exception {
+<span class="fc" id="L90">    OdfSpreadsheetDocument doc =</span>
+        (OdfSpreadsheetDocument)
+<span class="fc" id="L92">            OdfDocument.loadTemplate(</span>
+                EMPTY_SPREADSHEET_DOCUMENT_RESOURCE, OdfDocument.OdfMediaType.SPREADSHEET_TEMPLATE);
+<span class="fc" id="L94">    doc.changeMode(OdfMediaType.SPREADSHEET_TEMPLATE);</span>
+<span class="fc" id="L95">    return doc;</span>
+  }
+
+  /**
+   * To avoid data duplication a new document is only created, if not already opened. A document is
+   * cached by this constructor using the internalpath as key.
+   */
+  protected OdfSpreadsheetDocument(
+      OdfPackage pkg, String internalPath, OdfSpreadsheetDocument.OdfMediaType odfMediaType)
+      throws SAXException {
+<span class="fc" id="L105">    super(pkg, internalPath, odfMediaType.mMediaType);</span>
+<span class="fc" id="L106">  }</span>
+
+  /**
+   * Creates an OdfSpreadsheetDocument from the OpenDocument provided by a resource Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequentiell) read access needed by
+   * OdfSpreadsheetDocument, the InputStream is cached. This usually takes more time compared to the
+   * other createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF spreadsheet document, ClassCastException might be
+   * thrown.
+   *
+   * @param inputStream - the InputStream of the ODF spreadsheet document.
+   * @return the spreadsheet document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfSpreadsheetDocument loadDocument(InputStream inputStream) throws Exception {
+<span class="nc" id="L124">    return (OdfSpreadsheetDocument) OdfDocument.loadDocument(inputStream);</span>
+  }
+
+  /**
+   * Loads an OdfSpreadsheetDocument from the provided path.
+   *
+   * &lt;p&gt;OdfSpreadsheetDocument relies on the file being available for read access over the whole
+   * lifecycle of OdfSpreadsheetDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF spreadsheet document, ClassCastException might be
+   * thrown.
+   *
+   * @param documentPath - the path from where the document can be loaded
+   * @return the spreadsheet document from the given path or NULL if the media type is not supported
+   *     by ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfSpreadsheetDocument loadDocument(String documentPath) throws Exception {
+<span class="fc" id="L142">    return (OdfSpreadsheetDocument) OdfDocument.loadDocument(documentPath);</span>
+  }
+
+  /**
+   * Creates an OdfSpreadsheetDocument from the OpenDocument provided by a File.
+   *
+   * &lt;p&gt;OdfSpreadsheetDocument relies on the file being available for read access over the whole
+   * lifecycle of OdfSpreadsheetDocument.
+   *
+   * &lt;p&gt;If the resource stream is not a ODF spreadsheet document, ClassCastException might be
+   * thrown.
+   *
+   * @param file - a file representing the ODF spreadsheet document.
+   * @return the spreadsheet document created from the given File
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfSpreadsheetDocument loadDocument(File file) throws Exception {
+<span class="nc" id="L159">    return (OdfSpreadsheetDocument) OdfDocument.loadDocument(file);</span>
+  }
+
+  /**
+   * Get the content root of a spreadsheet document.
+   *
+   * @return content root, representing the office:spreadsheet tag
+   * @throws Exception if the file DOM could not be created.
+   */
+  @Override
+  public OfficeSpreadsheetElement getContentRoot() throws Exception {
+<span class="fc" id="L170">    return super.getContentRoot(OfficeSpreadsheetElement.class);</span>
+  }
+
+  /**
+   * Changes the document to the given mediatype. This method can only be used to convert a document
+   * to a related mediatype, e.g. template.
+   *
+   * @param mediaType the related ODF mimetype
+   */
+  public void changeMode(OdfMediaType mediaType) {
+<span class="fc" id="L180">    setOdfMediaType(mediaType.mMediaType);</span>
+<span class="fc" id="L181">  }</span>
+
+  /**
+   * Return a list of table features in this document. For general ODF documents it searches for
+   * them recursively through the document. For ODF documents, there is a getOdsTableList
+   *
+   * @see OdfDocument:getTableList
+   * @return a list of table features in this document.
+   */
+  public List&lt;OdfTable&gt; getSpreadsheetTables() {
+<span class="nc" id="L191">    return getTableList(true);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

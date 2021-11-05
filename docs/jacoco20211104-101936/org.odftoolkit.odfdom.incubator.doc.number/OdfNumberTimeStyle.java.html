@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfNumberTimeStyle.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.number</a> &gt; <span class="el_source">OdfNumberTimeStyle.java</span></div><h1>OdfNumberTimeStyle.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.number;
+
+import org.odftoolkit.odfdom.dom.attribute.number.NumberFormatSourceAttribute;
+import org.odftoolkit.odfdom.dom.element.number.NumberAmPmElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberDayElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberDayOfWeekElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberEraElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberHoursElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberMinutesElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberMonthElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberQuarterElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberSecondsElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTimeStyleElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberYearElement;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/**
+ * Convenient functionalty for the parent ODF OpenDocument element
+ *
+ * &lt;p&gt;This class lets you create a date style from a format string. The format string is given in
+ * the same form as Java's SimpleDateFormat class.
+ *
+ * &lt;p&gt;The characters used are:
+ *
+ * &lt;pre&gt;
+ * a 	Am/pm marker         PM
+ * H 	Hour in day (0-23)   0
+ * k 	Hour in day (1-24)   -- not in ODF
+ * K 	Hour in am/pm (0-11) -- not in ODF
+ * h 	Hour in am/pm (1-12) -- depends on AM/PM marker
+ * m 	Minute in hour       30
+ * s 	Second in minute     55
+ * S 	Millisecond          -- not in ODF
+ * z 	Time zone            -- not in ODF
+ * Z 	Time zone RFC822     -- not in ODF
+ * &lt;/pre&gt;
+ */
+public class OdfNumberTimeStyle extends NumberTimeStyleElement {
+
+  public OdfNumberTimeStyle(OdfFileDom ownerDoc) {
+<span class="fc" id="L67">    super(ownerDoc);</span>
+<span class="fc" id="L68">  }</span>
+
+  private String styleName;
+  private String formatCode;
+
+  /**
+   * Creates a new instance of OdfTimeStyle.
+   *
+   * @param ownerDoc document that this format belongs to
+   * @param format format string for the date/time
+   * @param styleName name of this style
+   */
+  public OdfNumberTimeStyle(OdfFileDom ownerDoc, String format, String styleName) {
+<span class="fc" id="L81">    super(ownerDoc);</span>
+<span class="fc" id="L82">    this.styleName = styleName;</span>
+<span class="fc" id="L83">    this.formatCode = format;</span>
+<span class="fc" id="L84">    setFormat(format);</span>
+<span class="fc" id="L85">  }</span>
+
+  /**
+   * Get the format string that represents this style.
+   *
+   * @return the format string
+   */
+  @Override
+  public String getFormat(boolean capsDateFormat) {
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">    if (formatCode == null) {</span>
+<span class="fc" id="L95">      formatCode = &quot;&quot;;</span>
+<span class="fc" id="L96">      String truncate = getAttribute(&quot;number:truncate-on-overflow&quot;);</span>
+<span class="fc" id="L97">      boolean setBrackets = false; // set brackets around first time element</span>
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">      if (truncate != null &amp;&amp; truncate.equals(&quot;false&quot;)) setBrackets = true;</span>
+<span class="fc" id="L99">      Node child = this.getFirstChild();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">      while (child != null) {</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (child instanceof OdfElement) {</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">          if (child instanceof NumberDayElement) {</span>
+<span class="nc" id="L103">            NumberDayElement ele = (NumberDayElement) child;</span>
+<span class="nc" id="L104">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="nc bnc" id="L105" title="All 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">              formatCode += capsDateFormat ? &quot;DD&quot; : &quot;dd&quot;;</span>
+            } else {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">              formatCode += capsDateFormat ? &quot;D&quot; : &quot;d&quot;;</span>
+            }
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">          } else if (child instanceof NumberMonthElement) {</span>
+<span class="nc" id="L111">            NumberMonthElement ele = (NumberMonthElement) child;</span>
+<span class="nc" id="L112">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (ele.getNumberTextualAttribute().booleanValue()) {</span>
+<span class="nc bnc" id="L114" title="All 4 branches missed.">              if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc" id="L115">                formatCode += &quot;MMMM&quot;;</span>
+              } else {
+<span class="nc" id="L117">                formatCode += &quot;MMM&quot;;</span>
+              }
+            } else {
+<span class="nc bnc" id="L120" title="All 4 branches missed.">              if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc" id="L121">                formatCode += &quot;MM&quot;;</span>
+              } else {
+<span class="nc" id="L123">                formatCode += &quot;M&quot;;</span>
+              }
+            }
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">          } else if (child instanceof NumberYearElement) {</span>
+<span class="nc" id="L127">            NumberYearElement ele = (NumberYearElement) child;</span>
+<span class="nc" id="L128">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">              formatCode += capsDateFormat ? &quot;YYYY&quot; : &quot;yyyy&quot;;</span>
+            } else {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">              formatCode += capsDateFormat ? &quot;YY&quot; : &quot;yy&quot;;</span>
+            }
+<span class="pc bfc" id="L134" title="All 2 branches covered.">          } else if (child instanceof NumberTextElement) {</span>
+<span class="fc" id="L135">            String content = child.getTextContent();</span>
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">            if ((content == null) || (content.equals(&quot;&quot;))) {</span>
+<span class="nc" id="L137">              formatCode += &quot; &quot;;</span>
+            } else {
+<span class="fc" id="L139">              formatCode += content;</span>
+            }
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">          } else if (child instanceof NumberEraElement) {</span>
+<span class="nc" id="L142">            NumberEraElement ele = (NumberEraElement) child;</span>
+<span class="nc" id="L143">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc" id="L145">              formatCode += &quot;GGGG&quot;;</span>
+            } else {
+<span class="nc" id="L147">              formatCode += &quot;GG&quot;;</span>
+            }
+<span class="pc bfc" id="L149" title="All 2 branches covered.">          } else if (child instanceof NumberHoursElement) {</span>
+<span class="fc" id="L150">            NumberHoursElement ele = (NumberHoursElement) child;</span>
+<span class="fc" id="L151">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">            if (setBrackets) formatCode += &quot;[&quot;;</span>
+<span class="pc bpc" id="L153" title="1 of 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">              formatCode += capsDateFormat ? &quot;HH&quot; : &quot;hh&quot;;</span>
+            } else {
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">              formatCode += capsDateFormat ? &quot;H&quot; : &quot;h&quot;;</span>
+            }
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">            if (setBrackets) {</span>
+<span class="nc" id="L159">              formatCode += &quot;]&quot;;</span>
+<span class="nc" id="L160">              setBrackets = false;</span>
+            }
+<span class="fc bfc" id="L162" title="All 2 branches covered.">          } else if (child instanceof NumberMinutesElement) {</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">            if (setBrackets) formatCode += &quot;[&quot;;</span>
+<span class="fc" id="L164">            NumberMinutesElement ele = (NumberMinutesElement) child;</span>
+<span class="fc" id="L165">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="fc" id="L167">              formatCode += &quot;mm&quot;;</span>
+            } else {
+<span class="nc" id="L169">              formatCode += &quot;m&quot;;</span>
+            }
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">            if (setBrackets) {</span>
+<span class="nc" id="L172">              formatCode += &quot;]&quot;;</span>
+<span class="nc" id="L173">              setBrackets = false;</span>
+            }
+<span class="fc bfc" id="L175" title="All 2 branches covered.">          } else if (child instanceof NumberSecondsElement) {</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">            if (setBrackets) formatCode += &quot;[&quot;;</span>
+<span class="fc" id="L177">            NumberSecondsElement ele = (NumberSecondsElement) child;</span>
+<span class="fc" id="L178">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="pc bpc" id="L179" title="2 of 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">              formatCode += capsDateFormat ? &quot;SS&quot; : &quot;ss&quot;;</span>
+            } else {
+<span class="nc bnc" id="L182" title="All 2 branches missed.">              formatCode += capsDateFormat ? &quot;SS&quot; : &quot;s&quot;;</span>
+            }
+<span class="fc" id="L184">            Integer decimals = ele.getNumberDecimalPlacesAttribute();</span>
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">            if (decimals != null &amp;&amp; decimals.intValue() &gt; 0) {</span>
+<span class="nc" id="L186">              formatCode += '.';</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">              for (int i = 0; i &lt; decimals.intValue(); i++) {</span>
+<span class="nc" id="L188">                formatCode += '0';</span>
+              }
+            }
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">            if (setBrackets) {</span>
+<span class="nc" id="L192">              formatCode += &quot;]&quot;;</span>
+<span class="nc" id="L193">              setBrackets = false;</span>
+            }
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">          } else if (child instanceof NumberQuarterElement) {</span>
+<span class="nc" id="L196">            NumberQuarterElement ele = (NumberQuarterElement) child;</span>
+<span class="nc" id="L197">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="nc bnc" id="L198" title="All 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc" id="L199">              formatCode += &quot;QQQ&quot;;</span>
+            } else {
+<span class="nc" id="L201">              formatCode += &quot;Q&quot;;</span>
+            }
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">          } else if (child instanceof NumberDayOfWeekElement) {</span>
+<span class="nc" id="L204">            NumberDayOfWeekElement ele = (NumberDayOfWeekElement) child;</span>
+<span class="nc" id="L205">            String numberstyle = ele.getNumberStyleAttribute();</span>
+<span class="nc bnc" id="L206" title="All 4 branches missed.">            if ((numberstyle != null) &amp;&amp; numberstyle.equals(&quot;long&quot;)) {</span>
+<span class="nc" id="L207">              formatCode += &quot;EEEE&quot;;</span>
+            } else {
+<span class="nc" id="L209">              formatCode += &quot;EEE&quot;;</span>
+            }
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">          } else if (child instanceof NumberAmPmElement) {</span>
+<span class="fc" id="L212">            formatCode += &quot;AM/PM&quot;;</span>
+          }
+        }
+<span class="fc" id="L215">        child = child.getNextSibling();</span>
+      }
+    }
+<span class="fc" id="L218">    return formatCode;</span>
+  }
+
+  /**
+   * Creates a &lt;code&gt;&amp;lt;number:time-style&amp;gt;&lt;/code&gt; element based upon format.
+   *
+   * @param format the format for the time
+   */
+  @Override
+  public void setFormat(String format) {
+<span class="fc" id="L228">    String actionChars = &quot;GyQMwdEHhms&quot;;</span>
+<span class="fc" id="L229">    int actionCount = 0;</span>
+
+    char ch;
+<span class="fc" id="L232">    String textBuffer = &quot;&quot;;</span>
+<span class="fc" id="L233">    boolean endQuote = false;</span>
+
+<span class="fc" id="L235">    int i = 0;</span>
+
+<span class="fc" id="L237">    this.setStyleNameAttribute(styleName);</span>
+<span class="fc" id="L238">    this.setNumberFormatSourceAttribute(NumberFormatSourceAttribute.Value.LANGUAGE.toString());</span>
+
+<span class="fc bfc" id="L240" title="All 2 branches covered.">    while (i &lt; format.length()) {</span>
+<span class="fc" id="L241">      ch = format.charAt(i);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">      if (actionChars.indexOf(ch) &gt;= 0) {</span>
+<span class="fc" id="L243">        appendText(textBuffer);</span>
+<span class="fc" id="L244">        textBuffer = &quot;&quot;;</span>
+<span class="fc" id="L245">        actionCount = 0;</span>
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">        while (i &lt; format.length() &amp;&amp; format.charAt(i) == ch) {</span>
+<span class="fc" id="L247">          actionCount++;</span>
+<span class="fc" id="L248">          i++;</span>
+        }
+<span class="fc" id="L250">        processChar(ch, actionCount);</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">      } else if (ch == '\'') {</span>
+<span class="nc" id="L252">        endQuote = false;</span>
+<span class="nc" id="L253">        i++;</span>
+<span class="nc bnc" id="L254" title="All 4 branches missed.">        while (i &lt; format.length() &amp;&amp; (!endQuote)) {</span>
+<span class="nc" id="L255">          ch = format.charAt(i);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">          if (ch == '\'') // check to see if this is really the end</span>
+          {
+<span class="nc bnc" id="L258" title="All 4 branches missed.">            if (i + 1 &lt; format.length() &amp;&amp; format.charAt(i + 1) == '\'') {</span>
+<span class="nc" id="L259">              i++;</span>
+<span class="nc" id="L260">              textBuffer += &quot;'&quot;;</span>
+            } else {
+<span class="nc" id="L262">              endQuote = true;</span>
+            }
+          } else {
+<span class="nc" id="L265">            textBuffer += ch;</span>
+          }
+<span class="nc" id="L267">          i++;</span>
+        }
+      } else {
+        // special handling &quot;AM/PM&quot;
+<span class="pc bpc" id="L271" title="3 of 4 branches missed.">        if (ch == 'A' &amp;&amp; format.startsWith(&quot;AM/PM&quot;, i)) {</span>
+<span class="nc" id="L272">          appendText(textBuffer);</span>
+<span class="nc" id="L273">          textBuffer = &quot;&quot;;</span>
+<span class="nc" id="L274">          NumberAmPmElement ampm = new NumberAmPmElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L275">          this.appendChild(ampm);</span>
+<span class="nc" id="L276">          i += 5;</span>
+<span class="nc" id="L277">        } else {</span>
+<span class="fc" id="L278">          textBuffer += ch;</span>
+<span class="fc" id="L279">          i++;</span>
+        }
+      }
+    }
+<span class="fc" id="L283">    appendText(textBuffer);</span>
+<span class="fc" id="L284">  }</span>
+
+  /**
+   * Place pending text into a &amp;lt;number:text&amp;gt; element.
+   *
+   * @param textBuffer pending text
+   */
+  private void appendText(String textBuffer) {
+<span class="fc" id="L292">    NumberTextElement textElement = null;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">    if (!textBuffer.equals(&quot;&quot;)) {</span>
+<span class="fc" id="L294">      textElement = new NumberTextElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="fc" id="L295">      textElement.setTextContent(textBuffer);</span>
+<span class="fc" id="L296">      this.appendChild(textElement);</span>
+    }
+<span class="fc" id="L298">  }</span>
+
+  /**
+   * Process a formatting character.
+   *
+   * @param ch the formatting character to process
+   * @param count the number of occurrences of this character
+   */
+  private void processChar(char ch, int count) {
+<span class="fc" id="L307">    OdfFileDom ownerDoc = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="pc bpc" id="L308" title="2 of 4 branches missed.">    switch (ch) {</span>
+      case 'H':
+      case 'h':
+<span class="fc" id="L311">        NumberHoursElement hours = new NumberHoursElement(ownerDoc);</span>
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">        hours.setNumberStyleAttribute(isLongIf(count &gt; 1));</span>
+<span class="fc" id="L313">        this.appendChild(hours);</span>
+<span class="fc" id="L314">        break;</span>
+      case 'M':
+      case 'm':
+<span class="fc" id="L317">        NumberMinutesElement minutes = new NumberMinutesElement(ownerDoc);</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">        minutes.setNumberStyleAttribute(isLongIf(count &gt; 1));</span>
+<span class="fc" id="L319">        this.appendChild(minutes);</span>
+<span class="fc" id="L320">        break;</span>
+      case 'S':
+      case 's':
+<span class="nc" id="L323">        NumberSecondsElement seconds = new NumberSecondsElement(ownerDoc);</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        seconds.setNumberStyleAttribute(isLongIf(count &gt; 1));</span>
+<span class="nc" id="L325">        this.appendChild(seconds);</span>
+        break;
+    }
+<span class="fc" id="L328">  }</span>
+
+  /**
+   * Add long or short style to an element.
+   *
+   * @param isLong true if this is number:style=&quot;long&quot;; false if number:style=&quot;short&quot;
+   * @return the string &quot;long&quot; or &quot;short&quot;
+   */
+  private String isLongIf(boolean isLong) {
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">    return ((isLong) ? &quot;long&quot; : &quot;short&quot;);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

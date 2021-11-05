@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CachedTable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">CachedTable.java</span></div><h1>CachedTable.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.changes;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+@SuppressWarnings(&quot;serial&quot;)
+class CachedTable extends CachedComponent {
+
+<span class="fc" id="L36">  private ArrayList&lt;CachedTable&gt; mTableStack = new ArrayList&lt;CachedTable&gt;();</span>
+<span class="fc" id="L37">  public HashMap&lt;List&lt;Integer&gt;, CachedTable&gt; mAllTables = new HashMap&lt;List&lt;Integer&gt;, CachedTable&gt;();</span>
+  // START *** SPREADSHEET PROPERTIES
+  // required to track repeatedColumns rows for spreadsheets..
+<span class="fc" id="L40">  public int mPreviousRepeatedRows = 0;</span>
+<span class="fc" id="L41">  public int mRepeatedRowsOnly = 0;</span>
+  // spreadsheet range, representing a subset of a single row.
+  // added cell data (content &amp; format) neglecting starting/ending empty cells and within the row
+  // any adjacent empty cells above MAX_REPEATING_EMPTY_CELLS
+  public JSONArray mCurrentRange;
+  // only cells with content should trigger an operation
+<span class="fc" id="L47">  public int mFirstContentCellNo = -1;</span>
+  // equal cell contents can be given out compressed
+<span class="fc" id="L49">  public int mFirstEqualCellNo = -1;</span>
+<span class="fc" id="L50">  public int mCurrentColumnNo = 0;</span>
+  // after there had been content, three following empty cells are being counted, before a new
+  // insert operation is being triggered
+<span class="fc" id="L53">  public int mEmptyCellCount = 0;</span>
+<span class="fc" id="L54">  public int mFirstEmptyCell = -1;</span>
+  // the JSONArray does not allow to delete empty cells, therefore they have to be counted
+<span class="fc" id="L56">  public JSONObject mPreviousCell = null;</span>
+<span class="fc" id="L57">  private int mCellRepetition = 1;</span>
+  // get the sheetNo
+  public Integer mSheetNo;
+<span class="fc" id="L60">  public Integer mFirstRow = 0;</span>
+<span class="fc" id="L61">  public Integer mLastRow = 0;</span>
+<span class="fc" id="L62">  public ArrayList&lt;CachedInnerTableOperation&gt; mCachedTableContentOps = null;</span>
+  // 1) Mapping the column's default cell style to empty cells for none max size OR
+  // adding column's default cell style to column style
+  // 2) Mapping the largest range of rows/columns to the table in case of MAX sheet
+<span class="fc" id="L66">  public Integer rowCount = null;</span>
+<span class="fc" id="L67">  public Integer columnCount = null;</span>
+
+  // We want to compress two identical following row format operations
+<span class="fc" id="L70">  public Boolean lastRowIsVisible = Boolean.TRUE;</span>
+<span class="fc" id="L71">  public String lastRowStyleName = null;</span>
+<span class="fc" id="L72">  public int lastRowRepetition = 0;</span>
+<span class="fc" id="L73">  public CachedInnerTableOperation lastRowFormatOperation = null;</span>
+
+  // List of the column properties with default cell styles
+<span class="fc" id="L76">  public List&lt;ColumnDefaultCellProps&gt; mColumnDefaultCells = null;</span>
+<span class="fc" id="L77">  public ColumnDefaultCellProps mCurrentDefaultCellProps = null;</span>
+<span class="fc" id="L78">  public int nextColumnDefaultCellListPos = 0;</span>
+<span class="fc" id="L79">  public String mPreviousColumnCellStyleID = null;</span>
+  // Boolean object as three states: There is a default style and all columns covered with default
+  // style (TRUE), there is a default style, but sometimes no style (FALSE) and no &quot;Default&quot; style
+  // (NULL)
+<span class="fc" id="L83">  public Boolean mHasOnlyDefaultColumnCellStyles = null;</span>
+
+  // Temporary map to count the most used column style, to move this in case of full column count to
+  // the table style
+<span class="fc" id="L87">  public Map&lt;String, Integer&gt; columnStyleOccurrence = null;</span>
+  // the name of the column style being used most in the table
+<span class="fc" id="L89">  public String mMostUsedColumnStyle = null;</span>
+
+  // Temporary map to count the most used row style, to move this in case of full row count to the
+  // table style
+<span class="fc" id="L93">  public Map&lt;String, Integer&gt; rowStyleOccurrence = null;</span>
+  // the name of the column style being used most in the table
+<span class="fc" id="L95">  public String mMostUsedRowStyle = null;</span>
+
+  // END *** SPREADSHEET PROPERTIES
+<span class="fc" id="L98">  public int mColumnCount = 0;</span>
+<span class="fc" id="L99">  public int mRowCount = 0;</span>
+<span class="fc" id="L100">  public boolean mWhiteSpaceOnly = true;</span>
+<span class="fc" id="L101">  public int mCellCount = 0;</span>
+<span class="fc" id="L102">  public boolean mIsTooLarge = false;</span>
+  public List&lt;Integer&gt; mTableGrid;
+  public List&lt;Integer&gt; mStart;
+  public String tableName;
+
+  public CachedTable() {
+<span class="fc" id="L108">    super();</span>
+<span class="fc" id="L109">  }</span>
+
+  public int getSubTableCount() {
+<span class="fc" id="L112">    return mTableStack.size();</span>
+  }
+
+  public void addSubTable(CachedTable subTable, List&lt;Integer&gt; position) {
+    // TODO: Do we need two containers?
+<span class="fc" id="L117">    mTableStack.add(subTable);</span>
+<span class="fc" id="L118">    mAllTables.put(position, subTable);</span>
+<span class="fc" id="L119">  }</span>
+
+  public CachedTable getSubTable(List&lt;Integer&gt; position) {
+<span class="fc" id="L122">    return mAllTables.get(position);</span>
+  }
+
+  public void removeSubTable() {
+<span class="fc" id="L126">    mTableStack.remove(mTableStack.size() - 1);</span>
+<span class="fc" id="L127">  }</span>
+
+  public int getCellRepetition() {
+<span class="nc" id="L130">    return mCellRepetition;</span>
+  }
+
+  public void setCellRepetition(int set) {
+<span class="fc" id="L134">    mCellRepetition = set;</span>
+<span class="fc" id="L135">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

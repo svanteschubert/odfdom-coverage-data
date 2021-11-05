@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Color.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">Color.java</span></div><h1>Color.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+/**
+ * This class represents the in OpenDocument format used data type {@odf.datatype color} See &lt;a
+ * href=&quot;http://www.w3.org/TR/CSS21/syndata.html#value-def-color&quot;&gt;W3C CSS specification&lt;/a&gt; for
+ * further details.
+ */
+public class Color implements OdfDataType {
+
+<span class="fc" id="L32">  private static final Pattern sixHexRGBPattern = Pattern.compile(&quot;^#[0-9a-fA-F]{6}$&quot;);</span>
+<span class="fc" id="L33">  private static final Pattern threeHexRGBPattern = Pattern.compile(&quot;^#[0-9a-fA-F]{3}$&quot;);</span>
+<span class="fc" id="L34">  private static final Map&lt;String, String&gt; labeledColors = new HashMap&lt;String, String&gt;();</span>
+
+  static {
+<span class="fc" id="L37">    labeledColors.put(&quot;aqua&quot;, &quot;#00ffff&quot;);</span>
+<span class="fc" id="L38">    labeledColors.put(&quot;black&quot;, &quot;#000000&quot;);</span>
+<span class="fc" id="L39">    labeledColors.put(&quot;blue&quot;, &quot;#0000ff&quot;);</span>
+<span class="fc" id="L40">    labeledColors.put(&quot;fuchsia&quot;, &quot;#ff00ff&quot;);</span>
+<span class="fc" id="L41">    labeledColors.put(&quot;gray&quot;, &quot;#808080&quot;);</span>
+<span class="fc" id="L42">    labeledColors.put(&quot;green&quot;, &quot;#008000&quot;);</span>
+<span class="fc" id="L43">    labeledColors.put(&quot;lime&quot;, &quot;#00ff00&quot;);</span>
+<span class="fc" id="L44">    labeledColors.put(&quot;maroon&quot;, &quot;#800000&quot;);</span>
+<span class="fc" id="L45">    labeledColors.put(&quot;navy&quot;, &quot;#000080&quot;);</span>
+<span class="fc" id="L46">    labeledColors.put(&quot;olive&quot;, &quot;#808000&quot;);</span>
+<span class="fc" id="L47">    labeledColors.put(&quot;orange&quot;, &quot;#ffA500&quot;);</span>
+<span class="fc" id="L48">    labeledColors.put(&quot;purple&quot;, &quot;#800080&quot;);</span>
+<span class="fc" id="L49">    labeledColors.put(&quot;red&quot;, &quot;#ff0000&quot;);</span>
+<span class="fc" id="L50">    labeledColors.put(&quot;silver&quot;, &quot;#c0c0c0&quot;);</span>
+<span class="fc" id="L51">    labeledColors.put(&quot;teal&quot;, &quot;#008080&quot;);</span>
+<span class="fc" id="L52">    labeledColors.put(&quot;white&quot;, &quot;#ffffff&quot;);</span>
+<span class="fc" id="L53">    labeledColors.put(&quot;yellow&quot;, &quot;#ffff00&quot;);</span>
+  }
+
+  private static final String COLOR_PREFIX = &quot;#&quot;;
+
+  private final String mColorAsSixHexRGB;
+
+  /** The color aqua in sRGB space. */
+<span class="fc" id="L61">  public static final Color AQUA = new Color(&quot;#00ffff&quot;);</span>
+
+  /** The color black in sRGB space. */
+<span class="fc" id="L64">  public static final Color BLACK = new Color(&quot;#000000&quot;);</span>
+
+  /** The color blue in sRGB space. */
+<span class="fc" id="L67">  public static final Color BLUE = new Color(&quot;#0000ff&quot;);</span>
+
+  /** The color fuchsia in sRGB space. */
+<span class="fc" id="L70">  public static final Color FUCHSIA = new Color(&quot;#ff00ff&quot;);</span>
+
+  /** The color gray in sRGB space. */
+<span class="fc" id="L73">  public static final Color GRAY = new Color(&quot;#808080&quot;);</span>
+
+  /** The color green in sRGB space. */
+<span class="fc" id="L76">  public static final Color GREEN = new Color(&quot;#008000&quot;);</span>
+
+  /** The color lime in sRGB space. */
+<span class="fc" id="L79">  public static final Color LIME = new Color(&quot;#00ff00&quot;);</span>
+
+  /** The color maroon in sRGB space. */
+<span class="fc" id="L82">  public static final Color MAROON = new Color(&quot;#800000&quot;);</span>
+
+  /** The color navy in sRGB space. */
+<span class="fc" id="L85">  public static final Color NAVY = new Color(&quot;#000080&quot;);</span>
+
+  /** The color olive in sRGB space. */
+<span class="fc" id="L88">  public static final Color OLIVE = new Color(&quot;#808000&quot;);</span>
+
+  /** The color orange in sRGB space. */
+<span class="fc" id="L91">  public static final Color ORANGE = new Color(&quot;#ffA500&quot;);</span>
+
+  /** The color purple in sRGB space. */
+<span class="fc" id="L94">  public static final Color PURPLE = new Color(&quot;#800080&quot;);</span>
+
+  /** The color red in sRGB space. */
+<span class="fc" id="L97">  public static final Color RED = new Color(&quot;#ff0000&quot;);</span>
+
+  /** The color silver in sRGB space. */
+<span class="fc" id="L100">  public static final Color SILVER = new Color(&quot;#c0c0c0&quot;);</span>
+
+  /** The color teal in sRGB space. */
+<span class="fc" id="L103">  public static final Color TEAL = new Color(&quot;#008080&quot;);</span>
+
+  /** The color white in sRGB space. */
+<span class="fc" id="L106">  public static final Color WHITE = new Color(&quot;#ffffff&quot;);</span>
+
+  /** The color yellow in sRGB space. */
+<span class="fc" id="L109">  public static final Color YELLOW = new Color(&quot;#ffff00&quot;);</span>
+
+  /**
+   * Construct Color by the parsing the given string. The string should be observed sRGB color
+   * standard which starts with &quot;#&quot; and following with six numbers or three numbers in Hex format.
+   * For example, &quot;#FFFFFF&quot; is a valid argument and white color will be constructed.
+   *
+   * &lt;p&gt;For further information on sRGB, see &lt;A
+   * href=&quot;http://www.w3.org/pub/WWW/Graphics/Color/sRGB.html&quot;&gt;
+   * http://www.w3.org/pub/WWW/Graphics/Color/sRGB.html &lt;/A&gt;.
+   *
+   * @param color represented using the 3 or 6 HEX sRGB notation.
+   * @throws IllegalArgumentException if the given argument is not a valid Color in sRGB HEX
+   *     notation.
+   */
+<span class="fc" id="L124">  public Color(String color) {</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">    if (!isValid(color)) {</span>
+<span class="nc" id="L126">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype Color&quot;);</span>
+    }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">    if (color.length() == 4) {</span>
+<span class="fc" id="L129">      mColorAsSixHexRGB = mapColorFromThreeToSixHex(color);</span>
+    } else {
+<span class="fc" id="L131">      mColorAsSixHexRGB = color;</span>
+    }
+<span class="fc" id="L133">  }</span>
+
+  /**
+   * Construct Color using the specified red, green and blue values in the range (0 - 255).
+   *
+   * @param red the red component.
+   * @param green the green component.
+   * @param blue the blue component.
+   * @throws IllegalArgumentException if &lt;code&gt;red&lt;/code&gt;, &lt;code&gt;green&lt;/code&gt; or &lt;code&gt;blue&lt;/code&gt;
+   *     are outside of the range 0 to 255, inclusive.
+   */
+  public Color(int red, int green, int blue) {
+<span class="fc" id="L145">    this(mapColorIntegerToString(red, green, blue));</span>
+<span class="fc" id="L146">  }</span>
+
+  /**
+   * Construct Color using the specified red, green, and blue values in the range (0.0 - 1.0).
+   *
+   * @param red the red component
+   * @param green the green component
+   * @param blue the blue component
+   * @throws IllegalArgumentException if &lt;code&gt;red&lt;/code&gt;, &lt;code&gt;green&lt;/code&gt; or &lt;code&gt;blue&lt;/code&gt;
+   *     are outside of the range 0.0 to 1.0, inclusive.
+   */
+  public Color(float red, float green, float blue) {
+<span class="fc" id="L158">    this((int) (red * 255 + 0.5), (int) (green * 255 + 0.5), (int) (blue * 255 + 0.5));</span>
+<span class="fc" id="L159">  }</span>
+
+  /**
+   * Construct Color using {@link java.awt.Color &lt;code&gt;java.awt.Color&lt;/code&gt;}.
+   *
+   * @param color the specified {@link java.awt.Color &lt;code&gt;java.awt.Color&lt;/code&gt;}.
+   * @throws IllegalArgumentException if the given argument is not a valid Color.
+   * @see java.awt.Color
+   */
+  public Color(java.awt.Color color) {
+<span class="fc" id="L169">    this(color.getRed(), color.getGreen(), color.getBlue());</span>
+<span class="fc" id="L170">  }</span>
+
+  /**
+   * Returns the Color in six HEX sRGB notation. format.
+   *
+   * @return a six number hexadecimal string representation of the Color
+   */
+  @Override
+  public String toString() {
+<span class="fc" id="L179">    return mColorAsSixHexRGB;</span>
+  }
+
+  /**
+   * Returns a Color instance representing the specified String value.
+   *
+   * @param colorValue a six (or three) number hexadecimal string representation of the Color
+   * @return return a Color instance representing &lt;code&gt;stringValue&lt;/code&gt;.
+   * @throws IllegalArgumentException if the given argument is not a valid Color.
+   */
+  public static Color valueOf(String colorValue) {
+<span class="nc" id="L190">    return new Color(colorValue);</span>
+  }
+
+  /**
+   * Check if the specified String is a valid {@odf.datatype color} data type.
+   *
+   * @param colorValue a six (or three) number hexadecimal string representation of the Color
+   * @return true if the value of argument is valid for{@odf.datatype color} data type false
+   *     otherwise.
+   */
+  public static boolean isValid(String colorValue) {
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">    if ((colorValue == null)</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        || !(threeHexRGBPattern.matcher(colorValue).matches()</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">            || sixHexRGBPattern.matcher(colorValue).matches())) {</span>
+<span class="nc" id="L204">      return false;</span>
+    } else {
+<span class="fc" id="L206">      return true;</span>
+    }
+  }
+
+  /**
+   * Convert RGB color formats to six-digit hex RGB format.
+   *
+   * &lt;p&gt;The RGB mapping works as follows: rgb(110%, 0%, 0%)----clipped to rgb(100%,0%,0%), return
+   * #ff0000 maroon----one of the seventeen fixed labeled numbers, return #800000
+   * #ff0000----six-digit notation #rrggbb, returns the input #f00----three-digit notation #rgb,
+   * return #ff0000 rgb(255,0,0)----integer range 0 - 255, return #ff0000 rgb(300,0,0)----clipped to
+   * rgb(255,0,0), return #ff0000 rgb(255,-10,0)----clipped to rgb(255,0,0), return #ff0000
+   *
+   * @param colorValue The sRGB color value to be converted.
+   * @return the converted color.
+   */
+  public static String toSixDigitHexRGB(String colorValue) {
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">    if (colorValue == null) {</span>
+<span class="nc" id="L224">      throw new IllegalArgumentException(&quot;parameter should not be null.&quot;);</span>
+    } else {
+<span class="fc" id="L226">      colorValue = colorValue.toLowerCase().trim();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">      if (sixHexRGBPattern.matcher(colorValue).matches()) {</span>
+        // 6-digit notation #rrggbb - return itself.
+<span class="fc" id="L229">        return colorValue;</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">      } else if (threeHexRGBPattern.matcher(colorValue).matches()) {</span>
+        // convert 3-digit notation #rgb.
+<span class="fc" id="L232">        return mapColorFromThreeToSixHex(colorValue);</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">      } else if (colorValue.startsWith(&quot;rgb&quot;)) {</span>
+<span class="fc" id="L234">        colorValue = colorValue.substring(3);</span>
+<span class="fc" id="L235">        colorValue = colorValue.substring(colorValue.indexOf(&quot;(&quot;) + 1, colorValue.indexOf(&quot;)&quot;));</span>
+<span class="fc" id="L236">        String[] rgbValues = colorValue.split(&quot;,&quot;);</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (rgbValues.length == 3) {</span>
+<span class="fc" id="L238">          int r = mapColorValueToInteger(rgbValues[0].trim());</span>
+<span class="fc" id="L239">          int g = mapColorValueToInteger(rgbValues[1].trim());</span>
+<span class="fc" id="L240">          int b = mapColorValueToInteger(rgbValues[2].trim());</span>
+<span class="fc" id="L241">          String rs = Integer.toHexString(r);</span>
+<span class="fc" id="L242">          String gs = Integer.toHexString(g);</span>
+<span class="fc" id="L243">          String bs = Integer.toHexString(b);</span>
+<span class="fc" id="L244">          String hexColor = COLOR_PREFIX;</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">          if (r &lt; 16) {</span>
+<span class="nc" id="L246">            hexColor += &quot;0&quot;;</span>
+          }
+<span class="fc" id="L248">          hexColor += rs;</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">          if (g &lt; 16) {</span>
+<span class="fc" id="L250">            hexColor += &quot;0&quot;;</span>
+          }
+<span class="fc" id="L252">          hexColor += gs;</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">          if (b &lt; 16) {</span>
+<span class="fc" id="L254">            hexColor += &quot;0&quot;;</span>
+          }
+<span class="fc" id="L256">          hexColor += bs;</span>
+<span class="fc" id="L257">          return hexColor;</span>
+        } else {
+<span class="nc" id="L259">          throw new IllegalArgumentException(</span>
+              &quot;parameter: &quot; + colorValue + &quot; can't be converted six-digit hex RGB.&quot;);
+        }
+      } else {
+        // convert the seventeen fixed labeled numbers.
+<span class="fc" id="L264">        String hexColor = labeledColors.get(colorValue);</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">        if (hexColor != null) {</span>
+<span class="fc" id="L266">          return hexColor;</span>
+        } else {
+<span class="nc" id="L268">          throw new IllegalArgumentException(</span>
+              &quot;parameter: &quot; + colorValue + &quot; can't be converted six-digit hex RGB.&quot;);
+        }
+      }
+    }
+  }
+
+  /**
+   * Return the corresponding {@link java.awt.Color &lt;code&gt;java.awt.Color&lt;/code&gt;} instance of the
+   * Color data type.
+   *
+   * @return the converted {@link java.awt.Color &lt;code&gt;java.awt.Color&lt;/code&gt;} instance..
+   */
+  public java.awt.Color getAWTColor() {
+<span class="nc" id="L282">    return mapColorToAWTColor(this);</span>
+  }
+
+  /**
+   * Map a Color data type to {@link java.awt.Color &lt;code&gt;java.awt.Color&lt;/code&gt;}.
+   *
+   * @param color The color data type to be mapped..
+   * @return the converted {@link java.awt.Color &lt;code&gt;java.awt.Color&lt;/code&gt;} instance.
+   */
+  public static java.awt.Color mapColorToAWTColor(Color color) {
+<span class="fc" id="L292">    int rgb = Integer.decode(&quot;0x&quot; + color.mColorAsSixHexRGB.substring(1));</span>
+<span class="fc" id="L293">    return new java.awt.Color(rgb);</span>
+  }
+
+  /**
+   * Converts Color expressed by red, green and blue values in the range (0 - 255) to a string
+   * format which is used in {@odf.datatype color}.
+   *
+   * @param red the red component.
+   * @param green the green component.
+   * @param blue the blue component.
+   * @return the string format color.
+   */
+  private static String mapColorIntegerToString(int red, int green, int blue) {
+<span class="fc" id="L306">    String rs = Integer.toHexString(red);</span>
+<span class="fc" id="L307">    String gs = Integer.toHexString(green);</span>
+<span class="fc" id="L308">    String bs = Integer.toHexString(blue);</span>
+<span class="fc" id="L309">    String hexColor = COLOR_PREFIX;</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">    if (red &lt; 16) {</span>
+<span class="nc" id="L311">      hexColor += &quot;0&quot;;</span>
+    }
+<span class="fc" id="L313">    hexColor += rs;</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">    if (green &lt; 16) {</span>
+<span class="fc" id="L315">      hexColor += &quot;0&quot;;</span>
+    }
+<span class="fc" id="L317">    hexColor += gs;</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">    if (blue &lt; 16) {</span>
+<span class="nc" id="L319">      hexColor += &quot;0&quot;;</span>
+    }
+<span class="fc" id="L321">    hexColor += bs;</span>
+<span class="fc" id="L322">    return hexColor;</span>
+  }
+
+  /**
+   * Converts Color from three-digit to six-digit form. The three-digit (#rgb) is converted into
+   * six-digit form (#rrggbb) by replicating digits, not by adding zeros. For example, #fb0 expands
+   * to #ffbb00. *
+   *
+   * @param threeDigitcColor the three-digit color form.
+   * @return the six-digit color form.
+   */
+  private static String mapColorFromThreeToSixHex(String threeDigitcColor) {
+<span class="fc" id="L334">    char[] colorData = threeDigitcColor.toCharArray();</span>
+<span class="fc" id="L335">    char[] sixDigitColor = new char[7];</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">    for (int i = 0; i &lt; 7; i++) {</span>
+<span class="fc" id="L337">      sixDigitColor[i] = colorData[(i + 1) / 2];</span>
+    }
+<span class="fc" id="L339">    return new String(sixDigitColor);</span>
+  }
+
+  /**
+   * Convert percent string and integer string to integer. value range will be checked and adapted
+   * to border (error correction)
+   */
+  private static int mapColorValueToInteger(String colorValue) {
+<span class="fc bfc" id="L347" title="All 2 branches covered.">    if (colorValue.endsWith(&quot;%&quot;)) {</span>
+<span class="fc" id="L348">      colorValue = colorValue.substring(0, colorValue.indexOf(&quot;%&quot;));</span>
+<span class="fc" id="L349">      int value = Integer.parseInt(colorValue);</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">      if (value &lt; 0) {</span>
+<span class="nc" id="L351">        value = 0;</span>
+      }
+<span class="fc bfc" id="L353" title="All 2 branches covered.">      if (value &gt; 100) {</span>
+<span class="fc" id="L354">        value = 100;</span>
+      }
+<span class="fc" id="L356">      return 255 * value / 100;</span>
+    } else {
+<span class="fc" id="L358">      int value = Integer.parseInt(colorValue);</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">      if (value &lt; 0) {</span>
+<span class="nc" id="L360">        value = 0;</span>
+      }
+<span class="fc bfc" id="L362" title="All 2 branches covered.">      if (value &gt; 255) {</span>
+<span class="fc" id="L363">        value = 255;</span>
+      }
+<span class="fc" id="L365">      return value;</span>
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L371" title="All 2 branches missed.">    if (obj == null) {</span>
+<span class="nc" id="L372">      return false;</span>
+    }
+<span class="nc bnc" id="L374" title="All 2 branches missed.">    if (getClass() != obj.getClass()) {</span>
+<span class="nc" id="L375">      return false;</span>
+    }
+<span class="nc" id="L377">    final Color other = (Color) obj;</span>
+<span class="nc bnc" id="L378" title="All 4 branches missed.">    if ((this.mColorAsSixHexRGB == null)</span>
+        ? (other.mColorAsSixHexRGB != null)
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        : !this.mColorAsSixHexRGB.equals(other.mColorAsSixHexRGB)) {</span>
+<span class="nc" id="L381">      return false;</span>
+    }
+<span class="nc" id="L383">    return true;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L388">    int hash = 3;</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">    hash = 97 * hash + (this.mColorAsSixHexRGB != null ? this.mColorAsSixHexRGB.hashCode() : 0);</span>
+<span class="nc" id="L390">    return hash;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

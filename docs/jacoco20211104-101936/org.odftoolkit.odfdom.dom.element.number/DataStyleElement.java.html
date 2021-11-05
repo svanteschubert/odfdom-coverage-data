@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataStyleElement.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.dom.element.number</a> &gt; <span class="el_source">DataStyleElement.java</span></div><h1>DataStyleElement.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.dom.element.number;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.odftoolkit.odfdom.changes.MapHelper;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.element.style.StyleMapElement;
+import org.odftoolkit.odfdom.dom.element.style.StyleTextPropertiesElement;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+
+/**
+ * interface of styles that represent the different number formats that are referenced from
+ * styles/auto styles with the data-style-name attribute
+ */
+public abstract class DataStyleElement extends OdfElement {
+
+<span class="fc" id="L42">  public enum TokenType {</span>
+<span class="fc" id="L43">    TOKEN_TEXT,</span>
+<span class="fc" id="L44">    TOKEN_NUMBER,</span>
+<span class="fc" id="L45">    TOKEN_COLOR,</span>
+<span class="fc" id="L46">    TOKEN_CURRENCY</span>
+  }
+
+<span class="fc" id="L49">  public enum NumberFormatType {</span>
+<span class="fc" id="L50">    FORMAT_CURRENCY,</span>
+<span class="fc" id="L51">    FORMAT_TEXT,</span>
+<span class="fc" id="L52">    FORMAT_PERCENT,</span>
+<span class="fc" id="L53">    FORMAT_DATE,</span>
+<span class="fc" id="L54">    FORMAT_TIME,</span>
+<span class="fc" id="L55">    FORMAT_NUMBER</span>
+  }
+
+  public static class StringToken {
+    public TokenType type;
+    public String text;
+
+<span class="fc" id="L62">    StringToken(String tx, TokenType t) {</span>
+<span class="fc" id="L63">      text = tx;</span>
+<span class="fc" id="L64">      type = t;</span>
+<span class="fc" id="L65">    }</span>
+  }
+
+  DataStyleElement(OdfFileDom ownerDoc, OdfName elementName) {
+<span class="fc" id="L69">    super(ownerDoc, elementName);</span>
+<span class="fc" id="L70">  }</span>
+
+  protected String getMapping(StyleMapElement mapElement) {
+<span class="fc" id="L73">    String mappedResult = &quot;&quot;;</span>
+<span class="fc" id="L74">    String condition = mapElement.getStyleConditionAttribute();</span>
+<span class="fc" id="L75">    String applyStyleName = mapElement.getStyleApplyStyleNameAttribute();</span>
+<span class="fc" id="L76">    org.w3c.dom.Node parent = getParentNode();</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">    if (applyStyleName != null) {</span>
+<span class="fc" id="L78">      DataStyleElement applyStyle = null;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">      if (parent instanceof OdfOfficeStyles) {</span>
+<span class="nc" id="L80">        applyStyle = ((OdfOfficeStyles) parent).getAllDataStyles().get(applyStyleName);</span>
+      } else {
+<span class="fc" id="L82">        applyStyle = ((OdfOfficeAutomaticStyles) parent).getAllDataStyles().get(applyStyleName);</span>
+      }
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">      if (applyStyle != null) {</span>
+<span class="fc" id="L85">        String localFormat = applyStyle.getFormat(true);</span>
+<span class="pc bpc" id="L86" title="3 of 6 branches missed.">        if (condition != null &amp;&amp; condition.length() &gt;= 9 &amp;&amp; condition.startsWith(&quot;value()&quot;)) {</span>
+          // always starts with &quot;value()&quot;
+<span class="fc" id="L88">          String operator2 = condition.substring(8, 9); // '=', &quot;&lt;&gt;&quot;, '&lt;', &quot;&lt;=&quot;, '&gt;', &quot;&gt;=&quot;</span>
+<span class="fc" id="L89">          int opLength = 1;</span>
+<span class="pc bpc" id="L90" title="2 of 6 branches missed.">          if (operator2.equals(&quot;=&quot;) || operator2.equals(&quot;&lt;&quot;) || operator2.equals(&quot;&gt;&quot;)) {</span>
+<span class="fc" id="L91">            opLength = 2;</span>
+          }
+          try {
+<span class="fc" id="L94">            double opValue = Double.parseDouble(condition.substring(7 + opLength));</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (opValue != 0.) {</span>
+<span class="nc" id="L96">              mappedResult += '[';</span>
+<span class="nc" id="L97">              mappedResult += condition.substring(7, 7 + opLength);</span>
+<span class="nc" id="L98">              mappedResult += Double.toString(opValue);</span>
+<span class="nc" id="L99">              mappedResult += ']';</span>
+            }
+<span class="nc" id="L101">          } catch (NumberFormatException e) {</span>
+
+<span class="fc" id="L103">          }</span>
+        }
+<span class="fc" id="L105">        mappedResult += localFormat;</span>
+      }
+    }
+<span class="fc" id="L108">    return mappedResult;</span>
+  }
+  /**
+   * converts a color attribute to a color token of a number format string
+   *
+   * @param e
+   * @return the resulting color token
+   */
+  public String getColorFromElement(StyleTextPropertiesElement e) {
+    // contains e.g. fo:color
+<span class="fc" id="L118">    String ret = &quot;&quot;;</span>
+<span class="fc" id="L119">    String color = e.getAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;color&quot;);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">    if (color != null) {</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">      if (color.equalsIgnoreCase(&quot;#0000ff&quot;)) {</span>
+<span class="nc" id="L122">        ret = &quot;[BLUE]&quot;;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#00FF00&quot;)) {</span>
+<span class="nc" id="L124">        ret = &quot;[GREEN]&quot;;</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#FF0000&quot;)) {</span>
+<span class="fc" id="L126">        ret = &quot;[RED]&quot;;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#FFFFFF&quot;)) {</span>
+<span class="nc" id="L128">        ret = &quot;[WHITE]&quot;;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#FF00FF&quot;)) {</span>
+<span class="nc" id="L130">        ret = &quot;[MAGENTA]&quot;;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#FFFF00&quot;)) {</span>
+<span class="nc" id="L132">        ret = &quot;[YELLOW]&quot;;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#00FFFF&quot;)) {</span>
+<span class="nc" id="L134">        ret = &quot;[CYAN]&quot;;</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">      } else if (color.equalsIgnoreCase(&quot;#000000&quot;)) {</span>
+<span class="nc" id="L136">        ret = &quot;[BLACK]&quot;;</span>
+      }
+    }
+<span class="fc" id="L139">    return ret;</span>
+  }
+  /**
+   * @param colorToken color name used in number format
+   * @return resulting color value or empty string
+   */
+  protected static String getColorElement(String colorToken) {
+<span class="fc" id="L146">    String ret = &quot;&quot;;</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">    if (colorToken.equalsIgnoreCase(&quot;RED&quot;)) {</span>
+<span class="fc" id="L148">      ret = &quot;#ff0000&quot;;</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;BLUE&quot;)) {</span>
+<span class="nc" id="L150">      ret = &quot;#0000ff&quot;;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;GREEN&quot;)) {</span>
+<span class="nc" id="L152">      ret = &quot;#00ff00&quot;;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;WHITE&quot;)) {</span>
+<span class="nc" id="L154">      ret = &quot;#ffffff&quot;;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;MAGENTA&quot;)) {</span>
+<span class="nc" id="L156">      ret = &quot;#ff00ff&quot;;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;YELLOW&quot;)) {</span>
+<span class="nc" id="L158">      ret = &quot;#ffff00&quot;;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;CYAN&quot;)) {</span>
+<span class="nc" id="L160">      ret = &quot;#00ffff&quot;;</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">    } else if (colorToken.equalsIgnoreCase(&quot;BLACK&quot;)) {</span>
+<span class="nc" id="L162">      ret = &quot;#000000&quot;;</span>
+    }
+<span class="fc" id="L164">    return ret;</span>
+  }
+  /**
+   * creates tokens from a number format
+   *
+   * @param format
+   * @return tokens to be converted to OdfElements
+   *     &lt;p&gt;TODO: at first only detecting currencies -
+   */
+  protected static List&lt;StringToken&gt; tokenize(String format, NumberFormatType type) {
+<span class="fc" id="L174">    ArrayList&lt;StringToken&gt; tokens = new ArrayList&lt;StringToken&gt;();</span>
+<span class="fc" id="L175">    boolean hasNumber =</span>
+        false; // only one number token can be created, next one will be part of a text token
+<span class="fc" id="L177">    String currentTextToken = &quot;&quot;;</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">    for (int pos = 0; pos &lt; format.length(); ++pos) {</span>
+<span class="fc" id="L179">      char c = format.charAt(pos);</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">      if (c == '&quot;') {</span>
+        // add all characters until the next quotation to the current text token
+<span class="nc" id="L182">        currentTextToken += c;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        while (pos &lt; format.length() - 1) {</span>
+<span class="nc" id="L184">          c = format.charAt(pos + 1);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">          if (c == '\\') {</span>
+<span class="nc" id="L186">            currentTextToken += c;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">            if ((pos &gt; format.length() - 2)) break; // invalid!</span>
+<span class="nc" id="L188">            currentTextToken += c;</span>
+<span class="nc" id="L189">            currentTextToken += format.charAt(pos + 2);</span>
+<span class="nc" id="L190">            ++pos;</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">          } else if (c == '&quot;') {</span>
+<span class="nc" id="L192">            currentTextToken += c;</span>
+<span class="nc" id="L193">            ++pos;</span>
+<span class="nc" id="L194">            break;</span>
+          } else {
+<span class="nc" id="L196">            currentTextToken += c;</span>
+          }
+<span class="nc" id="L198">          ++pos;</span>
+        }
+<span class="fc bfc" id="L200" title="All 2 branches covered.">      } else if (c == '[') {</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        if (!currentTextToken.isEmpty()) {</span>
+<span class="nc" id="L202">          tokens.add(new StringToken(currentTextToken, TokenType.TOKEN_TEXT));</span>
+<span class="nc" id="L203">          currentTextToken = &quot;&quot;;</span>
+        }
+<span class="fc" id="L205">        int closePos = format.indexOf(']', pos);</span>
+<span class="pc bpc" id="L206" title="2 of 4 branches missed.">        if (closePos &lt; 0</span>
+            || closePos &lt; pos + 2) { // minimum two characters inside, closing bracket not quoted
+<span class="nc" id="L208">          break; // invalid</span>
+        }
+<span class="fc" id="L210">        String bracketToken = format.substring(pos, closePos + 1);</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        if (tokens.isEmpty()</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">            &amp;&amp; !getColorElement(bracketToken.substring(1, bracketToken.length() - 1)).isEmpty()) {</span>
+<span class="fc" id="L213">          tokens.add(new StringToken(bracketToken, TokenType.TOKEN_COLOR));</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        } else if (bracketToken.charAt(1) == '$') {</span>
+<span class="fc" id="L215">          tokens.add(new StringToken(bracketToken, TokenType.TOKEN_CURRENCY));</span>
+        } else {
+          break; // invalid
+        }
+<span class="fc" id="L219">        pos = closePos;</span>
+
+<span class="pc bpc" id="L221" title="3 of 8 branches missed.">      } else if (!hasNumber &amp;&amp; (c == '#' || c == '0' || c == '.')) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (!currentTextToken.isEmpty()) {</span>
+<span class="fc" id="L223">          tokens.add(new StringToken(currentTextToken, TokenType.TOKEN_TEXT));</span>
+<span class="fc" id="L224">          currentTextToken = &quot;&quot;;</span>
+        }
+<span class="fc" id="L226">        final int numPos = pos;</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        while (++pos &lt; format.length()) {</span>
+          // TODO: hashes can only be at the beginning interrupted by comma
+<span class="fc" id="L229">          c = format.charAt(pos);</span>
+<span class="fc bfc" id="L230" title="All 10 branches covered.">          if ((c != '#' &amp;&amp; c != '.' &amp;&amp; c != ',' &amp;&amp; c != '0') || (pos == (format.length() - 1))) {</span>
+<span class="fc" id="L231">            String numberToken = format.substring(numPos, pos + 1);</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">            if (numberToken.charAt(numberToken.length() - 1) == '.') {</span>
+              // add replacement chars
+<span class="nc" id="L234">              int spacePos = format.indexOf(' ', pos - 1);</span>
+<span class="nc" id="L235">              int bracketPos = format.indexOf('[', pos - 1);</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">              if (spacePos &lt; 0) {</span>
+<span class="nc" id="L237">                spacePos = bracketPos;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">              } else if (bracketPos &lt; 0) {</span>
+<span class="nc" id="L239">                bracketPos = spacePos;</span>
+              }
+<span class="nc" id="L241">              spacePos = Math.min(spacePos, bracketPos);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">              if (spacePos</span>
+                  &lt; 0) { // if not found add the rest of the format TODO: Are there other delimiters
+                // than space and bracket? ?
+<span class="nc" id="L245">                spacePos = format.length();</span>
+              }
+<span class="nc bnc" id="L247" title="All 2 branches missed.">              if (spacePos &gt; 0) {</span>
+<span class="nc" id="L248">                numberToken += format.substring(pos, spacePos);</span>
+<span class="nc" id="L249">                pos = spacePos;</span>
+              }
+            }
+<span class="fc" id="L252">            tokens.add(new StringToken(numberToken, TokenType.TOKEN_NUMBER));</span>
+<span class="fc" id="L253">            break;</span>
+          }
+        }
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">      } else if (c == '\\') {</span>
+        // add this and the next character to the text token
+<span class="nc" id="L258">        currentTextToken += c;</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (pos &gt; format.length() - 2) {</span>
+<span class="nc" id="L260">          break; // invalid</span>
+        }
+<span class="nc" id="L262">        currentTextToken += format.charAt(pos + 1);</span>
+<span class="nc" id="L263">        ++pos;</span>
+      } else {
+<span class="fc" id="L265">        currentTextToken += c;</span>
+      }
+    }
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">    if (!currentTextToken.isEmpty()) {</span>
+<span class="nc" id="L269">      tokens.add(new StringToken(currentTextToken, TokenType.TOKEN_TEXT));</span>
+    }
+<span class="fc" id="L271">    return tokens;</span>
+  }
+
+  protected void emitTokens(List&lt;StringToken&gt; tokens, NumberFormatType type) {
+
+<span class="fc bfc" id="L276" title="All 2 branches covered.">    for (StringToken token : tokens) {</span>
+<span class="pc bpc" id="L277" title="1 of 5 branches missed.">      switch (token.type) {</span>
+        case TOKEN_CURRENCY:
+          {
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            if (NumberFormatType.FORMAT_CURRENCY == type) {</span>
+<span class="fc" id="L281">              emitCurrency(token.text);</span>
+            } else {
+<span class="nc" id="L283">              emitText(token.text);</span>
+            }
+          }
+<span class="nc" id="L286">          break;</span>
+        case TOKEN_TEXT:
+<span class="fc" id="L288">          emitText(token.text);</span>
+<span class="fc" id="L289">          break;</span>
+        case TOKEN_COLOR:
+          {
+<span class="fc" id="L292">            emitColor(token.text);</span>
+          }
+<span class="fc" id="L294">          break;</span>
+        case TOKEN_NUMBER:
+          {
+<span class="pc bpc" id="L297" title="1 of 4 branches missed.">            if (NumberFormatType.FORMAT_PERCENT == type &amp;&amp; token.text.endsWith(&quot;%&quot;)) {</span>
+<span class="nc" id="L298">              emitNumber(token.text.substring(0, token.text.length() - 1), true);</span>
+<span class="nc" id="L299">              final NumberTextElement numberText =</span>
+<span class="nc" id="L300">                  new NumberTextElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="nc" id="L301">              numberText.setTextContent(&quot;%&quot;);</span>
+<span class="nc" id="L302">              this.appendChild(numberText);</span>
+<span class="pc bfc" id="L303" title="All 2 branches covered.">            } else if (NumberFormatType.FORMAT_CURRENCY == type) {</span>
+<span class="fc" id="L304">              emitNumber(token.text, true);</span>
+            } else {
+<span class="fc" id="L306">              emitNumber(token.text, false);</span>
+            }
+          }
+          break;
+      }
+<span class="fc" id="L311">    }</span>
+<span class="fc" id="L312">  }</span>
+
+  protected void emitCurrency(String currencyToken) {
+<span class="fc" id="L315">    String innerText = currencyToken.substring(1, currencyToken.length() - 1);</span>
+<span class="fc" id="L316">    String currencySymbol = &quot;&quot;;</span>
+<span class="fc" id="L317">    String languageCode = &quot;&quot;;</span>
+<span class="pc bpc" id="L318" title="2 of 4 branches missed.">    if (innerText.startsWith(&quot;$&quot;) &amp;&amp; innerText.length() &gt; 1) {</span>
+<span class="fc" id="L319">      int dashPos = innerText.indexOf(&quot;-&quot;);</span>
+<span class="fc" id="L320">      currencySymbol = innerText.substring(1, dashPos);</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">      if (dashPos &gt; 0) {</span>
+<span class="fc" id="L322">        languageCode = innerText.substring(dashPos + 1);</span>
+      }
+    }
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">    if (!currencySymbol.isEmpty()) {</span>
+<span class="fc" id="L326">      OdfFileDom dom = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="fc" id="L327">      NumberCurrencySymbolElement cSymbol = new NumberCurrencySymbolElement(dom);</span>
+<span class="fc" id="L328">      String locale = MapHelper.getLocaleFromLangCode(languageCode);</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">      if (!locale.isEmpty()) {</span>
+<span class="fc" id="L330">        int dashPos = locale.indexOf(&quot;-&quot;);</span>
+<span class="fc" id="L331">        cSymbol.setAttributeNS(</span>
+<span class="fc" id="L332">            OdfDocumentNamespace.NUMBER.getUri(), &quot;number:language&quot;, locale.substring(0, dashPos));</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        if (dashPos &gt; 0) {</span>
+<span class="fc" id="L334">          cSymbol.setAttributeNS(</span>
+<span class="fc" id="L335">              OdfDocumentNamespace.NUMBER.getUri(),</span>
+              &quot;number:country&quot;,
+<span class="fc" id="L337">              locale.substring(dashPos + 1));</span>
+        }
+      }
+<span class="fc" id="L340">      cSymbol.setTextContent(currencySymbol);</span>
+<span class="fc" id="L341">      this.appendChild(cSymbol);</span>
+    }
+<span class="fc" id="L343">  }</span>
+
+  protected void emitColor(String colorToken) {
+<span class="fc" id="L346">    String color = getColorElement(colorToken.substring(1, colorToken.length() - 1));</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">    if (!color.isEmpty()) {</span>
+<span class="fc" id="L348">      OdfFileDom dom = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="fc" id="L349">      StyleTextPropertiesElement cProperties = new StyleTextPropertiesElement(dom);</span>
+<span class="fc" id="L350">      cProperties.setAttributeNS(OdfDocumentNamespace.FO.getUri(), &quot;fo:color&quot;, color);</span>
+<span class="fc" id="L351">      this.appendChild(cProperties);</span>
+    }
+<span class="fc" id="L353">  }</span>
+
+  protected void emitNumber(String numberToken, boolean forceCreateDecimalPlaces) {
+<span class="fc" id="L356">    OdfFileDom dom = (OdfFileDom) this.getOwnerDocument();</span>
+<span class="fc" id="L357">    NumberNumberElement number = new NumberNumberElement(dom);</span>
+    /* Process part before the decimal point (if any) */
+<span class="fc" id="L359">    int nDigits = 0;</span>
+    char ch;
+    int pos;
+<span class="fc bfc" id="L362" title="All 4 branches covered.">    for (pos = 0; pos &lt; numberToken.length() &amp;&amp; (ch = numberToken.charAt(pos)) != '.'; pos++) {</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">      if (ch == ',') {</span>
+<span class="fc" id="L364">        number.setNumberGroupingAttribute(true);</span>
+<span class="fc bfc" id="L365" title="All 2 branches covered.">      } else if (ch == '0') {</span>
+<span class="fc" id="L366">        nDigits++;</span>
+      }
+    }
+<span class="fc" id="L369">    number.setNumberMinIntegerDigitsAttribute(nDigits);</span>
+
+    /* Number of decimal places is the length after the decimal */
+<span class="fc bfc" id="L372" title="All 2 branches covered.">    if (pos &lt; numberToken.length()) {</span>
+<span class="fc" id="L373">      number.setNumberDecimalPlacesAttribute(numberToken.length() - (pos + 1));</span>
+<span class="pc bpc" id="L374" title="2 of 4 branches missed.">      if (pos &lt; numberToken.length() - 1 &amp;&amp; numberToken.charAt(pos + 1) != '0') {</span>
+<span class="nc" id="L375">        number.setNumberDecimalReplacementAttribute(numberToken.substring(pos + 1));</span>
+      }
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">    } else if (forceCreateDecimalPlaces) {</span>
+<span class="nc" id="L378">      number.setNumberDecimalPlacesAttribute(0);</span>
+    }
+<span class="fc" id="L380">    this.appendChild(number);</span>
+<span class="fc" id="L381">  }</span>
+  /**
+   * Place pending text into a &amp;lt;number:text&amp;gt; element.
+   *
+   * @param textBuffer pending text
+   */
+  protected void emitText(String textBuffer) {
+    NumberTextElement textElement;
+<span class="fc bfc" id="L389" title="All 2 branches covered.">    if (!textBuffer.equals(&quot;&quot;)) {</span>
+<span class="fc" id="L390">      textElement = new NumberTextElement((OdfFileDom) this.getOwnerDocument());</span>
+<span class="fc" id="L391">      textElement.setTextContent(textBuffer);</span>
+<span class="fc" id="L392">      this.appendChild(textElement);</span>
+    }
+<span class="fc" id="L394">  }</span>
+
+  public String getNumberFormat() {
+<span class="fc" id="L397">    String result = &quot;&quot;;</span>
+<span class="fc" id="L398">    NumberNumberElement number = OdfElement.findFirstChildNode(NumberNumberElement.class, this);</span>
+<span class="fc" id="L399">    boolean isGroup = number.getNumberGroupingAttribute();</span>
+    int decimalPos =
+<span class="fc bfc" id="L401" title="All 2 branches covered.">        (number.getNumberDecimalPlacesAttribute() == null)</span>
+<span class="fc" id="L402">            ? 0</span>
+<span class="fc" id="L403">            : number.getNumberDecimalPlacesAttribute().intValue();</span>
+    int minInt =
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">        (number.getNumberMinIntegerDigitsAttribute() == null)</span>
+<span class="nc" id="L406">            ? 0</span>
+<span class="fc" id="L407">            : number.getNumberMinIntegerDigitsAttribute().intValue();</span>
+<span class="fc" id="L408">    String decimalReplacement = number.getNumberDecimalReplacementAttribute();</span>
+    int i;
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">    if (minInt == 0) {</span>
+<span class="nc" id="L411">      result = &quot;#&quot;;</span>
+    }
+<span class="fc bfc" id="L413" title="All 2 branches covered.">    for (i = 0; i &lt; minInt; i++) {</span>
+<span class="pc bpc" id="L414" title="3 of 4 branches missed.">      if (((i + 1) % 3) == 0 &amp;&amp; isGroup) {</span>
+<span class="nc" id="L415">        result = &quot;,0&quot; + result;</span>
+      } else {
+<span class="fc" id="L417">        result = &quot;0&quot; + result;</span>
+      }
+    }
+<span class="fc bfc" id="L420" title="All 4 branches covered.">    while (isGroup &amp;&amp; (result.indexOf(',') == -1)) {</span>
+<span class="pc bpc" id="L421" title="1 of 4 branches missed.">      if (((i + 1) % 3) == 0 &amp;&amp; isGroup) {</span>
+<span class="fc" id="L422">        result = &quot;#,#&quot; + result;</span>
+      } else {
+<span class="fc" id="L424">        result = &quot;#&quot; + result;</span>
+      }
+<span class="fc" id="L426">      i++;</span>
+    }
+
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">    if (decimalReplacement != null) {</span>
+<span class="nc" id="L430">      result += '.' + decimalReplacement;</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">    } else if (decimalPos &gt; 0) {</span>
+<span class="fc" id="L432">      result += &quot;.&quot;;</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">      for (i = 0; i &lt; decimalPos; i++) {</span>
+<span class="fc" id="L434">        result += &quot;0&quot;;</span>
+      }
+    }
+<span class="fc" id="L437">    return result;</span>
+  }
+  /**
+   * Get the format string that represents this style.
+   *
+   * @param caps use capitals
+   * @return the format string
+   */
+  public abstract String getFormat(boolean caps);
+
+  /**
+   * Get the format string that represents this style. Uses capitals by default
+   *
+   * @return the format string
+   */
+  public String getFormat() {
+<span class="nc" id="L453">    return getFormat(Boolean.FALSE);</span>
+  }
+
+  /**
+   * Get the format string that represents this style.
+   *
+   * @param format the format string
+   * @return the format string
+   */
+  public abstract void setFormat(String format);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

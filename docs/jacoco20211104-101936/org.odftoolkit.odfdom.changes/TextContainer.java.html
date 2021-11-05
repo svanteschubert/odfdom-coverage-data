@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextContainer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.changes</a> &gt; <span class="el_source">TextContainer.java</span></div><h1>TextContainer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.odftoolkit.odfdom.changes;
+
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+
+/**
+ * This container can be used for components including a mix of text and elements, where each
+ * character and element are components. Instead of a list of this mixed components only a list of
+ * the elements is being held
+ *
+ * @author svante.schubertATgmail.com
+ */
+public class TextContainer&lt;T&gt; extends Component {
+
+  public TextContainer(OdfElement componentElement, Component parent) {
+<span class="fc" id="L34">    super(componentElement, parent);</span>
+<span class="fc" id="L35">  }</span>
+
+  public void appendText(Text text) {
+<span class="nc" id="L38">    mRootElement.appendChild(text);</span>
+<span class="nc" id="L39">  }</span>
+
+  public void removeText(int start, int end) {
+<span class="fc" id="L42">    ((TextContainingElement) mRootElement).delete(start, end);</span>
+<span class="fc" id="L43">  }</span>
+
+  public Node appendChild(Node node) {
+<span class="nc" id="L46">    Node newNode = mRootElement.appendChild(node);</span>
+<span class="nc" id="L47">    return newNode;</span>
+  }
+
+  /** Adds the given component to the root element */
+  @Override
+  public void addChild(int index, Component c) {
+<span class="fc" id="L53">    mRootElement.insert(c.getRootElement(), index);</span>
+<span class="fc" id="L54">  }</span>
+
+  /** @return either a text node of size 1 or an element being the root element of a component */
+  @Override
+  public Node getChildNode(int index) {
+<span class="fc" id="L59">    return ((OdfElement) mRootElement).receiveNode(index);</span>
+  }
+
+  /**
+   * Removes a component from the text element container. Removes either an element representing a
+   * component or text node of size 1
+   *
+   * @returns the node being deleted, either the text node or element
+   */
+  @Override
+  public Node remove(int index) {
+<span class="fc" id="L70">    Node node = (Node) this.getChildNode(index);</span>
+<span class="fc" id="L71">    return mRootElement.removeChild(node);</span>
+  }
+
+  /**
+   * All children of the root element will be traversed. If it is a text node the size is added, if
+   * it is an element and a component a size of one is added, if it is a marker, for known text
+   * marker elements (text:span, text:bookmark) the children are recursive checked
+   *
+   * @return the number of child components
+   */
+  @Override
+  public int size() {
+<span class="fc" id="L83">    return mRootElement.componentSize();</span>
+  }
+
+  /** Recursive traverse the text container and count the children */
+  private int findChild(Node parent, int size, Node targetNode) {
+<span class="fc" id="L88">    NodeList children = parent.getChildNodes();</span>
+    Node child;
+<span class="fc bfc" id="L90" title="All 2 branches covered.">    for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L91">      child = children.item(i);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">      if (child != targetNode) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (child instanceof Text) {</span>
+<span class="fc" id="L94">          size += ((Text) child).getLength();</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        } else if (child instanceof Element) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">          if (Component.isTextSelection(child)) {</span>
+<span class="fc" id="L97">            size = findChild(child, size, targetNode);</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">          } else if (child instanceof OdfElement &amp;&amp; ((OdfElement) child).isComponentRoot()) {</span>
+<span class="fc" id="L99">            size++;</span>
+          }
+          //					else if (child instanceof TextSElement) {
+          //						 Integer spaceCount = ((TextSElement) child).getTextCAttribute();
+          //						if(spaceCount == null){
+          //							size++;
+          //						}else{
+          //							size += spaceCount;
+          //						}
+          //					}
+        }
+      } else {
+        break;
+      }
+    }
+<span class="fc" id="L114">    return size;</span>
+  }
+
+  @Override
+  public int indexOf(Object o) {
+<span class="fc" id="L119">    Node targetNode = null;</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">    if (o instanceof Component) {</span>
+<span class="fc" id="L121">      targetNode = ((Component) o).getRootElement();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">    } else if (o instanceof Node) {</span>
+<span class="nc" id="L123">      targetNode = (Node) o;</span>
+    }
+<span class="fc" id="L125">    int position = 0;</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">    if (targetNode != null) {</span>
+<span class="fc" id="L127">      position += findChild(mRootElement, position, targetNode);</span>
+    }
+<span class="fc" id="L129">    return position;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

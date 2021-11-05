@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTextList.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.incubator.doc.text</a> &gt; <span class="el_source">OdfTextList.java</span></div><h1>OdfTextList.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.incubator.doc.text;
+
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument;
+import org.odftoolkit.odfdom.dom.OdfStylesDom;
+import org.odftoolkit.odfdom.dom.element.text.TextListElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListItemElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListLevelStyleElementBase;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.w3c.dom.Node;
+
+/** Convenient functionalty for the parent ODF OpenDocument element */
+public class OdfTextList extends TextListElement {
+
+  /**
+   * Creates a new instance of OdfList.
+   *
+   * @param ownerDoc
+   */
+  public OdfTextList(OdfFileDom ownerDoc) {
+<span class="fc" id="L47">    super(ownerDoc);</span>
+<span class="fc" id="L48">  }</span>
+
+  /**
+   * Creates a new instance of OdfList.
+   *
+   * @param ownerDoc The document to which the list belongs
+   * @param itemList An array of the list items, each preceded by delimiters that indicate nesting
+   *     level.
+   * @param indentDelim The character used as level nesting delimiter.
+   * @param listStyleName Name to be applied to each &lt;code&gt;text:list&lt;/code&gt; element.
+   */
+  public OdfTextList(
+      OdfFileDom ownerDoc, String[] itemList, char indentDelim, String listStyleName) {
+<span class="fc" id="L61">    super(ownerDoc);</span>
+<span class="fc" id="L62">    OdfTextList[] listArray = new OdfTextList[10];</span>
+    TextListItemElement listItem;
+    OdfTextParagraph para;
+    String item;
+<span class="fc" id="L66">    int level = 0;</span>
+<span class="fc" id="L67">    int lastLevel = 0;</span>
+    int lev; // loop counter
+
+<span class="fc" id="L70">    listArray[0] = this;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    for (int i = 0; i &lt; itemList.length; i++) {</span>
+<span class="fc" id="L72">      level = 0;</span>
+<span class="fc" id="L73">      item = itemList[i];</span>
+
+      // determine level of indenting by counting delimiters,
+      // then get rid of the delimiters
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">      while (level &lt; item.length() &amp;&amp; item.charAt(level) == indentDelim) {</span>
+<span class="fc" id="L78">        level++;</span>
+      }
+<span class="fc" id="L80">      item = item.substring(level);</span>
+
+<span class="fc bfc" id="L82" title="All 2 branches covered.">      if (level &gt; lastLevel) // open the sub-levels</span>
+      {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (lev = lastLevel + 1; lev &lt;= level; lev++) {</span>
+<span class="fc" id="L85">          listArray[lev] = new OdfTextList(ownerDoc);</span>
+<span class="fc" id="L86">          listArray[lev].setTextStyleNameAttribute(listStyleName);</span>
+        }
+<span class="fc bfc" id="L88" title="All 2 branches covered.">      } else if (level &lt; lastLevel) // close off the intervening lists</span>
+      {
+<span class="fc" id="L90">        closeLevels(ownerDoc, listArray, lastLevel, level);</span>
+      }
+      // now that we are at the proper level, add the item.
+<span class="fc" id="L93">      listArray[level].setTextStyleNameAttribute(listStyleName);</span>
+<span class="fc" id="L94">      listItem = new TextListItemElement(ownerDoc);</span>
+<span class="fc" id="L95">      para = new OdfTextParagraph(ownerDoc);</span>
+<span class="fc" id="L96">      para.setTextContent(item);</span>
+<span class="fc" id="L97">      listItem.appendChild(para);</span>
+<span class="fc" id="L98">      listArray[level].appendChild(listItem);</span>
+<span class="fc" id="L99">      lastLevel = level;</span>
+    }
+
+    // close off any remaining open lists
+<span class="fc" id="L103">    closeLevels(ownerDoc, listArray, lastLevel, 0);</span>
+<span class="fc" id="L104">  }</span>
+
+  private void closeLevels(
+      OdfFileDom ownerDoc, OdfTextList[] listArray, int fromLevel, int toLevel) {
+<span class="fc bfc" id="L108" title="All 2 branches covered.">    for (int level = fromLevel; level &gt; toLevel; level--) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">      if (!listArray[level - 1].hasChildNodes()) {</span>
+        /* Force a list item */
+<span class="fc" id="L111">        listArray[level - 1].appendChild(new TextListItemElement(ownerDoc));</span>
+      }
+<span class="fc" id="L113">      listArray[level - 1].getLastChild().appendChild(listArray[level]);</span>
+    }
+<span class="fc" id="L115">  }</span>
+
+  /**
+   * Retrieves Odf Text List Style
+   *
+   * @return the &lt;code&gt;OdfTextListStyle&lt;/code&gt; element
+   */
+  public OdfTextListStyle getListStyle() {
+<span class="fc" id="L123">    OdfTextListStyle style = null;</span>
+
+<span class="fc" id="L125">    String listName = getTextStyleNameAttribute();</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">    if (listName != null &amp;&amp; listName.length() &gt; 0) {</span>
+<span class="fc" id="L127">      OdfFileDom fileDom = (OdfFileDom) this.ownerDocument;</span>
+<span class="fc" id="L128">      OdfOfficeAutomaticStyles autoStyles = null;</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">      if (fileDom instanceof OdfContentDom) {</span>
+<span class="fc" id="L130">        autoStyles = ((OdfContentDom) fileDom).getAutomaticStyles();</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">      } else if (fileDom instanceof OdfStylesDom) {</span>
+<span class="nc" id="L132">        autoStyles = ((OdfStylesDom) fileDom).getAutomaticStyles();</span>
+      }
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">      if (autoStyles != null) {</span>
+<span class="fc" id="L135">        style = autoStyles.getListStyle(listName);</span>
+      }
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">      if (style == null) {</span>
+<span class="nc" id="L138">        OdfOfficeStyles styles = ((OdfSchemaDocument) fileDom.getDocument()).getDocumentStyles();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (styles != null) {</span>
+<span class="nc" id="L140">          style = styles.getListStyle(listName);</span>
+        }
+      }
+<span class="fc" id="L143">    } else {</span>
+      // if no style is specified at this particular list element, we
+      // ask the parent list (if any)
+<span class="fc" id="L146">      OdfTextList parentList = getParentList();</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">      if (parentList != null) {</span>
+<span class="fc" id="L148">        style = parentList.getListStyle();</span>
+      }
+    }
+
+<span class="fc" id="L152">    return style;</span>
+  }
+
+  /**
+   * Retrieves the list level count
+   *
+   * @return the level count
+   */
+  public int getListLevel() {
+<span class="fc" id="L161">    int level = 1;</span>
+<span class="fc" id="L162">    Node parent = getParentNode();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">    while (parent != null) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">      if (parent instanceof TextListElement) {</span>
+<span class="fc" id="L165">        level++;</span>
+      }
+<span class="fc" id="L167">      parent = parent.getParentNode();</span>
+    }
+<span class="fc" id="L169">    return level;</span>
+  }
+
+  /**
+   * Retrieves the List Level Style
+   *
+   * @return the &lt;code&gt;TextListLevelStyleElementBase&lt;/code&gt;
+   */
+  public TextListLevelStyleElementBase getListLevelStyle() {
+<span class="fc" id="L178">    TextListLevelStyleElementBase odfListLevelStyle = null;</span>
+<span class="fc" id="L179">    OdfTextListStyle style = getListStyle();</span>
+<span class="fc" id="L180">    int level = getListLevel();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">    if (style != null) {</span>
+<span class="fc" id="L182">      odfListLevelStyle = style.getLevel(level);</span>
+    } else {
+<span class="nc" id="L184">      Logger.getLogger(OdfTextList.class.getName()).warning(&quot;No ListLevelStyle found!&quot;);</span>
+    }
+<span class="fc" id="L186">    return odfListLevelStyle;</span>
+  }
+
+  /**
+   * Retrieves or create local list style
+   *
+   * @return the &lt;code&gt;OdfTextListStyle&lt;/code&gt; element
+   */
+  public OdfTextListStyle getOrCreateLocalListStyle() {
+<span class="nc" id="L195">    OdfTextListStyle listStyle = getListStyle();</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">    if (listStyle == null) {</span>
+<span class="nc" id="L197">      OdfOfficeAutomaticStyles autoStyles = null;</span>
+<span class="nc" id="L198">      OdfFileDom fileDom = ((OdfFileDom) this.ownerDocument);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">      if (fileDom instanceof OdfContentDom) {</span>
+<span class="nc" id="L200">        autoStyles = ((OdfContentDom) fileDom).getOrCreateAutomaticStyles();</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">      } else if (fileDom instanceof OdfStylesDom) {</span>
+<span class="nc" id="L202">        autoStyles = ((OdfStylesDom) fileDom).getOrCreateAutomaticStyles();</span>
+      }
+<span class="nc bnc" id="L204" title="All 2 branches missed.">      if (autoStyles != null) {</span>
+<span class="nc" id="L205">        listStyle = autoStyles.newListStyle();</span>
+      }
+    }
+<span class="nc" id="L208">    return listStyle;</span>
+  }
+
+  /**
+   * Retrieves the parent list of text list
+   *
+   * @return The &lt;code&gt;OdfTextList&lt;/code&gt;
+   */
+  public OdfTextList getParentList() {
+<span class="fc" id="L217">    Node parent = getParentNode();</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">    while (parent != null) {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">      if (parent instanceof OdfTextList) {</span>
+<span class="fc" id="L220">        return (OdfTextList) parent;</span>
+      }
+<span class="fc" id="L222">      parent = parent.getParentNode();</span>
+    }
+<span class="nc" id="L224">    return null;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

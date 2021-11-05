@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SignedZeroToHundredPercent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">SignedZeroToHundredPercent.java</span></div><h1>SignedZeroToHundredPercent.java</h1><pre class="source lang-java linenums">/*
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+&quot;License&quot;); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+&quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+package org.odftoolkit.odfdom.type;
+
+import java.util.regex.Pattern;
+
+/**
+ * This class represents the in OpenDocument format used data type {@odf.datatype
+ * signedZeroToHundredPercent}
+ */
+public class SignedZeroToHundredPercent implements OdfDataType {
+  private double mN;
+<span class="nc" id="L29">  private static final Pattern signedZeroToHundredPercentPattern =</span>
+<span class="nc" id="L30">      Pattern.compile(&quot;^-?([0-9]?[0-9](\\.[0-9]*)?|100(\\.0*)?|\\.[0-9]+)%$&quot;);</span>
+
+  /**
+   * Allocates a SignedZeroToHundredPercent object representing the n argument
+   *
+   * @param n the value of the SignedZeroToHundredPercent
+   * @throws IllegalArgumentException if the given argument is not a valid
+   *     SignedZeroToHundredPercent
+   */
+<span class="nc" id="L39">  public SignedZeroToHundredPercent(double n) throws IllegalArgumentException {</span>
+<span class="nc bnc" id="L40" title="All 4 branches missed.">    if (n &gt; 1 || n &lt; -1)</span>
+<span class="nc" id="L41">      throw new IllegalArgumentException(</span>
+          &quot;parameter is invalid for datatype SignedZeroToHundredPercent&quot;);
+<span class="nc" id="L43">    mN = n;</span>
+<span class="nc" id="L44">  }</span>
+
+  /**
+   * Returns a String Object representing this SignedZeroToHundredPercent's value
+   *
+   * @return return a string representation of the value of this SignedZeroToHundredPercent object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L53">    return Double.toString(mN * 100) + &quot;%&quot;;</span>
+  }
+
+  /**
+   * Returns a SignedZeroToHundredPercent instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a SignedZeroToHundredPercent instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid
+   *     SignedZeroToHundredPercent
+   */
+  public static SignedZeroToHundredPercent valueOf(String stringValue)
+      throws IllegalArgumentException {
+<span class="nc bnc" id="L66" title="All 4 branches missed.">    if ((stringValue == null) || (stringValue.length() == 0)) {</span>
+<span class="nc" id="L67">      return new SignedZeroToHundredPercent(0.0);</span>
+    }
+
+<span class="nc" id="L70">    int n = stringValue.indexOf(&quot;%&quot;);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    if (n != -1) {</span>
+<span class="nc" id="L72">      return new SignedZeroToHundredPercent(</span>
+<span class="nc" id="L73">          Double.valueOf(stringValue.substring(0, n)).doubleValue() / 100);</span>
+    } else {
+<span class="nc" id="L75">      throw new IllegalArgumentException(</span>
+          &quot;parameter is invalid for datatype SignedZeroToHundredPercent&quot;);
+    }
+  }
+
+  /**
+   * Returns the value of this SignedZeroToHundredPercent object as a double primitive
+   *
+   * @return the primitive double value of this SignedZeroToHundredPercent object.
+   */
+  public double doubleValue() {
+<span class="nc" id="L86">    return mN;</span>
+  }
+
+  /**
+   * check if the specified Double instance is a valid {@odf.datatype signedZeroToHundredPercent}
+   * data type
+   *
+   * @param doubleValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype signedZeroToHundredPercent}
+   *     data type false otherwise
+   */
+  public static boolean isValid(Double doubleValue) {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">    if ((doubleValue != null)</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        &amp;&amp; (doubleValue.doubleValue() &lt;= 1)</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        &amp;&amp; (doubleValue.doubleValue() &gt;= -1)) {</span>
+<span class="nc" id="L101">      return true;</span>
+    } else {
+<span class="nc" id="L103">      return false;</span>
+    }
+  }
+
+  /**
+   * check if the specified String instance is a valid {@odf.datatype 'signedZeroToHundredPercent'}
+   * data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype 'signedZeroToHundredPercent'}
+   *     data type false otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">    if ((stringValue == null)</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        || (!signedZeroToHundredPercentPattern.matcher(stringValue).matches())) {</span>
+<span class="nc" id="L118">      return false;</span>
+    } else {
+<span class="nc" id="L120">      return true;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Percent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.type</a> &gt; <span class="el_source">Percent.java</span></div><h1>Percent.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.type;
+
+import java.util.regex.Pattern;
+
+/** This class represents the in OpenDocument format used data type {@odf.datatype percent} */
+public class Percent implements OdfFieldDataType, OdfDataType {
+
+  private double mN;
+<span class="fc" id="L32">  private static final Pattern percentPattern =</span>
+<span class="fc" id="L33">      Pattern.compile(&quot;^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)%$&quot;);</span>
+
+  /**
+   * Allocates a Percent object representing the n argument
+   *
+   * @param n the value of the Percent
+   * @throws IllegalArgumentException if the given argument is not a valid Percent
+   */
+<span class="fc" id="L41">  public Percent(double n) throws IllegalArgumentException {</span>
+<span class="fc" id="L42">    mN = n;</span>
+<span class="fc" id="L43">  }</span>
+
+  /**
+   * Returns a String Object representing this Percent's value
+   *
+   * @return return a string representation of the value of this Percent object
+   */
+  @Override
+  public String toString() {
+<span class="nc" id="L52">    return Double.toString(mN * 100) + &quot;%&quot;;</span>
+  }
+
+  /**
+   * Returns a Percent instance representing the specified String value
+   *
+   * @param stringValue a String value
+   * @return return a Percent instance representing stringValue
+   * @throws IllegalArgumentException if the given argument is not a valid Percent
+   */
+  public static Percent valueOf(String stringValue) throws IllegalArgumentException {
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">    if ((stringValue == null) || (stringValue.length() == 0)) {</span>
+<span class="nc" id="L64">      return new Percent(0.0);</span>
+    }
+
+<span class="fc" id="L67">    int n = stringValue.indexOf(&quot;%&quot;);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">    if (n != -1) {</span>
+<span class="fc" id="L69">      return new Percent(Double.valueOf(stringValue.substring(0, n)).doubleValue() / 100);</span>
+    } else {
+<span class="nc" id="L71">      throw new IllegalArgumentException(&quot;parameter is invalid for datatype Percent&quot;);</span>
+    }
+  }
+
+  /**
+   * Returns the value of this Percent object as a double primitive
+   *
+   * @return the primitive double value of this Percent object.
+   */
+  public double doubleValue() {
+<span class="fc" id="L81">    return mN;</span>
+  }
+
+  /**
+   * check if the specified Double instance is a valid {@odf.datatype percent} data type
+   *
+   * @param doubleValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype percent} data type false
+   *     otherwise
+   */
+  public static boolean isValid(Double doubleValue) {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">    if (doubleValue == null) {</span>
+<span class="nc" id="L93">      return false;</span>
+    } else {
+<span class="nc" id="L95">      return true;</span>
+    }
+  }
+
+  /**
+   * check if the specified String instance is a valid {@odf.datatype percent} data type
+   *
+   * @param stringValue the value to be tested
+   * @return true if the value of argument is valid for {@odf.datatype percent} data type false
+   *     otherwise
+   */
+  public static boolean isValid(String stringValue) {
+<span class="nc bnc" id="L107" title="All 4 branches missed.">    if ((stringValue == null) || (!percentPattern.matcher(stringValue).matches())) {</span>
+<span class="nc" id="L108">      return false;</span>
+    } else {
+<span class="nc" id="L110">      return true;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

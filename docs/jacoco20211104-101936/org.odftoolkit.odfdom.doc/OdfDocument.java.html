@@ -1,0 +1,1244 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc</a> &gt; <span class="el_source">OdfDocument.java</span></div><h1>OdfDocument.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * &lt;p&gt;Copyright 2008, 2010 Oracle and/or its affiliates. All rights reserved.
+ *
+ * &lt;p&gt;Use is subject to license terms.
+ *
+ * &lt;p&gt;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0. You can also obtain a copy of the License at
+ * http://odftoolkit.org/docs/license.txt
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * &lt;p&gt;See the License for the specific language governing permissions and limitations under the
+ * License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import org.odftoolkit.odfdom.doc.table.OdfTable;
+import org.odftoolkit.odfdom.dom.OdfContentDom;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.OdfMetaDom;
+import org.odftoolkit.odfdom.dom.OdfSchemaConstraint;
+import org.odftoolkit.odfdom.dom.OdfSchemaDocument;
+import org.odftoolkit.odfdom.dom.attribute.text.TextAnchorTypeAttribute;
+import org.odftoolkit.odfdom.dom.element.draw.DrawPageElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeAnnotationElement;
+import org.odftoolkit.odfdom.dom.element.office.OfficeBodyElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.dom.style.props.OdfTextProperties;
+import org.odftoolkit.odfdom.incubator.doc.draw.OdfDrawFrame;
+import org.odftoolkit.odfdom.incubator.doc.draw.OdfDrawImage;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfDefaultStyle;
+import org.odftoolkit.odfdom.incubator.meta.OdfOfficeMeta;
+import org.odftoolkit.odfdom.pkg.MediaType;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.pkg.OdfPackage;
+import org.odftoolkit.odfdom.pkg.OdfValidationException;
+import org.odftoolkit.odfdom.type.Duration;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+
+/** This abstract class is representing one of the possible ODF documents. */
+public abstract class OdfDocument extends OdfSchemaDocument {
+  // Static parts of file references
+
+  private static final String SLASH = &quot;/&quot;;
+  private OdfMediaType mMediaType;
+  private OdfOfficeMeta mOfficeMeta;
+  private long documentOpeningTime;
+<span class="fc" id="L87">  private static final Pattern CONTROL_CHAR_PATTERN = Pattern.compile(&quot;\\p{Cntrl}&quot;);</span>
+  private static final String EMPTY_STRING = &quot;&quot;;
+  private Calendar mCreationDate;
+  private static final String FORMER_OPEN_OFFICE_VERSION =
+      &quot;StarOffice/8$Win32 OpenOffice.org_project/680m18$Build-9161&quot;;
+<span class="fc" id="L92">  protected Boolean mHasCollaboration = null;</span>
+
+  // Using static factory instead of constructor
+  protected OdfDocument(OdfPackage pkg, String internalPath, OdfMediaType mediaType)
+      throws SAXException {
+<span class="fc" id="L97">    super(pkg, internalPath, mediaType.getMediaTypeString());</span>
+<span class="fc" id="L98">    mMediaType = mediaType;</span>
+    // set document opening time.
+<span class="fc" id="L100">    documentOpeningTime = System.currentTimeMillis();</span>
+<span class="fc" id="L101">  }</span>
+
+  /** This enum contains all possible media types of OpenDocument documents. */
+<span class="fc" id="L104">  public enum OdfMediaType implements MediaType {</span>
+<span class="fc" id="L105">    CHART(&quot;application/vnd.oasis.opendocument.chart&quot;, &quot;odc&quot;),</span>
+<span class="fc" id="L106">    CHART_TEMPLATE(&quot;application/vnd.oasis.opendocument.chart-template&quot;, &quot;otc&quot;),</span>
+<span class="fc" id="L107">    FORMULA(&quot;application/vnd.oasis.opendocument.formula&quot;, &quot;odf&quot;),</span>
+<span class="fc" id="L108">    FORMULA_TEMPLATE(&quot;application/vnd.oasis.opendocument.formula-template&quot;, &quot;otf&quot;),</span>
+<span class="fc" id="L109">    DATABASE_FRONT_END(&quot;application/vnd.oasis.opendocument.base&quot;, &quot;odb&quot;),</span>
+<span class="fc" id="L110">    GRAPHICS(&quot;application/vnd.oasis.opendocument.graphics&quot;, &quot;odg&quot;),</span>
+<span class="fc" id="L111">    GRAPHICS_TEMPLATE(&quot;application/vnd.oasis.opendocument.graphics-template&quot;, &quot;otg&quot;),</span>
+<span class="fc" id="L112">    IMAGE(&quot;application/vnd.oasis.opendocument.image&quot;, &quot;odi&quot;),</span>
+<span class="fc" id="L113">    IMAGE_TEMPLATE(&quot;application/vnd.oasis.opendocument.image-template&quot;, &quot;oti&quot;),</span>
+<span class="fc" id="L114">    PRESENTATION(&quot;application/vnd.oasis.opendocument.presentation&quot;, &quot;odp&quot;),</span>
+<span class="fc" id="L115">    PRESENTATION_TEMPLATE(&quot;application/vnd.oasis.opendocument.presentation-template&quot;, &quot;otp&quot;),</span>
+<span class="fc" id="L116">    SPREADSHEET(&quot;application/vnd.oasis.opendocument.spreadsheet&quot;, &quot;ods&quot;),</span>
+<span class="fc" id="L117">    SPREADSHEET_TEMPLATE(&quot;application/vnd.oasis.opendocument.spreadsheet-template&quot;, &quot;ots&quot;),</span>
+<span class="fc" id="L118">    TEXT(&quot;application/vnd.oasis.opendocument.text&quot;, &quot;odt&quot;),</span>
+<span class="fc" id="L119">    TEXT_MASTER(&quot;application/vnd.oasis.opendocument.text-master&quot;, &quot;odm&quot;),</span>
+<span class="fc" id="L120">    TEXT_TEMPLATE(&quot;application/vnd.oasis.opendocument.text-template&quot;, &quot;ott&quot;),</span>
+<span class="fc" id="L121">    TEXT_WEB(&quot;application/vnd.oasis.opendocument.text-web&quot;, &quot;oth&quot;);</span>
+    private final String mMediaType;
+    private final String mSuffix;
+
+<span class="fc" id="L125">    OdfMediaType(String mediaType, String suffix) {</span>
+<span class="fc" id="L126">      this.mMediaType = mediaType;</span>
+<span class="fc" id="L127">      this.mSuffix = suffix;</span>
+<span class="fc" id="L128">    }</span>
+
+    /** @return the mediatype String of this document */
+    @Override
+    public String getMediaTypeString() {
+<span class="fc" id="L133">      return mMediaType;</span>
+    }
+
+    /** @return the ODF filesuffix of this document */
+    @Override
+    public String getSuffix() {
+<span class="fc" id="L139">      return mSuffix;</span>
+    }
+
+    /**
+     * @param mediaType string defining an ODF document
+     * @return the according OdfMediatype encapsulating the given string and the suffix
+     */
+    public static OdfMediaType getOdfMediaType(String mediaType) {
+<span class="fc" id="L147">      OdfMediaType odfMediaType = null;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">      if (mediaType != null) {</span>
+
+<span class="fc" id="L150">        String mediaTypeShort =</span>
+<span class="fc" id="L151">            mediaType.substring(mediaType.lastIndexOf(&quot;.&quot;) + 1, mediaType.length());</span>
+<span class="fc" id="L152">        mediaTypeShort = mediaTypeShort.replace('-', '_').toUpperCase();</span>
+        try {
+<span class="fc" id="L154">          odfMediaType = OdfMediaType.valueOf(mediaTypeShort);</span>
+
+<span class="fc" id="L156">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L157">          throw new IllegalArgumentException(</span>
+              &quot;Given mediaType '&quot; + mediaType + &quot;' is not an ODF mediatype!&quot;);
+<span class="fc" id="L159">        }</span>
+      }
+<span class="fc" id="L161">      return odfMediaType;</span>
+    }
+  }
+
+  /**
+   * Loads the ODF root document from the given Resource.
+   *
+   * &lt;p&gt;NOTE: Initial meta data (like the document creation time) will be added in this method.
+   *
+   * @param res a resource containing a package with a root document
+   * @param odfMediaType the media type of the root document
+   * @return the OpenDocument document or NULL if the media type is not supported by ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  protected static OdfDocument loadTemplate(Resource res, OdfMediaType odfMediaType)
+      throws Exception {
+<span class="fc" id="L177">    InputStream in = res.createInputStream();</span>
+<span class="fc" id="L178">    OdfPackage pkg = null;</span>
+    try {
+<span class="fc" id="L180">      pkg = OdfPackage.loadPackage(in);</span>
+    } finally {
+<span class="fc" id="L182">      in.close();</span>
+    }
+<span class="fc" id="L184">    OdfDocument newDocument = newDocument(pkg, ROOT_DOCUMENT_PATH, odfMediaType, Boolean.FALSE);</span>
+    // add creation time, the metadata have to be explicitly set
+<span class="fc" id="L186">    newDocument.mCreationDate = Calendar.getInstance();</span>
+<span class="fc" id="L187">    return newDocument;</span>
+  }
+
+  /**
+   * Loads the ODF root document from the given Resource.
+   *
+   * &lt;p&gt;NOTE: Initial meta data (like the document creation time) will be added in this method.
+   *
+   * @param res a resource containing a package with a root document
+   * @param odfMediaType the media type of the root document
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the OpenDocument document or NULL if the media type is not supported by ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  protected static OdfDocument loadTemplate(
+      Resource res, OdfMediaType odfMediaType, Boolean enableCollaboration) throws Exception {
+<span class="nc" id="L203">    InputStream in = res.createInputStream();</span>
+<span class="nc" id="L204">    OdfPackage pkg = null;</span>
+    try {
+<span class="nc" id="L206">      pkg = OdfPackage.loadPackage(in);</span>
+    } finally {
+<span class="nc" id="L208">      in.close();</span>
+    }
+<span class="nc" id="L210">    OdfDocument newDocument =</span>
+<span class="nc" id="L211">        newDocument(pkg, ROOT_DOCUMENT_PATH, odfMediaType, enableCollaboration);</span>
+    // add creation time, the metadata have to be explicitly set
+<span class="nc" id="L213">    newDocument.mCreationDate = Calendar.getInstance();</span>
+<span class="nc" id="L214">    return newDocument;</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package provided by its path.
+   *
+   * &lt;p&gt;OdfDocument relies on the file being available for read access over the whole life-cycle of
+   * OdfDocument.
+   *
+   * @param documentPath - the path from where the document can be loaded
+   * @return the OpenDocument from the given path or NULL if the media type is not supported by
+   *     ODFDOM.
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfDocument loadDocument(String documentPath) throws Exception {
+<span class="fc" id="L229">    return loadDocument(OdfPackage.loadPackage(documentPath));</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package provided by a Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param inStream - the InputStream of the ODF document.
+   * @param configuration - key/value pairs of user given run-time settings (configuration)
+   * @return the document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfDocument loadDocument(InputStream inStream, Map&lt;String, Object&gt; configuration)
+      throws Exception {
+<span class="nc" id="L247">    return loadDocument(OdfPackage.loadPackage(inStream, configuration));</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package provided by a Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param inStream - the InputStream of the ODF document.
+   * @param configuration - key/value pairs of user given run-time settings (configuration)
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfDocument loadDocument(
+      InputStream inStream, Map&lt;String, Object&gt; configuration, Boolean enableCollaboration)
+      throws Exception {
+<span class="fc" id="L267">    return loadDocument(OdfPackage.loadPackage(inStream, configuration), enableCollaboration);</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package provided by a Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param inStream - the InputStream of the ODF document.
+   * @return the document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfDocument loadDocument(InputStream inStream) throws Exception {
+<span class="fc" id="L283">    return loadDocument(OdfPackage.loadPackage(inStream));</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package provided by a Stream.
+   *
+   * &lt;p&gt;Since an InputStream does not provide the arbitrary (non sequential) read access needed by
+   * OdfDocument, the InputStream is cached. This usually takes more time compared to the other
+   * createInternalDocument methods. An advantage of caching is that there are no problems
+   * overwriting an input file.
+   *
+   * @param inStream - the InputStream of the ODF document.
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the document created from the given InputStream
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfDocument loadDocument(InputStream inStream, Boolean enableCollaboration)
+      throws Exception {
+<span class="fc" id="L301">    return loadDocument(OdfPackage.loadPackage(inStream), enableCollaboration);</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package provided as a File.
+   *
+   * @param file - a file representing the ODF document.
+   * @return the document created from the given File
+   * @throws java.lang.Exception - if the document could not be created.
+   */
+  public static OdfDocument loadDocument(File file) throws Exception {
+<span class="fc" id="L312">    return loadDocument(OdfPackage.loadPackage(file));</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package.
+   *
+   * @param odfPackage - the ODF package containing the ODF document.
+   * @return the root document of the given OdfPackage
+   * @throws java.lang.Exception - if the ODF document could not be created.
+   */
+  public static OdfDocument loadDocument(OdfPackage odfPackage) throws Exception {
+<span class="fc" id="L323">    return loadDocument(odfPackage, ROOT_DOCUMENT_PATH);</span>
+  }
+
+  /**
+   * Loads the ODF root document from the ODF package.
+   *
+   * @param odfPackage - the ODF package containing the ODF document.
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the root document of the given OdfPackage
+   * @throws java.lang.Exception - if the ODF document could not be created.
+   */
+  public static OdfDocument loadDocument(OdfPackage odfPackage, Boolean enableCollaboration)
+      throws Exception {
+<span class="fc" id="L336">    return loadDocument(odfPackage, ROOT_DOCUMENT_PATH, enableCollaboration);</span>
+  }
+
+  /**
+   * Creates an OdfDocument from the OpenDocument provided by an ODF package.
+   *
+   * @param odfPackage - the ODF package containing the ODF document.
+   * @param internalPath - the path to the ODF document relative to the package root, or an empty
+   *     String for the root document.
+   * @return the root document of the given OdfPackage
+   * @throws java.lang.Exception - if the ODF document could not be created.
+   */
+  public static OdfDocument loadDocument(OdfPackage odfPackage, String internalPath)
+      throws Exception {
+<span class="fc" id="L350">    return loadDocument(odfPackage, internalPath, Boolean.FALSE);</span>
+  }
+
+  /**
+   * Creates an OdfDocument from the OpenDocument provided by an ODF package.
+   *
+   * @param odfPackage - the ODF package containing the ODF document.
+   * @param internalPath - the path to the ODF document relative to the package root, or an empty
+   *     String for the root document.
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return the root document of the given OdfPackage
+   * @throws java.lang.Exception - if the ODF document could not be created.
+   */
+  public static OdfDocument loadDocument(
+      OdfPackage odfPackage, String internalPath, Boolean enableCollaboration) throws Exception {
+<span class="fc" id="L365">    String documentMediaType = odfPackage.getMediaTypeString(internalPath);</span>
+<span class="fc" id="L366">    OdfMediaType odfMediaType = null;</span>
+    try {
+<span class="fc" id="L368">      odfMediaType = OdfMediaType.getOdfMediaType(documentMediaType);</span>
+<span class="fc" id="L369">    } catch (IllegalArgumentException e) {</span>
+      // the returned NULL will be taking care of afterwards
+<span class="fc" id="L371">    }</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">    if (odfMediaType == null) {</span>
+<span class="fc" id="L373">      ErrorHandler errorHandler = odfPackage.getErrorHandler();</span>
+
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">      if (documentMediaType != null) {</span>
+<span class="fc" id="L376">        Matcher matcherCTRL = CONTROL_CHAR_PATTERN.matcher(documentMediaType);</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">        if (matcherCTRL.find()) {</span>
+<span class="fc" id="L378">          documentMediaType = matcherCTRL.replaceAll(EMPTY_STRING);</span>
+        }
+      }
+<span class="fc" id="L381">      OdfValidationException ve =</span>
+          new OdfValidationException(
+              OdfSchemaConstraint.DOCUMENT_WITHOUT_ODF_MIMETYPE, internalPath, documentMediaType);
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">      if (errorHandler != null) {</span>
+<span class="fc" id="L385">        errorHandler.fatalError(ve);</span>
+      }
+<span class="fc" id="L387">      throw ve;</span>
+    }
+<span class="fc" id="L389">    return newDocument(odfPackage, internalPath, odfMediaType, enableCollaboration);</span>
+  }
+
+  // return null if the media type can not be recognized.
+  private static OdfDocument loadDocumentFromTemplate(OdfMediaType odfMediaType) throws Exception {
+
+    final Resource documentTemplate;
+<span class="pc bpc" id="L396" title="4 of 7 branches missed.">    switch (odfMediaType) {</span>
+      case TEXT:
+      case TEXT_TEMPLATE:
+      case TEXT_MASTER:
+      case TEXT_WEB:
+<span class="fc" id="L401">        documentTemplate = OdfTextDocument.EMPTY_TEXT_DOCUMENT_RESOURCE;</span>
+<span class="fc" id="L402">        break;</span>
+
+      case SPREADSHEET:
+      case SPREADSHEET_TEMPLATE:
+<span class="nc" id="L406">        documentTemplate = OdfSpreadsheetDocument.EMPTY_SPREADSHEET_DOCUMENT_RESOURCE;</span>
+<span class="nc" id="L407">        break;</span>
+
+      case PRESENTATION:
+      case PRESENTATION_TEMPLATE:
+<span class="nc" id="L411">        documentTemplate = OdfPresentationDocument.EMPTY_PRESENTATION_DOCUMENT_RESOURCE;</span>
+<span class="nc" id="L412">        break;</span>
+
+      case GRAPHICS:
+      case GRAPHICS_TEMPLATE:
+<span class="fc" id="L416">        documentTemplate = OdfGraphicsDocument.EMPTY_GRAPHICS_DOCUMENT_RESOURCE;</span>
+<span class="fc" id="L417">        break;</span>
+
+      case CHART:
+      case CHART_TEMPLATE:
+<span class="fc" id="L421">        documentTemplate = OdfChartDocument.EMPTY_CHART_DOCUMENT_RESOURCE;</span>
+<span class="fc" id="L422">        break;</span>
+
+      case IMAGE:
+      case IMAGE_TEMPLATE:
+<span class="nc" id="L426">        documentTemplate = OdfImageDocument.EMPTY_IMAGE_DOCUMENT_RESOURCE;</span>
+<span class="nc" id="L427">        break;</span>
+
+      default:
+<span class="nc" id="L430">        documentTemplate = null;</span>
+<span class="nc" id="L431">        throw new IllegalArgumentException(</span>
+            &quot;Given mediaType '&quot; + odfMediaType.mMediaType + &quot;' is not yet supported!&quot;);
+    }
+<span class="fc" id="L434">    return loadTemplate(documentTemplate, odfMediaType);</span>
+  }
+
+  /**
+   * Creates one of the ODF documents based a given mediatype.
+   *
+   * @param odfMediaType The ODF Mediatype of the ODF document to be created.
+   * @param enableCollaboration - user changes equivalent for creating this document are gathered
+   * @return The ODF document, which mediatype dependends on the parameter or NULL if media type
+   *     were not supported.
+   */
+  private static OdfDocument newDocument(
+      OdfPackage pkg, String internalPath, OdfMediaType odfMediaType, Boolean enableCollaboration)
+      throws SAXException {
+<span class="fc" id="L448">    OdfDocument newDoc = null;</span>
+<span class="fc bfc" id="L449" title="All 15 branches covered.">    switch (odfMediaType) {</span>
+      case TEXT:
+<span class="fc" id="L451">        newDoc =</span>
+            new OdfTextDocument(
+                pkg, internalPath, OdfTextDocument.OdfMediaType.TEXT, enableCollaboration);
+<span class="fc" id="L454">        break;</span>
+
+      case TEXT_TEMPLATE:
+<span class="fc" id="L457">        newDoc =</span>
+            new OdfTextDocument(
+                pkg, internalPath, OdfTextDocument.OdfMediaType.TEXT_TEMPLATE, enableCollaboration);
+<span class="fc" id="L460">        break;</span>
+
+      case TEXT_MASTER:
+<span class="fc" id="L463">        newDoc =</span>
+            new OdfTextDocument(
+                pkg, internalPath, OdfTextDocument.OdfMediaType.TEXT_MASTER, enableCollaboration);
+<span class="fc" id="L466">        break;</span>
+
+      case TEXT_WEB:
+<span class="fc" id="L469">        newDoc =</span>
+            new OdfTextDocument(
+                pkg, internalPath, OdfTextDocument.OdfMediaType.TEXT_WEB, enableCollaboration);
+<span class="fc" id="L472">        break;</span>
+
+      case SPREADSHEET:
+<span class="fc" id="L475">        newDoc =</span>
+            new OdfSpreadsheetDocument(
+                pkg, internalPath, OdfSpreadsheetDocument.OdfMediaType.SPREADSHEET);
+<span class="fc" id="L478">        break;</span>
+
+      case SPREADSHEET_TEMPLATE:
+<span class="fc" id="L481">        newDoc =</span>
+            new OdfSpreadsheetDocument(
+                pkg, internalPath, OdfSpreadsheetDocument.OdfMediaType.SPREADSHEET_TEMPLATE);
+<span class="fc" id="L484">        break;</span>
+
+      case PRESENTATION:
+<span class="fc" id="L487">        newDoc =</span>
+            new OdfPresentationDocument(
+                pkg, internalPath, OdfPresentationDocument.OdfMediaType.PRESENTATION);
+<span class="fc" id="L490">        break;</span>
+
+      case PRESENTATION_TEMPLATE:
+<span class="fc" id="L493">        newDoc =</span>
+            new OdfPresentationDocument(
+                pkg, internalPath, OdfPresentationDocument.OdfMediaType.PRESENTATION_TEMPLATE);
+<span class="fc" id="L496">        break;</span>
+
+      case GRAPHICS:
+<span class="fc" id="L499">        newDoc =</span>
+            new OdfGraphicsDocument(pkg, internalPath, OdfGraphicsDocument.OdfMediaType.GRAPHICS);
+<span class="fc" id="L501">        break;</span>
+
+      case GRAPHICS_TEMPLATE:
+<span class="fc" id="L504">        newDoc =</span>
+            new OdfGraphicsDocument(
+                pkg, internalPath, OdfGraphicsDocument.OdfMediaType.GRAPHICS_TEMPLATE);
+<span class="fc" id="L507">        break;</span>
+
+      case CHART:
+<span class="fc" id="L510">        newDoc = new OdfChartDocument(pkg, internalPath, OdfChartDocument.OdfMediaType.CHART);</span>
+<span class="fc" id="L511">        break;</span>
+
+      case CHART_TEMPLATE:
+<span class="fc" id="L514">        newDoc =</span>
+            new OdfChartDocument(pkg, internalPath, OdfChartDocument.OdfMediaType.CHART_TEMPLATE);
+<span class="fc" id="L516">        break;</span>
+
+      case IMAGE:
+<span class="fc" id="L519">        newDoc = new OdfImageDocument(pkg, internalPath, OdfImageDocument.OdfMediaType.IMAGE);</span>
+<span class="fc" id="L520">        break;</span>
+
+      case IMAGE_TEMPLATE:
+<span class="fc" id="L523">        newDoc =</span>
+            new OdfImageDocument(pkg, internalPath, OdfImageDocument.OdfMediaType.IMAGE_TEMPLATE);
+<span class="fc" id="L525">        break;</span>
+
+      default:
+<span class="fc" id="L528">        newDoc = null;</span>
+<span class="fc" id="L529">        throw new IllegalArgumentException(</span>
+            &quot;Given mediaType '&quot; + odfMediaType.mMediaType + &quot;' is not yet supported!&quot;);
+    }
+    // returning null if MediaType is not supported
+<span class="fc" id="L533">    return newDoc;</span>
+  }
+
+  /**
+   * Returns an embedded OdfPackageDocument from the given package path.
+   *
+   * @param documentPath to the ODF document within the package. The path is relative the current
+   *     ODF document path.
+   * @return an embedded OdfPackageDocument
+   */
+  @Override
+  public OdfDocument loadSubDocument(String documentPath) {
+<span class="fc" id="L545">    return (OdfDocument) super.loadSubDocument(documentPath);</span>
+  }
+
+  /**
+   * Method returns all embedded OdfPackageDocuments, which match a valid OdfMediaType, of the
+   * current OdfPackageDocument. Note: The root document is not part of the returned collection.
+   *
+   * @return a map with all embedded documents and their paths of the current OdfPackageDocument
+   */
+  public Map&lt;String, OdfDocument&gt; loadSubDocuments() {
+<span class="fc" id="L555">    return loadSubDocuments(null);</span>
+  }
+
+  /**
+   * Method returns all embedded OdfPackageDocuments of sthe current OdfPackageDocument matching the
+   * according MediaType. This is done by matching the subfolder entries of the manifest file with
+   * the given OdfMediaType.
+   *
+   * @param desiredMediaType media type of the documents to be returned (used as a filter).
+   * @return embedded documents of the current OdfPackageDocument matching the given media type
+   */
+  public Map&lt;String, OdfDocument&gt; loadSubDocuments(OdfMediaType desiredMediaType) {
+<span class="fc" id="L567">    String wantedMediaString = null;</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">    if (desiredMediaType != null) {</span>
+<span class="fc" id="L569">      wantedMediaString = desiredMediaType.getMediaTypeString();</span>
+    }
+<span class="fc" id="L571">    Map&lt;String, OdfDocument&gt; embeddedObjectsMap = new HashMap&lt;String, OdfDocument&gt;();</span>
+    // check manifest for current embedded OdfPackageDocuments
+<span class="fc" id="L573">    Set&lt;String&gt; manifestEntries = mPackage.getFilePaths();</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">    for (String path : manifestEntries) {</span>
+      // any directory that is not the root document &quot;/&quot;
+<span class="fc bfc" id="L576" title="All 4 branches covered.">      if (path.length() &gt; 1 &amp;&amp; path.endsWith(SLASH)) {</span>
+<span class="fc" id="L577">        String entryMediaType = mPackage.getFileEntry(path).getMediaTypeString();</span>
+        // if the entry is a document (directory has mediaType)
+<span class="pc bpc" id="L579" title="1 of 2 branches missed.">        if (entryMediaType != null) {</span>
+          // if a specific ODF mediatype was requested
+<span class="fc bfc" id="L581" title="All 2 branches covered.">          if (wantedMediaString != null) {</span>
+            // test if the desired mediatype matches the current
+<span class="fc bfc" id="L583" title="All 2 branches covered.">            if (entryMediaType.equals(wantedMediaString)) {</span>
+<span class="fc" id="L584">              path = normalizeDocumentPath(path);</span>
+<span class="fc" id="L585">              embeddedObjectsMap.put(path, (OdfDocument) mPackage.loadDocument(path));</span>
+            }
+          } else {
+            // test if any ODF mediatype matches the current
+<span class="fc bfc" id="L589" title="All 2 branches covered.">            for (OdfMediaType mediaType : OdfMediaType.values()) {</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">              if (entryMediaType.equals(mediaType.getMediaTypeString())) {</span>
+<span class="fc" id="L591">                embeddedObjectsMap.put(path, (OdfDocument) mPackage.loadDocument(path));</span>
+              }
+            }
+          }
+        }
+      }
+<span class="fc" id="L597">    }</span>
+<span class="fc" id="L598">    return embeddedObjectsMap;</span>
+  }
+
+  /**
+   * Sets the media type of the OdfDocument
+   *
+   * @param odfMediaType media type to be set
+   */
+  protected void setOdfMediaType(OdfMediaType odfMediaType) {
+<span class="fc" id="L607">    mMediaType = odfMediaType;</span>
+<span class="fc" id="L608">    super.setMediaTypeString(odfMediaType.getMediaTypeString());</span>
+<span class="fc" id="L609">  }</span>
+
+  /** Gets the media type of the OdfDocument */
+  protected OdfMediaType getOdfMediaType() {
+<span class="fc" id="L613">    return mMediaType;</span>
+  }
+
+  /**
+   * Get the meta data feature instance of the current document
+   *
+   * @return the meta data feature instance which represent &lt;code&gt;office:meta&lt;/code&gt; in the meta.xml
+   */
+  public OdfOfficeMeta getOfficeMetadata() {
+<span class="fc bfc" id="L622" title="All 2 branches covered.">    if (mOfficeMeta == null) {</span>
+      try {
+<span class="fc" id="L624">        OdfMetaDom metaDom = getMetaDom();</span>
+<span class="fc" id="L625">        mOfficeMeta = new OdfOfficeMeta(metaDom);</span>
+<span class="nc" id="L626">      } catch (Exception ex) {</span>
+<span class="nc" id="L627">        Logger.getLogger(OdfDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L628">      }</span>
+    }
+<span class="fc" id="L630">    return mOfficeMeta;</span>
+  }
+
+  /**
+   * Save the document to an OutputStream. Delegate to the root document and save possible embedded
+   * OdfDocuments.
+   *
+   * &lt;p&gt;If the input file has been cached (this is the case when loading from an InputStream), the
+   * input file can be overwritten.
+   *
+   * &lt;p&gt;If not, the OutputStream may not point to the input file! Otherwise this will result in
+   * unwanted behaviour and broken files.
+   *
+   * &lt;p&gt;When save the embedded document to a stand alone document, all the file entries of the
+   * embedded document will be copied to a new document package. If the embedded document is outside
+   * of the current document directory, you have to embed it to the sub directory and refresh the
+   * link of the embedded document. you should reload it from the stream to get the saved embedded
+   * document.
+   *
+   * @param out - the OutputStream to write the file to
+   * @throws java.lang.Exception if the document could not be saved
+   */
+  public void save(OutputStream out) throws Exception {
+<span class="nc" id="L653">    updateMetaData();</span>
+<span class="nc bnc" id="L654" title="All 2 branches missed.">    if (!isRootDocument()) {</span>
+<span class="nc" id="L655">      OdfDocument newDoc = loadDocumentFromTemplate(getOdfMediaType());</span>
+<span class="nc" id="L656">      newDoc.insertDocument(this, ROOT_DOCUMENT_PATH);</span>
+<span class="nc" id="L657">      newDoc.updateMetaData();</span>
+<span class="nc" id="L658">      newDoc.mPackage.save(out);</span>
+      // ToDo: (Issue 219 - PackageRefactoring) - Return the document, when not closing!
+      // Should we close the sources now? User will never receive the open package!
+<span class="nc" id="L661">    } else {</span>
+<span class="nc" id="L662">      mPackage.save(out);</span>
+    }
+<span class="nc" id="L664">  }</span>
+
+  /**
+   * Save the document to a given file.
+   *
+   * &lt;p&gt;If the input file has been cached (this is the case when loading from an InputStream), the
+   * input file can be overwritten.
+   *
+   * &lt;p&gt;Otherwise it's allowed to overwrite the input file as long as the same path name is used
+   * that was used for loading (no symbolic link foo2.odt pointing to the loaded file foo1.odt, no
+   * network path X:\foo.odt pointing to the loaded file D:\foo.odt).
+   *
+   * &lt;p&gt;When saving the embedded document to a stand alone document, all files of the embedded
+   * document will be copied to a new document package. If the embedded document is outside of the
+   * current document directory, you have to embed it to the sub directory and refresh the link of
+   * the embedded document. You should reload it from the given file to get the saved embedded
+   * document.
+   *
+   * @param file - the file to save the document
+   * @throws java.lang.Exception if the document could not be saved
+   */
+  @Override
+  public void save(File file) throws Exception {
+<span class="fc" id="L687">    updateMetaData();</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">    if (!isRootDocument()) {</span>
+<span class="fc" id="L689">      OdfDocument newDoc = loadDocumentFromTemplate(getOdfMediaType());</span>
+<span class="fc" id="L690">      newDoc.insertDocument(this, ROOT_DOCUMENT_PATH);</span>
+<span class="fc" id="L691">      newDoc.updateMetaData();</span>
+<span class="fc" id="L692">      newDoc.mPackage.save(file);</span>
+      // ToDo: (Issue 219 - PackageRefactoring) - Return the document, when not closing!
+      // Should we close the sources now? User will never receive the open package!
+<span class="fc" id="L695">    } else {</span>
+<span class="fc" id="L696">      this.mPackage.save(file);</span>
+    }
+<span class="fc" id="L698">  }</span>
+
+  /**
+   * Close the document and release all temporary created data. After execution of this method, this
+   * class is no longer usable. Do this as the last action to free resources. Closing an already
+   * closed document has no effect.
+   */
+  @Override
+  public void close() {
+    // set all member variables explicit to null
+<span class="fc" id="L708">    mMediaType = null;</span>
+<span class="fc" id="L709">    mOfficeMeta = null;</span>
+<span class="fc" id="L710">    super.close();</span>
+<span class="fc" id="L711">  }</span>
+
+  /**
+   * Get the content root of a document.
+   *
+   * &lt;p&gt;You may prefer to use the getContentRoot methods of subclasses of OdfDocument. Their return
+   * parameters are already casted to respective subclasses of OdfElement.
+   *
+   * @param the type of the content root, depend on the document type
+   * @return the child element of office:body, e.g. office:text for text docs
+   * @throws Exception if the file DOM could not be created.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  &lt;T extends OdfElement&gt; T getContentRoot(Class&lt;T&gt; clazz) throws Exception {
+<span class="fc" id="L725">    OdfElement contentRoot = getContentDom().getRootElement();</span>
+<span class="fc" id="L726">    OfficeBodyElement contentBody =</span>
+<span class="fc" id="L727">        OdfElement.findFirstChildNode(OfficeBodyElement.class, contentRoot);</span>
+<span class="fc" id="L728">    NodeList childs = contentBody.getChildNodes();</span>
+<span class="pc bpc" id="L729" title="1 of 2 branches missed.">    for (int i = 0; i &lt; childs.getLength(); i++) {</span>
+<span class="fc" id="L730">      Node cur = childs.item(i);</span>
+<span class="pc bpc" id="L731" title="1 of 4 branches missed.">      if ((cur != null) &amp;&amp; clazz.isInstance(cur)) {</span>
+<span class="fc" id="L732">        return (T) cur;</span>
+      }
+    }
+<span class="nc" id="L735">    return null;</span>
+  }
+
+  /**
+   * Get the content root of a document.
+   *
+   * &lt;p&gt;You may prefer to use the getContentRoot methods of subclasses of OdfDocument.
+   *
+   * @return the child element of office:body, e.g. office:text for text docs
+   * @throws Exception if the file DOM could not be created.
+   */
+  public OdfElement getContentRoot() throws Exception {
+<span class="nc" id="L747">    return getContentRoot(OdfElement.class);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L752">    return &quot;\n&quot;</span>
+<span class="nc" id="L753">        + getMediaTypeString()</span>
+        + &quot; - ID: &quot;
+<span class="nc" id="L755">        + this.hashCode()</span>
+        + &quot; &quot;
+<span class="nc" id="L757">        + getPackage().getBaseURI();</span>
+  }
+
+  /**
+   * Insert an Image from the specified uri to the end of the OdfDocument.
+   *
+   * @param imageUri The URI of the image that will be added to the document, add image stream to
+   *     the package, in the 'Pictures/' graphic directory with the same image file name as in the
+   *     URI. If the imageURI is relative first the user.dir is taken to make it absolute.
+   * @return Returns the internal package path of the image, which was created based on the given
+   *     URI.
+   */
+  public String newImage(URI imageUri) {
+    try {
+<span class="fc" id="L771">      OdfContentDom contentDom = this.getContentDom();</span>
+<span class="fc" id="L772">      OdfDrawFrame drawFrame = contentDom.newOdfElement(OdfDrawFrame.class);</span>
+<span class="fc" id="L773">      XPath xpath = contentDom.getXPath();</span>
+<span class="fc bfc" id="L774" title="All 2 branches covered.">      if (this instanceof OdfSpreadsheetDocument) {</span>
+<span class="fc" id="L775">        TableTableCellElement lastCell =</span>
+            (TableTableCellElement)
+<span class="fc" id="L777">                xpath.evaluate(&quot;//table:table-cell[last()]&quot;, contentDom, XPathConstants.NODE);</span>
+<span class="fc" id="L778">        lastCell.appendChild(drawFrame);</span>
+<span class="fc" id="L779">        drawFrame.removeAttribute(&quot;text:anchor-type&quot;);</span>
+
+<span class="pc bpc" id="L781" title="1 of 2 branches missed.">      } else if (this instanceof OdfTextDocument) {</span>
+<span class="fc" id="L782">        TextPElement lastPara =</span>
+<span class="fc" id="L783">            (TextPElement) xpath.evaluate(&quot;//text:p[last()]&quot;, contentDom, XPathConstants.NODE);</span>
+<span class="fc bfc" id="L784" title="All 2 branches covered.">        if (lastPara == null) {</span>
+<span class="fc" id="L785">          lastPara = ((OdfTextDocument) this).newParagraph();</span>
+        }
+<span class="fc" id="L787">        lastPara.appendChild(drawFrame);</span>
+<span class="fc" id="L788">        drawFrame.setTextAnchorTypeAttribute(TextAnchorTypeAttribute.Value.PARAGRAPH.toString());</span>
+<span class="pc bnc" id="L789" title="All 2 branches missed.">      } else if (this instanceof OdfPresentationDocument) {</span>
+<span class="nc" id="L790">        DrawPageElement lastPage =</span>
+            (DrawPageElement)
+<span class="nc" id="L792">                xpath.evaluate(&quot;//draw:page[last()]&quot;, contentDom, XPathConstants.NODE);</span>
+<span class="nc" id="L793">        lastPage.appendChild(drawFrame);</span>
+      }
+<span class="fc" id="L795">      OdfDrawImage image = (OdfDrawImage) drawFrame.newDrawImageElement();</span>
+<span class="fc" id="L796">      String imagePath = image.newImage(imageUri);</span>
+<span class="fc" id="L797">      return imagePath;</span>
+<span class="nc" id="L798">    } catch (Exception ex) {</span>
+<span class="nc" id="L799">      Logger.getLogger(OdfDocument.class.getName()).log(Level.SEVERE, null, ex);</span>
+    }
+<span class="nc" id="L801">    return null;</span>
+  }
+
+  /**
+   * Return an instance of table feature with the specific table name.
+   *
+   * @param name of the table being searched for.
+   * @return an instance of table feature with the specific table name.
+   */
+  public OdfTable getTableByName(String name) {
+    try {
+<span class="fc" id="L812">      OdfElement root = getContentDom().getRootElement();</span>
+<span class="fc" id="L813">      OfficeBodyElement officeBody = OdfElement.findFirstChildNode(OfficeBodyElement.class, root);</span>
+<span class="fc" id="L814">      OdfElement typedContent = OdfElement.findFirstChildNode(OdfElement.class, officeBody);</span>
+
+<span class="fc" id="L816">      NodeList childList = typedContent.getChildNodes();</span>
+<span class="pc bpc" id="L817" title="1 of 2 branches missed.">      for (int i = 0; i &lt; childList.getLength(); i++) {</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">        if (childList.item(i) instanceof TableTableElement) {</span>
+<span class="fc" id="L819">          TableTableElement table = (TableTableElement) childList.item(i);</span>
+<span class="fc" id="L820">          if (table</span>
+<span class="fc" id="L821">              .getOdfAttributeValue(OdfName.newName(OdfDocumentNamespace.TABLE, &quot;name&quot;))</span>
+<span class="fc bfc" id="L822" title="All 2 branches covered.">              .equals(name)) {</span>
+<span class="fc" id="L823">            return OdfTable.getInstance(table);</span>
+          }
+        }
+      }
+<span class="nc" id="L827">    } catch (Exception e) {</span>
+<span class="nc" id="L828">      Logger.getLogger(OdfDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L829">    }</span>
+<span class="nc" id="L830">    return null;</span>
+  }
+
+  /**
+   * Return a list of table features in this document. For general ODF documents it searches for
+   * them recursively through the document. For ODF documents, there is a getOdsTableList
+   *
+   * @see OdfSpreadsheetDocument:getSpreadsheetTables
+   * @return a list of table features in this document.
+   */
+  @Deprecated(
+      since =
+          &quot;It was not clear that this is searching recursively, especialy in OdfSpreadsheetDocuments&quot;)
+  public List&lt;OdfTable&gt; getTableList() {
+<span class="nc" id="L844">    return getTableList(false);</span>
+  }
+
+  /**
+   * Return a list of table features in this document. For general ODF documents it searches for
+   * tables recursively through the document.
+   *
+   * @see OdfSpreadsheetDocument:getSpreadsheetTables
+   * @param doRecursiveSearch In spreadsheet documents you do not need a recursive search.
+   * @return a list of table features in this document.
+   */
+  public List&lt;OdfTable&gt; getTableList(boolean doRecursiveSearch) {
+<span class="fc" id="L856">    List&lt;OdfTable&gt; tableList = null;</span>
+    try {
+<span class="fc" id="L858">      List&lt;TableTableElement&gt; tableElementList = getTables(doRecursiveSearch);</span>
+<span class="fc" id="L859">      tableList = new ArrayList&lt;OdfTable&gt;(tableElementList.size());</span>
+<span class="fc bfc" id="L860" title="All 2 branches covered.">      for (int i = 0; i &lt; tableElementList.size(); i++) {</span>
+<span class="fc" id="L861">        tableList.add(OdfTable.getInstance(tableElementList.get(i)));</span>
+      }
+<span class="nc" id="L863">    } catch (Exception e) {</span>
+<span class="nc" id="L864">      Logger.getLogger(OdfDocument.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="fc" id="L865">    }</span>
+<span class="fc" id="L866">    return tableList;</span>
+  }
+
+  /**
+   * Update document meta data in the ODF document. Following metadata data is being updated:
+   *
+   * &lt;ul&gt;
+   *   &lt;li&gt;The name of the person who last modified this document will be the Java user.name System
+   *       property
+   *   &lt;li&gt;The date and time when the document was last modified using current data
+   *   &lt;li&gt;The number of times this document has been edited is incremented by 1
+   *   &lt;li&gt;The total time spent editing this document
+   * &lt;/ul&gt;
+   *
+   * TODO:This method will be moved to OdfMetadata class. see
+   * http://odftoolkit.org/bugzilla/show_bug.cgi?id=204
+   */
+  public void updateMetaData() {
+<span class="pc bpc" id="L884" title="1 of 2 branches missed.">    if (getOfficeMetadata().hasAutomaticUpdate()) {</span>
+<span class="fc" id="L885">      OdfOfficeMeta metaData = getOfficeMetadata();</span>
+
+      // OpenOffice 3.4.1 needs this metadata to continue list numbering correctly
+<span class="fc" id="L888">      metaData.setGenerator(FORMER_OPEN_OFFICE_VERSION);</span>
+
+      // set creation date
+<span class="fc bfc" id="L891" title="All 2 branches covered.">      if (mCreationDate != null) {</span>
+<span class="fc" id="L892">        getOfficeMetadata().setCreationDate(mCreationDate);</span>
+      }
+
+      // update late modfied date
+<span class="fc" id="L896">      Calendar calendar = Calendar.getInstance();</span>
+<span class="fc" id="L897">      metaData.setDate(calendar);</span>
+
+      // update editing-cycles
+<span class="fc" id="L900">      Integer cycle = metaData.getEditingCycles();</span>
+<span class="fc bfc" id="L901" title="All 2 branches covered.">      if (cycle != null) {</span>
+<span class="fc" id="L902">        metaData.setEditingCycles(++cycle);</span>
+      } else {
+<span class="fc" id="L904">        metaData.setEditingCycles(1);</span>
+      }
+      // update editing-duration
+<span class="fc" id="L907">      long editingDuration = calendar.getTimeInMillis() - documentOpeningTime;</span>
+<span class="fc bfc" id="L908" title="All 2 branches covered.">      editingDuration = (editingDuration &lt; 1) ? 1 : editingDuration;</span>
+      try {
+<span class="fc" id="L910">        DatatypeFactory aFactory = DatatypeFactory.newInstance();</span>
+<span class="fc" id="L911">        metaData.setEditingDuration(new Duration(aFactory.newDurationDayTime(editingDuration)));</span>
+<span class="nc" id="L912">      } catch (DatatypeConfigurationException e) {</span>
+<span class="nc" id="L913">        Logger.getLogger(OdfDocument.class.getName())</span>
+<span class="nc" id="L914">            .log(</span>
+                Level.SEVERE,
+                &quot;editing duration update fail as DatatypeFactory can not be instanced&quot;,
+                e);
+<span class="fc" id="L918">      }</span>
+    }
+<span class="fc" id="L920">  }</span>
+
+  // /////////////////
+  // Following is the implementation of locale settings
+  // ////////////////
+  /**
+   * Unicode characters are in general divided by office applications into three different groups.
+   *
+   * &lt;p&gt;1) There is CJK: the Chinese, Japanese and Korean script (also old Vietnamese belong to this
+   * group). See http://en.wikipedia.org/wiki/CJK_characters
+   *
+   * &lt;p&gt;2) There is CTL: Complex Text Layout, which uses BIDI algorithms and/or glyph modules for
+   * instance Arabic, Hebrew, Indic and Thai. See http://en.wikipedia.org/wiki/Complex_Text_Layout
+   *
+   * &lt;p&gt;3) And there is all the rest, which was once called by MS Western.
+   */
+<span class="fc" id="L936">  public enum UnicodeGroup {</span>
+
+    /** Western language */
+<span class="fc" id="L939">    WESTERN,</span>
+    /** Chinese, Japanese and Korean */
+<span class="fc" id="L941">    CJK,</span>
+    /** Complex Text Layout language */
+<span class="fc" id="L943">    CTL;</span>
+  }
+
+<span class="fc" id="L946">  private static final HashSet&lt;String&gt; CJKLanguage = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L947">  private static final HashSet&lt;String&gt; CTLLanguage = new HashSet&lt;String&gt;();</span>
+
+  {
+<span class="fc" id="L950">    CJKLanguage.add(&quot;zh&quot;); // LANGUAGE_CHINES</span>
+<span class="fc" id="L951">    CJKLanguage.add(&quot;ja&quot;); // LANGUAGE_JAPANESE</span>
+<span class="fc" id="L952">    CJKLanguage.add(&quot;ko&quot;); // LANGUAGE_KOREANE</span>
+
+<span class="fc" id="L954">    CTLLanguage.add(&quot;am&quot;); // LANGUAGE_AMHARIC_ETHIOPIA</span>
+<span class="fc" id="L955">    CTLLanguage.add(&quot;ar&quot;); // LANGUAGE_ARABIC_SAUDI_ARABIA</span>
+<span class="fc" id="L956">    CTLLanguage.add(&quot;as&quot;); // LANGUAGE_ASSAMESE</span>
+<span class="fc" id="L957">    CTLLanguage.add(&quot;bn&quot;); // LANGUAGE_BENGALI</span>
+<span class="fc" id="L958">    CTLLanguage.add(&quot;bo&quot;); // LANGUAGE_TIBETAN</span>
+<span class="fc" id="L959">    CTLLanguage.add(&quot;brx&quot;); // LANGUAGE_USER_BODO_INDIA</span>
+<span class="fc" id="L960">    CTLLanguage.add(&quot;dgo&quot;); // LANGUAGE_USER_DOGRI_INDIA</span>
+<span class="fc" id="L961">    CTLLanguage.add(&quot;dv&quot;); // LANGUAGE_DHIVEHI</span>
+<span class="fc" id="L962">    CTLLanguage.add(&quot;dz&quot;); // LANGUAGE_DZONGKHA</span>
+<span class="fc" id="L963">    CTLLanguage.add(&quot;fa&quot;); // LANGUAGE_FARSI</span>
+<span class="fc" id="L964">    CTLLanguage.add(&quot;gu&quot;); // LANGUAGE_GUJARATI</span>
+<span class="fc" id="L965">    CTLLanguage.add(&quot;he&quot;); // LANGUAGE_HEBREW</span>
+<span class="fc" id="L966">    CTLLanguage.add(&quot;hi&quot;); // LANGUAGE_HINDI</span>
+<span class="fc" id="L967">    CTLLanguage.add(&quot;km&quot;); // LANGUAGE_KHMER</span>
+<span class="fc" id="L968">    CTLLanguage.add(&quot;kn&quot;); // LANGUAGE_KANNADA</span>
+<span class="fc" id="L969">    CTLLanguage.add(&quot;ks&quot;); // LANGUAGE_KASHMIRI</span>
+<span class="fc" id="L970">    CTLLanguage.add(&quot;ku&quot;); // LANGUAGE_USER_KURDISH_IRAQ</span>
+<span class="fc" id="L971">    CTLLanguage.add(&quot;lo&quot;); // LANGUAGE_LAO</span>
+<span class="fc" id="L972">    CTLLanguage.add(&quot;mai&quot;); // LANGUAGE_USER_MAITHILI_INDIA</span>
+<span class="fc" id="L973">    CTLLanguage.add(&quot;ml&quot;); // LANGUAGE_MALAYALAM</span>
+<span class="fc" id="L974">    CTLLanguage.add(&quot;mn&quot;); // LANGUAGE_MONGOLIAN_MONGOLIAN</span>
+<span class="fc" id="L975">    CTLLanguage.add(&quot;mni&quot;); // LANGUAGE_MANIPURI</span>
+<span class="fc" id="L976">    CTLLanguage.add(&quot;mr&quot;); // LANGUAGE_MARATHI</span>
+<span class="fc" id="L977">    CTLLanguage.add(&quot;my&quot;); // LANGUAGE_BURMESE</span>
+<span class="fc" id="L978">    CTLLanguage.add(&quot;ne&quot;); // LANGUAGE_NEPALI</span>
+<span class="fc" id="L979">    CTLLanguage.add(&quot;or&quot;); // LANGUAGE_ORIYA</span>
+<span class="fc" id="L980">    CTLLanguage.add(&quot;pa&quot;); // LANGUAGE_PUNJABI</span>
+<span class="fc" id="L981">    CTLLanguage.add(&quot;sa&quot;); // LANGUAGE_SANSKRIT</span>
+<span class="fc" id="L982">    CTLLanguage.add(&quot;sd&quot;); // LANGUAGE_SINDHI</span>
+<span class="fc" id="L983">    CTLLanguage.add(&quot;si&quot;); // LANGUAGE_SINHALESE_SRI_LANKA</span>
+<span class="fc" id="L984">    CTLLanguage.add(&quot;syr&quot;); // LANGUAGE_SYRIAC</span>
+<span class="fc" id="L985">    CTLLanguage.add(&quot;ta&quot;); // LANGUAGE_TAMIL</span>
+<span class="fc" id="L986">    CTLLanguage.add(&quot;te&quot;); // LANGUAGE_TELUGU</span>
+<span class="fc" id="L987">    CTLLanguage.add(&quot;th&quot;); // LANGUAGE_THAI</span>
+<span class="fc" id="L988">    CTLLanguage.add(&quot;ug&quot;); // LANGUAGE_UIGHUR_CHINA</span>
+<span class="fc" id="L989">    CTLLanguage.add(&quot;ur&quot;); // LANGUAGE_URDU</span>
+<span class="fc" id="L990">    CTLLanguage.add(&quot;yi&quot;); // LANGUAGE_YIDDISH</span>
+  }
+
+  /**
+   * Set a locale information.
+   *
+   * &lt;p&gt;The locale information will affect the language and country setting of the document. Thus
+   * the font settings, the spell checkings and etc will be affected.
+   *
+   * @param locale - an instance of Locale
+   */
+  public void setLocale(Locale locale) {
+<span class="fc" id="L1002">    setLocale(locale, getUnicodeGroup(locale));</span>
+<span class="fc" id="L1003">  }</span>
+
+  /**
+   * This method will return Locale, which presents the default language and country information
+   * settings in this document.
+   *
+   * @return an instance of Locale that the default language and country is set to.
+   */
+  /**
+   * Similar to OpenOffice.org, ODFDOM assumes that every Locale is related to one of the three
+   * Unicodes Groups, either CJK, CTL or Western.
+   *
+   * @param locale the UnicodeGroup is requested for
+   * @return the related UnicodeGroup
+   */
+  public static UnicodeGroup getUnicodeGroup(Locale locale) {
+<span class="fc" id="L1019">    String language = locale.getLanguage();</span>
+<span class="fc bfc" id="L1020" title="All 2 branches covered.">    if (CJKLanguage.contains(language)) {</span>
+<span class="fc" id="L1021">      return UnicodeGroup.CJK;</span>
+    }
+<span class="fc bfc" id="L1023" title="All 2 branches covered.">    if (CTLLanguage.contains(language)) {</span>
+<span class="fc" id="L1024">      return UnicodeGroup.CTL;</span>
+    }
+<span class="fc" id="L1026">    return UnicodeGroup.WESTERN;</span>
+  }
+
+  /**
+   * Set a locale of a specific script type.
+   *
+   * &lt;p&gt;If the locale does not belong to the script type, it will not be set.
+   *
+   * @param locale - Locale information
+   * @param unicodeGroup - The script type
+   */
+  private void setLocale(Locale locale, UnicodeGroup unicodeGroup) {
+    try {
+<span class="pc bpc" id="L1039" title="1 of 4 branches missed.">      switch (unicodeGroup) {</span>
+        case WESTERN:
+<span class="fc" id="L1041">          setDefaultWesternLanguage(locale);</span>
+<span class="fc" id="L1042">          break;</span>
+        case CJK:
+<span class="fc" id="L1044">          setDefaultAsianLanguage(locale);</span>
+<span class="fc" id="L1045">          break;</span>
+        case CTL:
+<span class="fc" id="L1047">          setDefaultComplexLanguage(locale);</span>
+          break;
+      }
+<span class="nc" id="L1050">    } catch (Exception e) {</span>
+<span class="nc" id="L1051">      Logger.getLogger(OdfDocument.class.getName()).log(Level.SEVERE, &quot;Failed to set locale&quot;, e);</span>
+<span class="fc" id="L1052">    }</span>
+<span class="fc" id="L1053">  }</span>
+
+  /**
+   * This method will return Locale, which presents the default language and country information
+   * settings in this document
+   *
+   * &lt;p&gt;ODF allows to set a Locale for each of the three UnicodeGroups. Therefore there might be
+   * three different Locale for the document.
+   *
+   * @param unicodeGroup - One of the three (CJK, CTL or Western).
+   * @return the Locale for the given UnicodeGroup
+   */
+  public Locale getLocale(UnicodeGroup unicodeGroup) {
+    try {
+<span class="pc bpc" id="L1067" title="1 of 4 branches missed.">      switch (unicodeGroup) {</span>
+        case WESTERN:
+<span class="fc" id="L1069">          return getDefaultLanguageByProperty(</span>
+              OdfTextProperties.Country, OdfTextProperties.Language);
+        case CJK:
+<span class="fc" id="L1072">          return getDefaultLanguageByProperty(</span>
+              OdfTextProperties.CountryAsian, OdfTextProperties.LanguageAsian);
+        case CTL:
+<span class="fc" id="L1075">          return getDefaultLanguageByProperty(</span>
+              OdfTextProperties.CountryComplex, OdfTextProperties.LanguageComplex);
+      }
+<span class="nc" id="L1078">    } catch (Exception e) {</span>
+<span class="nc" id="L1079">      Logger.getLogger(OdfDocument.class.getName()).log(Level.SEVERE, &quot;Failed to get locale&quot;, e);</span>
+<span class="nc" id="L1080">    }</span>
+<span class="nc" id="L1081">    return null;</span>
+  }
+
+  /** Returns the current Locale for the OdfStyleProperty of the corresponding UnicodeGroup */
+  private Locale getDefaultLanguageByProperty(
+      OdfStyleProperty countryProp, OdfStyleProperty languageProp) throws Exception {
+<span class="fc" id="L1087">    String lang = null, ctry = null;</span>
+
+<span class="fc" id="L1089">    OdfOfficeStyles styles = getStylesDom().getOfficeStyles();</span>
+
+    // get language and country setting from default style setting for
+    // paragraph
+<span class="fc" id="L1093">    OdfDefaultStyle defaultStyle = styles.getDefaultStyle(OdfStyleFamily.Paragraph);</span>
+<span class="pc bpc" id="L1094" title="1 of 2 branches missed.">    if (defaultStyle != null) {</span>
+<span class="nc bnc" id="L1095" title="All 4 branches missed.">      if (defaultStyle.hasProperty(countryProp) &amp;&amp; defaultStyle.hasProperty(languageProp)) {</span>
+<span class="nc" id="L1096">        ctry = defaultStyle.getProperty(countryProp);</span>
+<span class="nc" id="L1097">        lang = defaultStyle.getProperty(languageProp);</span>
+<span class="nc" id="L1098">        return new Locale(lang, ctry);</span>
+      }
+    }
+    // if no default style setting for paragraph
+    // get language and country setting from other default style settings
+<span class="fc" id="L1103">    Iterable&lt;OdfDefaultStyle&gt; defaultStyles = styles.getDefaultStyles();</span>
+<span class="fc" id="L1104">    Iterator&lt;OdfDefaultStyle&gt; itera = defaultStyles.iterator();</span>
+<span class="fc bfc" id="L1105" title="All 2 branches covered.">    while (itera.hasNext()) {</span>
+<span class="fc" id="L1106">      OdfDefaultStyle style = itera.next();</span>
+<span class="pc bpc" id="L1107" title="1 of 4 branches missed.">      if (style.hasProperty(countryProp) &amp;&amp; style.hasProperty(languageProp)) {</span>
+<span class="fc" id="L1108">        ctry = style.getProperty(countryProp);</span>
+<span class="fc" id="L1109">        lang = style.getProperty(languageProp);</span>
+<span class="fc" id="L1110">        return new Locale(lang, ctry);</span>
+      }
+<span class="fc" id="L1112">    }</span>
+<span class="fc" id="L1113">    return null;</span>
+  }
+
+  /**
+   * This method will set the default language and country information of the document, based on the
+   * parameter of the Locale information.
+   *
+   * @param locale - an instance of Locale that the default language and country will be set to.
+   * @throws Exception
+   */
+  private void setDefaultWesternLanguage(Locale locale) throws Exception {
+<span class="fc" id="L1124">    OdfOfficeStyles styles = getStylesDom().getOfficeStyles();</span>
+<span class="fc" id="L1125">    Iterable&lt;OdfDefaultStyle&gt; defaultStyles = styles.getDefaultStyles();</span>
+<span class="pc bpc" id="L1126" title="1 of 2 branches missed.">    if (defaultStyles != null) {</span>
+<span class="fc" id="L1127">      Iterator&lt;OdfDefaultStyle&gt; itera = defaultStyles.iterator();</span>
+<span class="fc bfc" id="L1128" title="All 2 branches covered.">      while (itera.hasNext()) {</span>
+<span class="fc" id="L1129">        OdfDefaultStyle style = itera.next();</span>
+<span class="pc bpc" id="L1130" title="1 of 2 branches missed.">        if (style.getFamily().getProperties().contains(OdfTextProperties.Language)) {</span>
+<span class="fc" id="L1131">          style.setProperty(OdfTextProperties.Language, locale.getLanguage());</span>
+<span class="fc" id="L1132">          style.setProperty(OdfTextProperties.Country, locale.getCountry());</span>
+        }
+<span class="fc" id="L1134">      }</span>
+    }
+<span class="fc" id="L1136">  }</span>
+
+  /**
+   * This method will set the default Asian language and country information of the document, based
+   * on the parameter of the Locale information. If the Locale instance is not set a Asian language
+   * (Chinese, Traditional Chinese, Japanese and Korean, nothing will take effect.
+   *
+   * @param locale - an instance of Locale that the default Asian language and country will be set
+   *     to.
+   * @throws Exception
+   */
+  private void setDefaultAsianLanguage(Locale locale) throws Exception {
+<span class="fc" id="L1148">    OdfOfficeStyles styles = getStylesDom().getOfficeStyles();</span>
+<span class="fc" id="L1149">    Iterable&lt;OdfDefaultStyle&gt; defaultStyles = styles.getDefaultStyles();</span>
+<span class="pc bpc" id="L1150" title="1 of 2 branches missed.">    if (defaultStyles != null) {</span>
+<span class="fc" id="L1151">      Iterator&lt;OdfDefaultStyle&gt; itera = defaultStyles.iterator();</span>
+<span class="fc bfc" id="L1152" title="All 2 branches covered.">      while (itera.hasNext()) {</span>
+<span class="fc" id="L1153">        OdfDefaultStyle style = itera.next();</span>
+<span class="pc bpc" id="L1154" title="1 of 2 branches missed.">        if (style.getFamily().getProperties().contains(OdfTextProperties.LanguageAsian)) {</span>
+<span class="fc" id="L1155">          style.setProperty(OdfTextProperties.LanguageAsian, locale.getLanguage());</span>
+<span class="fc" id="L1156">          style.setProperty(OdfTextProperties.CountryAsian, locale.getCountry());</span>
+        }
+<span class="fc" id="L1158">      }</span>
+    }
+<span class="fc" id="L1160">  }</span>
+
+  /**
+   * This method will set the default complex language and country information of the document,
+   * based on the parameter of the Locale information.
+   *
+   * @param locale - an instance of Locale that the default complex language and country will be set
+   *     to.
+   * @throws Exception
+   */
+  private void setDefaultComplexLanguage(Locale locale) throws Exception {
+<span class="fc" id="L1171">    OdfOfficeStyles styles = getStylesDom().getOfficeStyles();</span>
+<span class="fc" id="L1172">    Iterable&lt;OdfDefaultStyle&gt; defaultStyles = styles.getDefaultStyles();</span>
+<span class="pc bpc" id="L1173" title="1 of 2 branches missed.">    if (defaultStyles != null) {</span>
+<span class="fc" id="L1174">      Iterator&lt;OdfDefaultStyle&gt; itera = defaultStyles.iterator();</span>
+<span class="fc bfc" id="L1175" title="All 2 branches covered.">      while (itera.hasNext()) {</span>
+<span class="fc" id="L1176">        OdfDefaultStyle style = itera.next();</span>
+<span class="pc bpc" id="L1177" title="1 of 2 branches missed.">        if (style.getFamily().getProperties().contains(OdfTextProperties.LanguageComplex)) {</span>
+<span class="fc" id="L1178">          style.setProperty(OdfTextProperties.LanguageComplex, locale.getLanguage());</span>
+<span class="fc" id="L1179">          style.setProperty(OdfTextProperties.CountryComplex, locale.getCountry());</span>
+        }
+<span class="fc" id="L1181">      }</span>
+    }
+<span class="fc" id="L1183">  }</span>
+
+<span class="fc" id="L1185">  private Set&lt;String&gt; mFontNames = null;</span>
+<span class="fc" id="L1186">  private Map&lt;String, OfficeAnnotationElement&gt; annotations = null;</span>
+
+  /**
+   * This is a temporary solution to know about the fonts within the documents. Project client does
+   * not provide font information, therefore the 16 fonts are hard coded
+   */
+  public Set&lt;String&gt; getFontNames() {
+<span class="fc bfc" id="L1193" title="All 2 branches covered.">    if (mFontNames == null) {</span>
+<span class="fc" id="L1194">      mFontNames = new HashSet&lt;String&gt;();</span>
+    }
+<span class="fc" id="L1196">    return mFontNames;</span>
+  }
+
+  public void addAnnotation(String name, OfficeAnnotationElement element) {
+<span class="fc bfc" id="L1200" title="All 2 branches covered.">    if (annotations == null) {</span>
+<span class="fc" id="L1201">      annotations = new HashMap&lt;String, OfficeAnnotationElement&gt;();</span>
+    }
+<span class="fc" id="L1203">    annotations.put(name, element);</span>
+<span class="fc" id="L1204">  }</span>
+
+  public OfficeAnnotationElement getAnnotation(String name) {
+<span class="pc bpc" id="L1207" title="2 of 4 branches missed.">    if (annotations == null || !annotations.containsKey(name)) {</span>
+<span class="nc" id="L1208">      return null;</span>
+    }
+<span class="fc" id="L1210">    return annotations.get(name);</span>
+  }
+
+  public void removeAnnotation(String name) {
+<span class="nc bnc" id="L1214" title="All 4 branches missed.">    if (annotations != null &amp;&amp; annotations.containsKey(name)) {</span>
+<span class="nc" id="L1215">      annotations.remove(name);</span>
+    }
+<span class="nc" id="L1217">  }</span>
+
+  public String getUniqueAnnotationName() {
+<span class="fc" id="L1220">    String prefix = &quot;CmtId&quot;;</span>
+<span class="fc" id="L1221">    int freeIndex = 0;</span>
+<span class="fc bfc" id="L1222" title="All 2 branches covered.">    if (annotations != null) {</span>
+<span class="fc bfc" id="L1223" title="All 2 branches covered.">      while (annotations.containsKey(prefix + freeIndex)) {</span>
+<span class="fc" id="L1224">        ++freeIndex;</span>
+      }
+    }
+<span class="fc" id="L1227">    return prefix + freeIndex;</span>
+  }
+
+  protected void removeCachedView() {
+<span class="nc" id="L1231">    mPackage = getPackage();</span>
+    // removes the LO/AO view caching
+<span class="nc" id="L1233">    mPackage.remove(&quot;Thumbnails/thumbnail.png&quot;);</span>
+<span class="nc" id="L1234">  }</span>
+
+  /**
+   * @return TRUE if the document was created by CollabTextDocument and thereby supports user
+   *     changes, otherwise FALSE
+   */
+  public Boolean hasCollaboration() {
+<span class="pc bpc" id="L1241" title="1 of 4 branches missed.">    return mHasCollaboration != null &amp;&amp; mHasCollaboration;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

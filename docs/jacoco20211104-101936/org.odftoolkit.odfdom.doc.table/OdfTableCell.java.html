@@ -1,0 +1,1809 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="de"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OdfTableCell.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ODFDOM</a> &gt; <a href="index.source.html" class="el_package">org.odftoolkit.odfdom.doc.table</a> &gt; <span class="el_source">OdfTableCell.java</span></div><h1>OdfTableCell.java</h1><pre class="source lang-java linenums">/**
+ * **********************************************************************
+ *
+ * &lt;p&gt;Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * &lt;p&gt;http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * &lt;p&gt;Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * &lt;p&gt;**********************************************************************
+ */
+package org.odftoolkit.odfdom.doc.table;
+
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.odftoolkit.odfdom.doc.OdfDocument;
+import org.odftoolkit.odfdom.dom.OdfDocumentNamespace;
+import org.odftoolkit.odfdom.dom.attribute.fo.FoTextAlignAttribute;
+import org.odftoolkit.odfdom.dom.attribute.fo.FoWrapOptionAttribute;
+import org.odftoolkit.odfdom.dom.attribute.office.OfficeValueTypeAttribute;
+import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
+import org.odftoolkit.odfdom.dom.element.number.NumberCurrencySymbolElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberNumberElement;
+import org.odftoolkit.odfdom.dom.element.number.NumberTextElement;
+import org.odftoolkit.odfdom.dom.element.table.TableCoveredTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableCellElementBase;
+import org.odftoolkit.odfdom.dom.element.table.TableTableColumnElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableHeaderRowsElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowGroupElement;
+import org.odftoolkit.odfdom.dom.element.table.TableTableRowsElement;
+import org.odftoolkit.odfdom.dom.element.text.TextHElement;
+import org.odftoolkit.odfdom.dom.element.text.TextListElement;
+import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.style.OdfStyleFamily;
+import org.odftoolkit.odfdom.dom.style.props.OdfStylePropertiesSet;
+import org.odftoolkit.odfdom.dom.style.props.OdfStyleProperty;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberCurrencyStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberDateStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberPercentageStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberStyle;
+import org.odftoolkit.odfdom.incubator.doc.number.OdfNumberTimeStyle;
+import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeAutomaticStyles;
+import org.odftoolkit.odfdom.incubator.doc.style.OdfStyle;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
+import org.odftoolkit.odfdom.incubator.doc.text.OdfWhitespaceProcessor;
+import org.odftoolkit.odfdom.pkg.OdfElement;
+import org.odftoolkit.odfdom.pkg.OdfFileDom;
+import org.odftoolkit.odfdom.pkg.OdfName;
+import org.odftoolkit.odfdom.type.Color;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+
+/**
+ * OdfTableCell represents table cell feature in ODF document.
+ *
+ * &lt;p&gt;OdfTable provides methods to get/set/modify the cell content and cell properties.
+ */
+public class OdfTableCell {
+
+  TableTableCellElementBase mOdfElement;
+  int mnRepeatedColIndex;
+  int mnRepeatedRowIndex;
+  OdfTable mOwnerTable;
+  String msFormatString;
+  /** The default date format of table cell. */
+  private static final String DEFAULT_DATE_FORMAT = &quot;yyyy-MM-dd&quot;;
+  /** The default time format of table cell. */
+  private static final String DEFAULT_TIME_FORMAT = &quot;'PT'HH'H'mm'M'ss'S'&quot;;
+  /** The default cell back color of table cell. */
+  private static final String DEFAULT_BACKGROUND_COLOR = &quot;#FFFFFF&quot;;
+  /** The default column spanned number. */
+  private static final int DEFAULT_COLUMN_SPANNED_NUMBER = 1;
+  /** The default row spanned number. */
+  private static final int DEFAULT_ROW_SPANNED_NUMBER = 1;
+  /** The default columns repeated number. */
+  private static final int DEFAULT_COLUMNS_REPEATED_NUMBER = 1;
+
+  TableTableCellElementBase mCellElement;
+  OdfDocument mDocument;
+
+<span class="fc" id="L97">  OdfTableCell(TableTableCellElementBase odfElement, int repeatedColIndex, int repeatedRowIndex) {</span>
+<span class="fc" id="L98">    mCellElement = odfElement;</span>
+<span class="fc" id="L99">    mnRepeatedColIndex = repeatedColIndex;</span>
+<span class="fc" id="L100">    mnRepeatedRowIndex = repeatedRowIndex;</span>
+<span class="fc" id="L101">    mOwnerTable = getTable();</span>
+<span class="fc" id="L102">    mDocument = ((OdfDocument) ((OdfFileDom) mCellElement.getOwnerDocument()).getDocument());</span>
+<span class="fc" id="L103">  }</span>
+
+  /**
+   * Get the &lt;code&gt;OdfTableCell&lt;/code&gt; instance from the &lt;code&gt;TableTableCellElementBase&lt;/code&gt;
+   * instance.
+   *
+   * &lt;p&gt;Each &lt;code&gt;TableTableCellElementBase&lt;/code&gt; instance has a one-to-one relationship to the a
+   * &lt;code&gt;OdfTableCell&lt;/code&gt; instance.
+   *
+   * @param cellElement the cell element that need to get the corresponding &lt;code&gt;OdfTableCell
+   *     &lt;/code&gt; instance
+   * @return the &lt;code&gt;OdfTableCell&lt;/code&gt; instance that represents a specified cell element
+   */
+  public static OdfTableCell getInstance(TableTableCellElementBase cellElement) {
+<span class="fc" id="L117">    TableTableElement tableElement = null;</span>
+<span class="fc" id="L118">    Node node = cellElement.getParentNode();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">      if (node instanceof TableTableElement) {</span>
+<span class="fc" id="L121">        tableElement = (TableTableElement) node;</span>
+      }
+<span class="fc" id="L123">      node = node.getParentNode();</span>
+    }
+<span class="fc" id="L125">    OdfTable table = null;</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">    if (tableElement != null) {</span>
+<span class="fc" id="L127">      table = OdfTable.getInstance(tableElement);</span>
+    } else {
+<span class="nc" id="L129">      throw new IllegalArgumentException(&quot;the cellElement is not in the table dom tree&quot;);</span>
+    }
+
+<span class="fc" id="L132">    OdfTableCell cell = table.getCellInstance(cellElement, 0, 0);</span>
+<span class="fc" id="L133">    int colRepeatedNum = cell.getColumnsRepeatedNumber();</span>
+<span class="fc" id="L134">    int rowRepeatedNum = cell.getTableRow().getRowsRepeatedNumber();</span>
+<span class="pc bpc" id="L135" title="3 of 4 branches missed.">    if (colRepeatedNum &gt; 1 &amp;&amp; rowRepeatedNum &gt; 1) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">      if (colRepeatedNum &gt; 1) {</span>
+<span class="nc" id="L137">        Logger.getLogger(OdfTableCell.class.getName())</span>
+<span class="nc" id="L138">            .log(</span>
+                Level.WARNING,
+                &quot;the cell has the repeated column number, and puzzled about get which repeated column index of the cell,&quot;);
+      }
+<span class="nc bnc" id="L142" title="All 2 branches missed.">      if (rowRepeatedNum &gt; 1) {</span>
+<span class="nc" id="L143">        Logger.getLogger(OdfTableCell.class.getName())</span>
+<span class="nc" id="L144">            .log(</span>
+                Level.WARNING,
+                &quot;the row contains the current cell has the repeated row number, and puzzled about get which repeated row index of the cell,&quot;);
+      }
+<span class="nc" id="L148">      Logger.getLogger(OdfTableCell.class.getName())</span>
+<span class="nc" id="L149">          .log(</span>
+              Level.WARNING,
+              &quot;here just return the first cell that the repeated column index is 0 and repeated row index is 0, too.&quot;);
+    }
+<span class="fc" id="L153">    return cell;</span>
+  }
+
+  /**
+   * Return the horizontal alignment setting of this cell.
+   *
+   * &lt;p&gt;The returned value can be &quot;center&quot;, &quot;end&quot;, &quot;justify&quot;, &quot;left&quot;, &quot;right&quot;, or &quot;start&quot;. If no
+   * horizontal alignment is set, null will be returned.
+   *
+   * @return the horizontal alignment setting.
+   */
+  public String getHorizontalAlignment() {
+<span class="nc" id="L165">    OdfStyleBase styleElement = getCellStyleElement();</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L167">      OdfStyleProperty property =</span>
+<span class="nc" id="L168">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.ParagraphProperties,
+<span class="nc" id="L170">              OdfName.newName(OdfDocumentNamespace.FO, &quot;text-align&quot;));</span>
+<span class="nc" id="L171">      return styleElement.getProperty(property);</span>
+    }
+<span class="nc" id="L173">    return null;</span>
+  }
+
+  /**
+   * Set the horizontal alignment setting of this cell.
+   *
+   * &lt;p&gt;The parameter can be &quot;center&quot;, &quot;end&quot;, &quot;justify&quot;, &quot;left&quot;, &quot;right&quot;, or &quot;start&quot;. Actually,
+   * &quot;left&quot; will be interpreted as &quot;start&quot;, while &quot;right&quot; will be interpreted as &quot;end&quot;. If argument
+   * is null, the explicit horizontal alignment setting is removed.
+   *
+   * @param horizontalAlignment the horizontal alignment setting.
+   */
+  public void setHorizontalAlignment(String horizontalAlignment) {
+<span class="nc bnc" id="L186" title="All 2 branches missed.">    if (FoTextAlignAttribute.Value.LEFT.toString().equalsIgnoreCase(horizontalAlignment)) {</span>
+<span class="nc" id="L187">      horizontalAlignment = FoTextAlignAttribute.Value.START.toString();</span>
+    }
+<span class="nc bnc" id="L189" title="All 2 branches missed.">    if (FoTextAlignAttribute.Value.RIGHT.toString().equalsIgnoreCase(horizontalAlignment)) {</span>
+<span class="nc" id="L190">      horizontalAlignment = FoTextAlignAttribute.Value.END.toString();</span>
+    }
+<span class="nc" id="L192">    splitRepeatedCells();</span>
+<span class="nc" id="L193">    OdfStyleBase styleElement = getCellStyleElementForWrite();</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L195">      OdfStyleProperty property =</span>
+<span class="nc" id="L196">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.ParagraphProperties,
+<span class="nc" id="L198">              OdfName.newName(OdfDocumentNamespace.FO, &quot;text-align&quot;));</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">      if (horizontalAlignment != null) {</span>
+<span class="nc" id="L200">        styleElement.setProperty(property, horizontalAlignment);</span>
+      } else {
+<span class="nc" id="L202">        styleElement.removeProperty(property);</span>
+      }
+    }
+<span class="nc" id="L205">  }</span>
+
+  /**
+   * Return the vertical alignment setting of this cell.
+   *
+   * &lt;p&gt;The returned value can be &quot;auto&quot;, &quot;automatic&quot;, &quot;baseline&quot;, &quot;bottom&quot;, &quot;middle&quot;, or &quot;top&quot;.
+   *
+   * @return the vertical alignment setting of this cell.
+   */
+  public String getVerticalAlignment() {
+<span class="nc" id="L215">    OdfStyleBase styleElement = getCellStyleElement();</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L217">      OdfStyleProperty property =</span>
+<span class="nc" id="L218">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L220">              OdfName.newName(OdfDocumentNamespace.STYLE, &quot;vertical-align&quot;));</span>
+<span class="nc" id="L221">      return styleElement.getProperty(property);</span>
+    }
+<span class="nc" id="L223">    return null;</span>
+  }
+
+  /**
+   * Set the vertical alignment setting of this cell.
+   *
+   * &lt;p&gt;The parameter can be &quot;auto&quot;, &quot;automatic&quot;, &quot;baseline&quot;, &quot;bottom&quot;, &quot;middle&quot;, or &quot;top&quot;. If
+   * argument is null, the explicit vertical alignment setting is removed.
+   *
+   * @param verticalAlignment the vertical alignment setting.
+   */
+  public void setVerticalAlignment(String verticalAlignment) {
+<span class="nc" id="L235">    splitRepeatedCells();</span>
+<span class="nc" id="L236">    OdfStyleBase styleElement = getCellStyleElementForWrite();</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L238">      OdfStyleProperty property =</span>
+<span class="nc" id="L239">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L241">              OdfName.newName(OdfDocumentNamespace.STYLE, &quot;vertical-align&quot;));</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">      if (verticalAlignment != null) {</span>
+<span class="nc" id="L243">        styleElement.setProperty(property, verticalAlignment);</span>
+      } else {
+<span class="nc" id="L245">        styleElement.removeProperty(property);</span>
+      }
+    }
+<span class="nc" id="L248">  }</span>
+
+  /**
+   * Return the wrap option of this cell.
+   *
+   * @return true if the cell content can be wrapped;
+   *     &lt;p&gt;false if the cell content cannot be wrapped.
+   */
+  public boolean isTextWrapped() {
+<span class="nc" id="L257">    OdfStyleBase styleElement = getCellStyleElement();</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L259">      OdfStyleProperty property =</span>
+<span class="nc" id="L260">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L262">              OdfName.newName(OdfDocumentNamespace.FO, &quot;wrap-option&quot;));</span>
+<span class="nc" id="L263">      String wrapped = styleElement.getProperty(property);</span>
+<span class="nc bnc" id="L264" title="All 4 branches missed.">      if ((wrapped != null) &amp;&amp; (wrapped.equals(FoWrapOptionAttribute.Value.WRAP.toString()))) {</span>
+<span class="nc" id="L265">        return true;</span>
+      }
+    }
+<span class="nc" id="L268">    return false;</span>
+  }
+
+  /**
+   * Set the wrap option of this cell.
+   *
+   * @param isTextWrapped whether the cell content can be wrapped or not
+   */
+  public void setTextWrapped(boolean isTextWrapped) {
+<span class="nc" id="L277">    splitRepeatedCells();</span>
+<span class="nc" id="L278">    OdfStyleBase styleElement = getCellStyleElementForWrite();</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L280">      OdfStyleProperty property =</span>
+<span class="nc" id="L281">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L283">              OdfName.newName(OdfDocumentNamespace.FO, &quot;wrap-option&quot;));</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">      if (isTextWrapped) {</span>
+<span class="nc" id="L285">        styleElement.setProperty(property, FoWrapOptionAttribute.Value.WRAP.toString());</span>
+      } else {
+<span class="nc" id="L287">        styleElement.setProperty(property, FoWrapOptionAttribute.Value.NO_WRAP.toString());</span>
+      }
+    }
+<span class="nc" id="L290">  }</span>
+
+  private TableTableRowElement findRowInTableHeaderRows(
+      TableTableHeaderRowsElement headers, TableTableRowElement tr, int[] indexs) {
+<span class="fc" id="L294">    int result = 0;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">    for (Node m : new DomNodeList(headers.getChildNodes())) {</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">      if (m == tr) {</span>
+<span class="fc" id="L297">        indexs[0] = result;</span>
+<span class="fc" id="L298">        return tr;</span>
+      }
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">      if (m instanceof TableTableRowElement) {</span>
+<span class="fc" id="L301">        result += ((TableTableRowElement) m).getTableNumberRowsRepeatedAttribute().intValue();</span>
+      }
+<span class="fc" id="L303">    }</span>
+<span class="fc" id="L304">    indexs[0] = result;</span>
+<span class="fc" id="L305">    return null;</span>
+  }
+
+  private TableTableRowElement findRowInTableRows(
+      TableTableRowsElement rows, TableTableRowElement tr, int[] indexs) {
+<span class="nc" id="L310">    int result = 0;</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">    for (Node m : new DomNodeList(rows.getChildNodes())) {</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">      if (m == tr) {</span>
+<span class="nc" id="L313">        indexs[0] = result;</span>
+<span class="nc" id="L314">        return tr;</span>
+      }
+<span class="nc bnc" id="L316" title="All 2 branches missed.">      if (m instanceof TableTableRowElement) {</span>
+<span class="nc" id="L317">        result += ((TableTableRowElement) m).getTableNumberRowsRepeatedAttribute().intValue();</span>
+      }
+<span class="nc" id="L319">    }</span>
+<span class="nc" id="L320">    indexs[0] = result;</span>
+<span class="nc" id="L321">    return null;</span>
+  }
+
+  private TableTableRowElement findRowInTableRowGroup(
+      OdfElement group, TableTableRowElement tr, int[] indexs) {
+<span class="fc" id="L326">    int result = 0;</span>
+<span class="fc" id="L327">    int[] resultIndexs = new int[1];</span>
+
+<span class="pc bpc" id="L329" title="2 of 4 branches missed.">    if (!(group instanceof TableTableRowGroupElement) &amp;&amp; !(group instanceof TableTableElement)) {</span>
+<span class="nc" id="L330">      indexs[0] = 0;</span>
+<span class="nc" id="L331">      return null;</span>
+    }
+
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">    for (Node m : new DomNodeList(group.getChildNodes())) {</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">      if (m instanceof TableTableHeaderRowsElement) {</span>
+<span class="fc" id="L336">        TableTableHeaderRowsElement headers = (TableTableHeaderRowsElement) m;</span>
+<span class="fc" id="L337">        TableTableRowElement returnEle = findRowInTableHeaderRows(headers, tr, resultIndexs);</span>
+<span class="fc" id="L338">        result += resultIndexs[0];</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">        if (returnEle != null) { // find</span>
+<span class="fc" id="L340">          indexs[0] = result;</span>
+<span class="fc" id="L341">          return returnEle;</span>
+        }
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">      } else if (m instanceof TableTableRowGroupElement) {</span>
+<span class="nc" id="L344">        TableTableRowGroupElement aGroup = (TableTableRowGroupElement) m;</span>
+<span class="nc" id="L345">        TableTableRowElement returnEle = findRowInTableRowGroup(aGroup, tr, resultIndexs);</span>
+<span class="nc" id="L346">        result += resultIndexs[0];</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (returnEle != null) { // find</span>
+<span class="nc" id="L348">          indexs[0] = result;</span>
+<span class="nc" id="L349">          return returnEle;</span>
+        }
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">      } else if (m instanceof TableTableRowsElement) {</span>
+<span class="nc" id="L352">        TableTableRowsElement rows = (TableTableRowsElement) m;</span>
+<span class="nc" id="L353">        TableTableRowElement returnEle = findRowInTableRows(rows, tr, resultIndexs);</span>
+<span class="nc" id="L354">        result += resultIndexs[0];</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        if (returnEle != null) { // find</span>
+<span class="nc" id="L356">          indexs[0] = result;</span>
+<span class="nc" id="L357">          return returnEle;</span>
+        }
+<span class="pc bfc" id="L359" title="All 2 branches covered.">      } else if (m instanceof TableTableRowElement) {</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        if (m == tr) { // find</span>
+<span class="fc" id="L361">          indexs[0] = result;</span>
+<span class="fc" id="L362">          return tr;</span>
+        }
+<span class="fc" id="L364">        result += ((TableTableRowElement) m).getTableNumberRowsRepeatedAttribute().intValue();</span>
+      }
+<span class="fc" id="L366">    }</span>
+<span class="nc" id="L367">    indexs[0] = result;</span>
+<span class="nc" id="L368">    return null;</span>
+  }
+
+  /**
+   * Get the index of the table row which contains this cell.
+   *
+   * @return the index of the row containing this cell
+   */
+  public int getRowIndex() {
+<span class="fc" id="L377">    TableTableElement table = getTableElement();</span>
+<span class="fc" id="L378">    TableTableRowElement tr = getTableRowElement();</span>
+<span class="fc" id="L379">    int[] indexs = new int[1];</span>
+
+<span class="fc" id="L381">    TableTableRowElement returnEle = findRowInTableRowGroup(table, tr, indexs);</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">    if (returnEle != null) {</span>
+<span class="fc" id="L383">      return (indexs[0] + mnRepeatedRowIndex);</span>
+    } else {
+<span class="nc" id="L385">      return -1;</span>
+    }
+  }
+
+  /**
+   * Get an instance of table feature which contains this cell.
+   *
+   * @return the table containing this cell
+   */
+  public OdfTable getTable() {
+<span class="fc" id="L395">    TableTableElement tableElement = getTableElement();</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">    if (tableElement != null) {</span>
+<span class="fc" id="L397">      return OdfTable.getInstance(tableElement);</span>
+    }
+<span class="nc" id="L399">    return null;</span>
+  }
+
+  /**
+   * Get the index of the table column which contains this cell.
+   *
+   * @return the index of the column containing this cell
+   */
+  public int getColumnIndex() {
+<span class="fc" id="L408">    TableTableRowElement tr = (TableTableRowElement) mCellElement.getParentNode();</span>
+<span class="fc" id="L409">    int result = 0;</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">    for (Node n : new DomNodeList(tr.getChildNodes())) {</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">      if (n == mCellElement) {</span>
+<span class="fc" id="L412">        return result + mnRepeatedColIndex;</span>
+      }
+<span class="pc bpc" id="L414" title="1 of 2 branches missed.">      if (n instanceof TableTableCellElementBase) {</span>
+<span class="fc" id="L415">        result +=</span>
+<span class="fc" id="L416">            ((TableTableCellElementBase) n).getTableNumberColumnsRepeatedAttribute().intValue();</span>
+      }
+<span class="fc" id="L418">    }</span>
+<span class="nc" id="L419">    return result;</span>
+  }
+
+  /**
+   * Get the instance of table column feature which contains this cell.
+   *
+   * @return the instance of table column feature which contains the cell.
+   */
+  public OdfTableColumn getTableColumn() {
+<span class="fc" id="L428">    OdfTable table = getTable();</span>
+<span class="fc" id="L429">    int index = getColumnIndex();</span>
+<span class="fc" id="L430">    return table.getColumnByIndex(index);</span>
+  }
+
+  TableTableColumnElement getTableColumnElement() {
+    // return OdfTableCellBaseImpl.getTableColumn((OdfTableCellBase) mCellElement);
+<span class="nc" id="L435">    TableTableElement tableElement = getTableElement();</span>
+<span class="nc" id="L436">    int columnindex = getColumnIndex();</span>
+<span class="nc" id="L437">    OdfTable fTable = OdfTable.getInstance(tableElement);</span>
+<span class="nc" id="L438">    return fTable.getColumnElementByIndex(columnindex);</span>
+  }
+
+  /**
+   * Get the instance of table row feature which contains this cell.
+   *
+   * @return the instance of table row feature which contains the cell.
+   */
+  public OdfTableRow getTableRow() {
+<span class="fc" id="L447">    OdfTable table = getTable();</span>
+<span class="fc" id="L448">    int index = getRowIndex();</span>
+<span class="fc" id="L449">    return table.getRowByIndex(index);</span>
+  }
+
+  private TableTableRowElement getTableRowElement() {
+<span class="fc" id="L453">    Node node = mCellElement.getParentNode();</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">    if (node instanceof TableTableRowElement) {</span>
+<span class="fc" id="L455">      return (TableTableRowElement) node;</span>
+    }
+<span class="nc" id="L457">    return null;</span>
+  }
+
+  /**
+   * Get the table object who contains this cell.
+   *
+   * @return the table object who contains the cell.
+   */
+  private TableTableElement getTableElement() {
+<span class="fc" id="L466">    Node node = mCellElement.getParentNode();</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">    while (node != null) {</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">      if (node instanceof TableTableElement) {</span>
+<span class="fc" id="L469">        return (TableTableElement) node;</span>
+      }
+<span class="fc" id="L471">      node = node.getParentNode();</span>
+    }
+<span class="nc" id="L473">    return null;</span>
+  }
+
+  /**
+   * Get the cell that covers this cell.
+   *
+   * &lt;p&gt;If the cell is a covered cell, the owner cell will be returned; if the cell is a real cell ,
+   * the cell itself will be returned.
+   *
+   * @return the cell that covers the current cell
+   */
+  public OdfTableCell getOwnerTableCell() {
+<span class="fc" id="L485">    OdfTable ownerTable = getTable();</span>
+<span class="fc" id="L486">    List&lt;CellCoverInfo&gt; coverList =</span>
+<span class="fc" id="L487">        ownerTable.getCellCoverInfos(</span>
+<span class="fc" id="L488">            0, 0, ownerTable.getColumnCount() - 1, ownerTable.getRowCount() - 1);</span>
+<span class="fc" id="L489">    return ownerTable.getOwnerCellByPosition(coverList, getColumnIndex(), getRowIndex());</span>
+  }
+
+  /**
+   * Get the instance of &lt;code&gt;TableTableCellElementBase&lt;/code&gt; which represents this cell.
+   *
+   * @return the instance of &lt;code&gt;TableTableCellElementBase&lt;/code&gt;
+   */
+  public TableTableCellElementBase getOdfElement() {
+<span class="fc" id="L498">    return mCellElement;</span>
+  }
+
+  /**
+   * Return the currency code of this cell, for example, &quot;USD&quot;, &quot;EUR&quot;, &quot;CNY&quot;, and etc.
+   *
+   * &lt;p&gt;If the value type is not &quot;currency&quot;, an IllegalArgumentException will be thrown.
+   *
+   * @return the currency code
+   *     &lt;p&gt;
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown if the value type
+   *     is not &quot;currency&quot;.
+   */
+  public String getCurrencyCode() {
+<span class="nc" id="L512">    if (mCellElement</span>
+<span class="nc" id="L513">        .getOfficeValueTypeAttribute()</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        .equals(OfficeValueTypeAttribute.Value.CURRENCY.toString())) {</span>
+<span class="nc" id="L515">      return mCellElement.getOfficeCurrencyAttribute();</span>
+    } else {
+<span class="nc" id="L517">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Set the currency code of this cell, for example, &quot;USD&quot;, &quot;EUR&quot;, &quot;CNY&quot;, and etc.
+   *
+   * @param currency the currency code that need to be set.
+   * @throws IllegalArgumentException If input &lt;code&gt;currency&lt;/code&gt; is null, an
+   *     IllegalArgumentException will be thrown.
+   */
+  public void setCurrencyCode(String currency) {
+<span class="nc bnc" id="L529" title="All 2 branches missed.">    if (currency == null) {</span>
+<span class="nc" id="L530">      throw new IllegalArgumentException(&quot;Currency code of cell should not be null.&quot;);</span>
+    }
+<span class="nc" id="L532">    splitRepeatedCells();</span>
+<span class="nc" id="L533">    if (mCellElement</span>
+<span class="nc" id="L534">        .getOfficeValueTypeAttribute()</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">        .equals(OfficeValueTypeAttribute.Value.CURRENCY.toString())) {</span>
+<span class="nc" id="L536">      mCellElement.setOfficeCurrencyAttribute(currency);</span>
+    } else {
+<span class="nc" id="L538">      throw new IllegalArgumentException();</span>
+    }
+<span class="nc" id="L540">  }</span>
+
+  private void setTypeAttr(OfficeValueTypeAttribute.Value type) {
+<span class="fc" id="L543">    mCellElement.setOfficeValueTypeAttribute(type.toString());</span>
+<span class="fc" id="L544">  }</span>
+
+  /**
+   * Set the value type of this cell. The parameter can be &quot;boolean&quot;, &quot;currency&quot;, &quot;date&quot;, &quot;float&quot;,
+   * &quot;percentage&quot;, &quot;string&quot; or &quot;time&quot;.
+   *
+   * &lt;p&gt;If the parameter &lt;code&gt;type&lt;/code&gt; is not a valid cell type, an IllegalArgumentException
+   * will be thrown.
+   *
+   * @param type the type that need to be set If input type is null, an IllegalArgumentException
+   *     will be thrown.
+   */
+  public void setValueType(String type) {
+<span class="nc bnc" id="L557" title="All 2 branches missed.">    if (type == null) {</span>
+<span class="nc" id="L558">      throw new IllegalArgumentException(&quot;type shouldn't be null.&quot;);</span>
+    }
+<span class="nc" id="L560">    String sType = type.toLowerCase();</span>
+<span class="nc" id="L561">    OfficeValueTypeAttribute.Value value = OfficeValueTypeAttribute.Value.enumValueOf(sType);</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">    if (value == null) {</span>
+<span class="nc" id="L563">      throw new IllegalArgumentException(&quot;the value type of cell is not valid&quot;);</span>
+    }
+
+<span class="nc" id="L566">    mCellElement.setOfficeValueTypeAttribute(sType);</span>
+<span class="nc" id="L567">  }</span>
+
+  /**
+   * Get the value type of this cell. The returned value can be &quot;boolean&quot;, &quot;currency&quot;, &quot;date&quot;,
+   * &quot;float&quot;, &quot;percentage&quot;, &quot;string&quot; or &quot;time&quot;. If no value type is set, null will be returned.
+   *
+   * @return the type of the cell
+   */
+  public String getValueType() {
+<span class="fc" id="L576">    return mCellElement.getOfficeValueTypeAttribute();</span>
+  }
+
+  private OfficeValueTypeAttribute.Value getTypeAttr() {
+<span class="fc" id="L580">    String type = mCellElement.getOfficeValueTypeAttribute();</span>
+<span class="fc" id="L581">    return OfficeValueTypeAttribute.Value.enumValueOf(type);</span>
+  }
+
+  /**
+   * Get the double value of this cell as Double object.
+   *
+   * &lt;p&gt;Throw IllegalArgumentException if the cell type is not &quot;float&quot;.
+   *
+   * @return the double value of this cell as a Double object. If the cell value is empty, null will
+   *     be returned.
+   *     &lt;p&gt;An IllegalArgumentException will be thrown if the cell type is not &quot;float&quot;.
+   */
+  public Double getDoubleValue() {
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">    if (getTypeAttr() == OfficeValueTypeAttribute.Value.FLOAT) {</span>
+<span class="fc" id="L595">      return mCellElement.getOfficeValueAttribute();</span>
+    } else {
+<span class="nc" id="L597">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Get the currency value of this cell as Double object.
+   *
+   * &lt;p&gt;Throw IllegalArgumentException if the cell type is not &quot;currency&quot;.
+   *
+   * @return the currency value of this cell as a Double object. If the cell value is empty, null
+   *     will be returned.
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown if the cell type is
+   *     not &quot;currency&quot;.
+   */
+  public Double getCurrencyValue() {
+<span class="nc bnc" id="L612" title="All 2 branches missed.">    if (getTypeAttr() == OfficeValueTypeAttribute.Value.CURRENCY) {</span>
+<span class="nc" id="L613">      return mCellElement.getOfficeValueAttribute();</span>
+    } else {
+<span class="nc" id="L615">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Get the symbol of currency.
+   *
+   * @return the currency symbol
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown if the value type
+   *     is not &quot;currency&quot;.
+   */
+  public String getCurrencySymbol() {
+<span class="nc bnc" id="L627" title="All 2 branches missed.">    if (getTypeAttr() != OfficeValueTypeAttribute.Value.CURRENCY) {</span>
+<span class="nc" id="L628">      throw new IllegalArgumentException();</span>
+    }
+
+<span class="nc" id="L631">    OdfStyle style = getCellStyleElement();</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">    if (style != null) {</span>
+<span class="nc" id="L633">      String dataStyleName =</span>
+<span class="nc" id="L634">          style.getOdfAttributeValue(</span>
+<span class="nc" id="L635">              OdfName.newName(OdfDocumentNamespace.STYLE, &quot;data-style-name&quot;));</span>
+<span class="nc" id="L636">      OdfNumberCurrencyStyle dataStyle =</span>
+<span class="nc" id="L637">          mCellElement.getOrCreateAutomaticStyles().getCurrencyStyle(dataStyleName);</span>
+<span class="nc bnc" id="L638" title="All 2 branches missed.">      if (dataStyle == null) {</span>
+<span class="nc" id="L639">        dataStyle = mDocument.getDocumentStyles().getCurrencyStyle(dataStyleName);</span>
+      }
+<span class="nc bnc" id="L641" title="All 4 branches missed.">      if ((dataStyle != null) &amp;&amp; (dataStyle.getCurrencySymbolElement() != null)) {</span>
+<span class="nc" id="L642">        return dataStyle.getCurrencySymbolElement().getTextContent();</span>
+      }
+    }
+<span class="nc" id="L645">    return null;</span>
+  }
+
+  /**
+   * Set the value and currency of the cell, and set the value type as &quot;currency&quot;.
+   * If&lt;code&gt;value&lt;/value&gt; is null, the cell value will be removed.
+   *
+   * @param value  the value that will be set
+   * @param currency	the currency that will be set.
+   * @throws IllegalArgumentException  If input currency is null, an IllegalArgumentException will be thrown.
+   */
+  public void setCurrencyValue(Double value, String currency) {
+<span class="nc bnc" id="L657" title="All 2 branches missed.">    if (currency == null) {</span>
+<span class="nc" id="L658">      throw new IllegalArgumentException(&quot;currency shouldn't be null.&quot;);</span>
+    }
+<span class="nc" id="L660">    splitRepeatedCells();</span>
+<span class="nc" id="L661">    setTypeAttr(OfficeValueTypeAttribute.Value.CURRENCY);</span>
+<span class="nc" id="L662">    mCellElement.setOfficeValueAttribute(value);</span>
+<span class="nc" id="L663">    mCellElement.setOfficeCurrencyAttribute(currency);</span>
+<span class="nc" id="L664">  }</span>
+
+  /**
+   * Get the cell percentage value as Double object.
+   *
+   * &lt;p&gt;Throw IllegalArgumentException if the cell type is not &quot;percentage&quot;.
+   *
+   * @return the percentage value of this cell as a Double object. If the cell value is empty, null
+   *     will be returned.
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown if the cell type is
+   *     not &quot;percentage&quot;.
+   */
+  public Double getPercentageValue() {
+<span class="nc bnc" id="L677" title="All 2 branches missed.">    if (getTypeAttr() == OfficeValueTypeAttribute.Value.PERCENTAGE) {</span>
+<span class="nc" id="L678">      return mCellElement.getOfficeValueAttribute();</span>
+    } else {
+<span class="nc" id="L680">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Set the cell value as a percentage value and set the value type as percentage too.
+   * If&lt;code&gt;value&lt;/value&gt; is null, the cell value will be removed.
+   *
+   * @param value	the value that will be set
+   */
+  public void setPercentageValue(Double value) {
+<span class="nc" id="L691">    splitRepeatedCells();</span>
+<span class="nc" id="L692">    setTypeAttr(OfficeValueTypeAttribute.Value.PERCENTAGE);</span>
+<span class="nc" id="L693">    mCellElement.setOfficeValueAttribute(value);</span>
+<span class="nc" id="L694">  }</span>
+
+  /**
+   * Get the text displayed in this cell.
+   *
+   * @return the text displayed in this cell
+   */
+  public String getDisplayText() {
+    // TODO: This function doesn't work well if a cell contains a list.
+    // Refer to testGetSetTextValue();
+<span class="fc" id="L704">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L705">    return textProcessor.getText(mCellElement);</span>
+  }
+
+  /**
+   * Set the text displayed in this cell.
+   *
+   * &lt;p&gt;Please note the displayed text in ODF viewer might be different with the value set by this
+   * method, because the displayed text in ODF viewer is calculated and set by editor.
+   *
+   * @param content the displayed text. If content is null, it will display the empty string
+   *     instead.
+   */
+  public void setDisplayText(String content) {
+<span class="pc bpc" id="L718" title="1 of 2 branches missed.">    if (content == null) {</span>
+<span class="nc" id="L719">      content = &quot;&quot;;</span>
+    }
+<span class="fc" id="L721">    removeContent();</span>
+
+<span class="fc" id="L723">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L724">    OdfTextParagraph para = new OdfTextParagraph((OdfFileDom) mCellElement.getOwnerDocument());</span>
+<span class="fc" id="L725">    textProcessor.append(para, content);</span>
+
+<span class="fc" id="L727">    mCellElement.appendChild(para);</span>
+<span class="fc" id="L728">  }</span>
+
+  /**
+   * Set the text displayed in this cell, with a specified style name.
+   *
+   * &lt;p&gt;Please note the displayed text in ODF viewer might be different with the value set by this
+   * method, because the displayed text in ODF viewer are calculated and set by editor.
+   *
+   * @param content the displayed text. If content is null, it will display the empty string
+   *     instead.
+   * @param stylename the style name. If stylename is null, the content will use the default
+   *     paragraph style.
+   */
+  public void setDisplayText(String content, String stylename) {
+<span class="nc bnc" id="L742" title="All 2 branches missed.">    if (content == null) {</span>
+<span class="nc" id="L743">      content = &quot;&quot;;</span>
+    }
+<span class="nc" id="L745">    removeContent();</span>
+
+<span class="nc" id="L747">    OdfWhitespaceProcessor textProcessor = new OdfWhitespaceProcessor();</span>
+<span class="nc" id="L748">    OdfTextParagraph para = new OdfTextParagraph((OdfFileDom) mCellElement.getOwnerDocument());</span>
+<span class="nc bnc" id="L749" title="All 4 branches missed.">    if ((stylename != null) &amp;&amp; (stylename.length() &gt; 0)) {</span>
+<span class="nc" id="L750">      para.setStyleName(stylename);</span>
+    }
+<span class="nc" id="L752">    textProcessor.append(para, content);</span>
+
+<span class="nc" id="L754">    mCellElement.appendChild(para);</span>
+<span class="nc" id="L755">  }</span>
+
+  /**
+   * Set the cell value as a double and set the value type to be &quot;float&quot;.
+   *
+   * @param value	the double value that will be set. If&lt;code&gt;value&lt;/value&gt; is null, the cell value will be removed.
+   */
+  public void setDoubleValue(Double value) {
+<span class="fc" id="L763">    splitRepeatedCells();</span>
+<span class="fc" id="L764">    setTypeAttr(OfficeValueTypeAttribute.Value.FLOAT);</span>
+<span class="fc" id="L765">    mCellElement.setOfficeValueAttribute(value);</span>
+<span class="fc" id="L766">    setDisplayText(value + &quot;&quot;);</span>
+<span class="fc" id="L767">  }</span>
+
+  /**
+   * Get the cell boolean value as Boolean object.
+   *
+   * &lt;p&gt;Throw IllegalArgumentException if the cell type is not &quot;boolean&quot;.
+   *
+   * @return the Boolean value of cell. If the cell value is empty, null will be returned.
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown if the cell type is
+   *     not &quot;boolean&quot;.
+   */
+  public Boolean getBooleanValue() {
+<span class="pc bpc" id="L779" title="1 of 2 branches missed.">    if (getTypeAttr() == OfficeValueTypeAttribute.Value.BOOLEAN) {</span>
+<span class="fc" id="L780">      return mCellElement.getOfficeBooleanValueAttribute();</span>
+    } else {
+<span class="nc" id="L782">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Set the cell value as a boolean and set the value type to be boolean. If&lt;code&gt;value&lt;/value&gt; is null, the cell value will be removed.
+   *
+   * @param value	the value of boolean type
+   */
+  public void setBooleanValue(Boolean value) {
+<span class="fc" id="L792">    splitRepeatedCells();</span>
+<span class="fc" id="L793">    setTypeAttr(OfficeValueTypeAttribute.Value.BOOLEAN);</span>
+<span class="fc" id="L794">    mCellElement.setOfficeBooleanValueAttribute(value);</span>
+<span class="fc" id="L795">    setDisplayText(value + &quot;&quot;);</span>
+<span class="fc" id="L796">  }</span>
+
+  /**
+   * Get the cell date value as Calendar.
+   *
+   * &lt;p&gt;Throw IllegalArgumentException if the cell type is not &quot;date&quot;.
+   *
+   * @return the Calendar value of cell
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown, if the cell type
+   *     is not &quot;date&quot;.
+   */
+  public Calendar getDateValue() {
+<span class="nc bnc" id="L808" title="All 2 branches missed.">    if (getTypeAttr() == OfficeValueTypeAttribute.Value.DATE) {</span>
+<span class="nc" id="L809">      String dateStr = mCellElement.getOfficeDateValueAttribute();</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">      if (dateStr == null) {</span>
+<span class="nc" id="L811">        return null;</span>
+      }
+<span class="nc" id="L813">      Date date = parseString(dateStr, DEFAULT_DATE_FORMAT);</span>
+<span class="nc" id="L814">      Calendar calender = Calendar.getInstance();</span>
+<span class="nc" id="L815">      calender.setTime(date);</span>
+<span class="nc" id="L816">      return calender;</span>
+    } else {
+<span class="nc" id="L818">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Set the cell value as a date, and set the value type to be &quot;date&quot;.
+   *
+   * @param date the value of {@link java.util.Calendar java.util.Calendar} type.
+   */
+  public void setDateValue(Calendar date) {
+<span class="nc bnc" id="L828" title="All 2 branches missed.">    if (date == null) {</span>
+<span class="nc" id="L829">      throw new IllegalArgumentException(&quot;date shouldn't be null.&quot;);</span>
+    }
+<span class="nc" id="L831">    splitRepeatedCells();</span>
+<span class="nc" id="L832">    setTypeAttr(OfficeValueTypeAttribute.Value.DATE);</span>
+<span class="nc" id="L833">    SimpleDateFormat simpleFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);</span>
+<span class="nc" id="L834">    String svalue = simpleFormat.format(date.getTime());</span>
+<span class="nc" id="L835">    mCellElement.setOfficeDateValueAttribute(svalue);</span>
+<span class="nc" id="L836">    setDisplayText(svalue);</span>
+<span class="nc" id="L837">  }</span>
+
+  /**
+   * Set the cell value as a string, and set the value type to be string.
+   *
+   * @param str the value of string type. If input string is null, an empty string will be set.
+   */
+  public void setStringValue(String str) {
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">    if (str == null) {</span>
+<span class="nc" id="L846">      str = &quot;&quot;;</span>
+    }
+<span class="fc" id="L848">    splitRepeatedCells();</span>
+<span class="fc" id="L849">    setTypeAttr(OfficeValueTypeAttribute.Value.STRING);</span>
+<span class="fc" id="L850">    mCellElement.setOfficeStringValueAttribute(str);</span>
+<span class="fc" id="L851">    setDisplayText(str);</span>
+<span class="fc" id="L852">  }</span>
+
+  // Note: if you want to change the cell
+  // splitRepeatedCells must be called first in order to
+  // 1. update parent row if the row is the repeated rows.
+  // 2. update the cell itself if the cell is the column repeated cells.
+  void splitRepeatedCells() {
+<span class="fc" id="L859">    OdfTable table = getTable();</span>
+    // 1.if the parent row is the repeated row
+    // the repeated row has to be separated
+    // after this the cell element and repeated index will be updated
+    // according to the new parent row
+<span class="fc" id="L864">    OdfTableRow row = getTableRow();</span>
+<span class="fc" id="L865">    int colIndex = getColumnIndex();</span>
+<span class="fc bfc" id="L866" title="All 2 branches covered.">    if (row.getRowsRepeatedNumber() &gt; 1) {</span>
+<span class="fc" id="L867">      row.splitRepeatedRows();</span>
+<span class="fc" id="L868">      OdfTableCell cell = row.getCellByIndex(colIndex);</span>
+<span class="fc" id="L869">      mCellElement = cell.getOdfElement();</span>
+<span class="fc" id="L870">      mnRepeatedColIndex = cell.mnRepeatedColIndex;</span>
+<span class="fc" id="L871">      mnRepeatedRowIndex = cell.mnRepeatedRowIndex;</span>
+    }
+
+    // 2.if the cell is the column repeated cell
+    // this repeated cell has to be separated
+<span class="fc" id="L876">    int repeateNum = getColumnsRepeatedNumber();</span>
+<span class="fc bfc" id="L877" title="All 2 branches covered.">    if (repeateNum &gt; 1) {</span>
+      // change this repeated column to several single columns
+<span class="fc" id="L879">      TableTableCellElementBase ownerCellElement = null;</span>
+<span class="fc" id="L880">      int repeatedColIndex = mnRepeatedColIndex;</span>
+<span class="fc" id="L881">      Node refElement = mCellElement;</span>
+<span class="fc bfc" id="L882" title="All 2 branches covered.">      for (int i = repeateNum - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L883">        TableTableCellElementBase newCell =</span>
+<span class="fc" id="L884">            (TableTableCellElementBase) mCellElement.cloneNode(true);</span>
+<span class="fc" id="L885">        newCell.removeAttributeNS(OdfDocumentNamespace.TABLE.getUri(), &quot;number-columns-repeated&quot;);</span>
+<span class="fc" id="L886">        row.getOdfElement().insertBefore(newCell, refElement);</span>
+<span class="fc" id="L887">        refElement = newCell;</span>
+<span class="fc bfc" id="L888" title="All 2 branches covered.">        if (repeatedColIndex == i) {</span>
+<span class="fc" id="L889">          ownerCellElement = newCell;</span>
+        } else {
+<span class="fc" id="L891">          table.updateCellRepository(</span>
+              mCellElement, i, mnRepeatedRowIndex, newCell, 0, mnRepeatedRowIndex);
+        }
+      }
+      // remove this column element
+<span class="fc" id="L896">      row.getOdfElement().removeChild(mCellElement);</span>
+
+<span class="pc bpc" id="L898" title="1 of 2 branches missed.">      if (ownerCellElement != null) {</span>
+<span class="fc" id="L899">        table.updateCellRepository(</span>
+            mCellElement,
+            mnRepeatedColIndex,
+            mnRepeatedRowIndex,
+            ownerCellElement,
+            0,
+            mnRepeatedRowIndex);
+<span class="fc" id="L906">        mCellElement = ownerCellElement;</span>
+<span class="fc" id="L907">        mnRepeatedColIndex = 0;</span>
+      }
+    }
+<span class="fc" id="L910">  }</span>
+
+  /**
+   * Get the cell value as a string.
+   *
+   * &lt;p&gt;If the cell type is not string, the display text will be returned.
+   *
+   * @return the string value of this cell, or the display text
+   */
+  public String getStringValue() {
+<span class="fc" id="L920">    return getDisplayText();</span>
+  }
+
+  /**
+   * Get the cell value as {@link java.util.Calendar java.util.Calendar}.
+   *
+   * &lt;p&gt;Throw exception if the cell type is not &quot;time&quot;.
+   *
+   * @return the Calendar value of cell
+   * @throws IllegalArgumentException an IllegalArgumentException will be thrown if the cell type is
+   *     not time.
+   */
+  public Calendar getTimeValue() {
+<span class="pc bpc" id="L933" title="1 of 2 branches missed.">    if (getTypeAttr() == OfficeValueTypeAttribute.Value.TIME) {</span>
+<span class="fc" id="L934">      String timeStr = mCellElement.getOfficeTimeValueAttribute();</span>
+<span class="fc" id="L935">      Date date = parseString(timeStr, DEFAULT_TIME_FORMAT);</span>
+<span class="fc" id="L936">      Calendar calender = Calendar.getInstance();</span>
+<span class="fc" id="L937">      calender.setTime(date);</span>
+<span class="fc" id="L938">      calender.clear(Calendar.YEAR);</span>
+<span class="fc" id="L939">      calender.clear(Calendar.MONTH);</span>
+<span class="fc" id="L940">      calender.clear(Calendar.DAY_OF_MONTH);</span>
+<span class="fc" id="L941">      return calender;</span>
+    } else {
+<span class="nc" id="L943">      throw new IllegalArgumentException();</span>
+    }
+  }
+
+  /**
+   * Set the cell value as a time and set the value type to be &quot;time&quot; too.
+   *
+   * @param time the value of {@link java.util.Calendar java.util.Calendar} type.
+   * @throws IllegalArgumentException If input time is null, an IllegalArgumentException exception
+   *     will be thrown.
+   */
+  public void setTimeValue(Calendar time) {
+<span class="pc bpc" id="L955" title="1 of 2 branches missed.">    if (time == null) {</span>
+<span class="nc" id="L956">      throw new IllegalArgumentException(&quot;time shouldn't be null.&quot;);</span>
+    }
+<span class="fc" id="L958">    splitRepeatedCells();</span>
+<span class="fc" id="L959">    setTypeAttr(OfficeValueTypeAttribute.Value.TIME);</span>
+<span class="fc" id="L960">    SimpleDateFormat simpleFormat = new SimpleDateFormat(DEFAULT_TIME_FORMAT);</span>
+<span class="fc" id="L961">    String svalue = simpleFormat.format(time.getTime());</span>
+<span class="fc" id="L962">    mCellElement.setOfficeTimeValueAttribute(svalue);</span>
+<span class="fc" id="L963">    setDisplayText(svalue);</span>
+<span class="fc" id="L964">  }</span>
+
+  private Date parseString(String value, String format) {
+<span class="fc" id="L967">    SimpleDateFormat simpleFormat = new SimpleDateFormat(format);</span>
+<span class="fc" id="L968">    Date simpleDate = null;</span>
+    try {
+<span class="fc" id="L970">      simpleDate = simpleFormat.parse(value);</span>
+<span class="nc" id="L971">    } catch (ParseException e) {</span>
+<span class="nc" id="L972">      Logger.getLogger(OdfTableCell.class.getName()).log(Level.SEVERE, e.getMessage(), e);</span>
+<span class="nc" id="L973">      return null;</span>
+<span class="fc" id="L974">    }</span>
+<span class="fc" id="L975">    return simpleDate;</span>
+  }
+
+  /**
+   * Get the background color of this cell.
+   *
+   * &lt;p&gt;If no background color is set, default background color &quot;#FFFFFF&quot; will be returned.
+   *
+   * @return the background color of this cell
+   */
+  public Color getCellBackgroundColor() {
+<span class="nc" id="L986">    Color color = Color.WHITE;</span>
+<span class="nc" id="L987">    OdfStyleBase styleElement = getCellStyleElement();</span>
+<span class="nc bnc" id="L988" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L989">      OdfStyleProperty bkColorProperty =</span>
+<span class="nc" id="L990">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L992">              OdfName.newName(OdfDocumentNamespace.FO, &quot;background-color&quot;));</span>
+<span class="nc" id="L993">      String property = styleElement.getProperty(bkColorProperty);</span>
+<span class="nc bnc" id="L994" title="All 2 branches missed.">      if (property != null) {</span>
+        try {
+<span class="nc" id="L996">          color = new Color(property);</span>
+<span class="nc" id="L997">        } catch (Exception e) {</span>
+          // use default background color White
+<span class="nc" id="L999">          color = Color.WHITE;</span>
+<span class="nc" id="L1000">          Logger.getLogger(OdfTableCell.class.getName()).log(Level.WARNING, e.getMessage());</span>
+<span class="nc" id="L1001">        }</span>
+      }
+    }
+<span class="nc" id="L1004">    return color;</span>
+  }
+
+  /**
+   * Get the background color string of this cell.
+   *
+   * &lt;p&gt;If no background color is set, default background color &quot;#FFFFFF&quot; will be returned.
+   *
+   * @return the background color of this cell
+   */
+  public String getCellBackgroundColorString() {
+<span class="nc" id="L1015">    String color = DEFAULT_BACKGROUND_COLOR;</span>
+<span class="nc" id="L1016">    OdfStyleBase styleElement = getCellStyleElement();</span>
+<span class="nc bnc" id="L1017" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L1018">      OdfStyleProperty bkColorProperty =</span>
+<span class="nc" id="L1019">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L1021">              OdfName.newName(OdfDocumentNamespace.FO, &quot;background-color&quot;));</span>
+<span class="nc" id="L1022">      String property = styleElement.getProperty(bkColorProperty);</span>
+<span class="nc bnc" id="L1023" title="All 2 branches missed.">      if (Color.isValid(property)) {</span>
+<span class="nc" id="L1024">        color = property;</span>
+      }
+    }
+<span class="nc" id="L1027">    return color;</span>
+  }
+
+  /**
+   * Set the background color of this cell.
+   *
+   * @param cellBackgroundColor the background color that need to set. If &lt;code&gt;cellBackgroundColor
+   *     &lt;/code&gt; is null, default background color &lt;code&gt;Color.WHITE&lt;/code&gt; will be set.
+   */
+  public void setCellBackgroundColor(Color cellBackgroundColor) {
+<span class="nc bnc" id="L1037" title="All 2 branches missed.">    if (cellBackgroundColor == null) {</span>
+<span class="nc" id="L1038">      cellBackgroundColor = Color.WHITE;</span>
+    }
+<span class="nc" id="L1040">    splitRepeatedCells();</span>
+<span class="nc" id="L1041">    OdfStyleBase styleElement = getCellStyleElementForWrite();</span>
+<span class="nc bnc" id="L1042" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L1043">      OdfStyleProperty bkColorProperty =</span>
+<span class="nc" id="L1044">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L1046">              OdfName.newName(OdfDocumentNamespace.FO, &quot;background-color&quot;));</span>
+<span class="nc" id="L1047">      styleElement.setProperty(bkColorProperty, cellBackgroundColor.toString());</span>
+    }
+<span class="nc" id="L1049">  }</span>
+
+  /**
+   * Set the background color of this cell using string. The string must be a valid argument for
+   * constructing {@link org.odftoolkit.odfdom.type.Color
+   * &lt;code&gt;org.odftoolkit.odfdom.type.Color&lt;/code&gt;}.
+   *
+   * @param cellBackgroundColor the background color that need to set. If cellBackgroundColor is
+   *     null, default background color #FFFFFF will be set.
+   * @see org.odftoolkit.odfdom.type.Color
+   */
+  public void setCellBackgroundColor(String cellBackgroundColor) {
+<span class="nc bnc" id="L1061" title="All 2 branches missed.">    if (!Color.isValid(cellBackgroundColor)) {</span>
+<span class="nc" id="L1062">      Logger.getLogger(OdfTableCell.class.getName())</span>
+<span class="nc" id="L1063">          .log(</span>
+              Level.WARNING,
+              &quot;Parameter is invalid for datatype Color, default background color #FFFFFF will be set.&quot;);
+<span class="nc" id="L1066">      cellBackgroundColor = DEFAULT_BACKGROUND_COLOR;</span>
+    }
+<span class="nc" id="L1068">    splitRepeatedCells();</span>
+<span class="nc" id="L1069">    OdfStyleBase styleElement = getCellStyleElementForWrite();</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L1071">      OdfStyleProperty bkColorProperty =</span>
+<span class="nc" id="L1072">          OdfStyleProperty.get(</span>
+              OdfStylePropertiesSet.TableCellProperties,
+<span class="nc" id="L1074">              OdfName.newName(OdfDocumentNamespace.FO, &quot;background-color&quot;));</span>
+<span class="nc" id="L1075">      styleElement.setProperty(bkColorProperty, cellBackgroundColor);</span>
+    }
+<span class="nc" id="L1077">  }</span>
+
+  /**
+   * Get the column spanned number of this cell.
+   *
+   * @return the column spanned number
+   */
+  int getColumnSpannedNumber() {
+<span class="fc bfc" id="L1085" title="All 2 branches covered.">    if (mCellElement instanceof TableCoveredTableCellElement) {</span>
+<span class="fc" id="L1086">      return 1;</span>
+    }
+<span class="fc" id="L1088">    Integer value = ((TableTableCellElement) mCellElement).getTableNumberColumnsSpannedAttribute();</span>
+<span class="pc bpc" id="L1089" title="1 of 2 branches missed.">    if (value != null) {</span>
+<span class="fc" id="L1090">      return value.intValue();</span>
+    }
+<span class="nc" id="L1092">    return DEFAULT_COLUMN_SPANNED_NUMBER;</span>
+  }
+
+  /**
+   * Get the column repeated number of this cell.
+   *
+   * @return the column repeated number
+   */
+  int getColumnsRepeatedNumber() {
+<span class="fc" id="L1101">    Integer value = mCellElement.getTableNumberColumnsRepeatedAttribute();</span>
+<span class="pc bpc" id="L1102" title="1 of 2 branches missed.">    if (value != null) {</span>
+<span class="fc" id="L1103">      return value.intValue();</span>
+    }
+<span class="nc" id="L1105">    return DEFAULT_COLUMNS_REPEATED_NUMBER;</span>
+  }
+
+  /**
+   * Get the row spanned number of this cell.
+   *
+   * @return the row spanned number
+   */
+  int getRowSpannedNumber() {
+<span class="fc bfc" id="L1114" title="All 2 branches covered.">    if (mCellElement instanceof TableCoveredTableCellElement) {</span>
+<span class="fc" id="L1115">      return 1;</span>
+    }
+<span class="fc" id="L1117">    Integer value = ((TableTableCellElement) mCellElement).getTableNumberRowsSpannedAttribute();</span>
+<span class="pc bpc" id="L1118" title="1 of 2 branches missed.">    if (value != null) {</span>
+<span class="fc" id="L1119">      return value.intValue();</span>
+    }
+<span class="nc" id="L1121">    return DEFAULT_ROW_SPANNED_NUMBER;</span>
+  }
+
+  /**
+   * Set the column spanned number.
+   *
+   * @param spannedNum the column spanned number to be set. If spannedNum is less than 1, default
+   *     column spanned number 1 will be set.
+   */
+  void setColumnSpannedNumber(int spannedNum) {
+<span class="pc bpc" id="L1131" title="1 of 2 branches missed.">    if (spannedNum &lt; 1) {</span>
+<span class="nc" id="L1132">      spannedNum = DEFAULT_COLUMN_SPANNED_NUMBER;</span>
+    }
+<span class="fc" id="L1134">    splitRepeatedCells();</span>
+<span class="pc bpc" id="L1135" title="1 of 2 branches missed.">    if (mCellElement instanceof TableTableCellElement) {</span>
+<span class="fc" id="L1136">      ((TableTableCellElement) mCellElement)</span>
+<span class="fc" id="L1137">          .setTableNumberColumnsSpannedAttribute(new Integer(spannedNum));</span>
+    } else {
+<span class="nc" id="L1139">      throw new IllegalArgumentException();</span>
+    }
+<span class="fc" id="L1141">  }</span>
+
+  /**
+   * Set the column repeated number.
+   *
+   * @param repeatedNum the column repeated number that need to be set. If repeatedNum is less than
+   *     1, default columns repeated number 1 will be set.
+   */
+  void setColumnsRepeatedNumber(int repeatedNum) {
+<span class="nc bnc" id="L1150" title="All 2 branches missed.">    if (repeatedNum &lt; 1) {</span>
+<span class="nc" id="L1151">      repeatedNum = DEFAULT_COLUMNS_REPEATED_NUMBER;</span>
+    }
+<span class="nc" id="L1153">    mCellElement.setTableNumberColumnsRepeatedAttribute(new Integer(repeatedNum));</span>
+<span class="nc" id="L1154">  }</span>
+
+  /**
+   * Set the row spanned number.
+   *
+   * @param spannedNum row spanned number that need to be set the row spanned number that need to be
+   *     set. If spannedNum is less than 1, default row spanned number 1 will be set.
+   */
+  void setRowSpannedNumber(int spannedNum) {
+<span class="nc bnc" id="L1163" title="All 2 branches missed.">    if (spannedNum &lt; 1) {</span>
+<span class="nc" id="L1164">      spannedNum = DEFAULT_ROW_SPANNED_NUMBER;</span>
+    }
+<span class="nc" id="L1166">    splitRepeatedCells();</span>
+<span class="nc bnc" id="L1167" title="All 2 branches missed.">    if (mCellElement instanceof TableTableCellElement) {</span>
+<span class="nc" id="L1168">      ((TableTableCellElement) mCellElement)</span>
+<span class="nc" id="L1169">          .setTableNumberRowsSpannedAttribute(new Integer(spannedNum));</span>
+    } else {
+<span class="nc" id="L1171">      throw new IllegalArgumentException();</span>
+    }
+<span class="nc" id="L1173">  }</span>
+
+  /**
+   * Judge if the ODF DOM element of this cell is the covered cell element.
+   *
+   * @return true if the ODFDOM element is TableCoveredTableCellElement
+   */
+  boolean isCoveredElement() {
+<span class="fc bfc" id="L1181" title="All 2 branches covered.">    if (mCellElement instanceof TableCoveredTableCellElement) {</span>
+<span class="fc" id="L1182">      return true;</span>
+    }
+<span class="fc" id="L1184">    return false;</span>
+  }
+
+  /**
+   * Get the style name of this cell.
+   *
+   * @return the name of the style
+   */
+  public String getStyleName() {
+<span class="fc" id="L1193">    OdfStyle style = getCellStyleElement();</span>
+<span class="pc bpc" id="L1194" title="1 of 2 branches missed.">    if (style == null) {</span>
+<span class="nc" id="L1195">      return &quot;&quot;;</span>
+    }
+<span class="fc" id="L1197">    return style.getStyleNameAttribute();</span>
+  }
+
+  /**
+   * Set a formula to the cell.
+   *
+   * &lt;p&gt;Please note, the parameter &lt;code&gt;formula&lt;/code&gt; will not be checked and interpreted; the
+   * cell value will not be calculated. It's just simply set as a formula attribute. See
+   * {@odf.attribute table:formula}
+   *
+   * @param formula the formula that need to be set.
+   * @throws IllegalArgumentException if formula is null, an IllegalArgumentException will be
+   *     thrown.
+   */
+  public void setFormula(String formula) {
+<span class="nc bnc" id="L1212" title="All 2 branches missed.">    if (formula == null) {</span>
+<span class="nc" id="L1213">      throw new IllegalArgumentException(&quot;formula shouldn't be null.&quot;);</span>
+    }
+<span class="nc" id="L1215">    splitRepeatedCells();</span>
+<span class="nc" id="L1216">    mCellElement.setTableFormulaAttribute(formula);</span>
+<span class="nc" id="L1217">  }</span>
+
+  /**
+   * Get the formula string of the cell.
+   *
+   * @return the formula representation of the cell
+   *     &lt;p&gt;If the cell does not contain a formula, null will be returned.
+   */
+  public String getFormula() {
+<span class="nc" id="L1226">    return mCellElement.getTableFormulaAttribute();</span>
+  }
+
+  //	/**
+  //	 * get the error value of the cell
+  //	 * if the formula can not be calculated, an error will be set
+  //	 * @return
+  //	 * 			return 0 if the cell has no error
+  //	 * 			return the error value of the cell if the formula result can not be calculated
+  //	 * 			such as divided by 0
+  //	 */
+  //	public long getError()
+  //	{
+  //		return 0;
+  //	}
+  /**
+   * Set the currency symbol and overall format of a currency cell.
+   *
+   * &lt;p&gt;Please note the overall format includes the symbol character, for example: $#,##0.00.
+   *
+   * &lt;p&gt;This function only works for currency.
+   *
+   * @param currencySymbol the currency symbol
+   * @param format overall format
+   * @throws IllegalArgumentException if input currencySymbol or format is null, an
+   *     IllegalArgumentException will be thrown.
+   */
+  public void setCurrencyFormat(String currencySymbol, String format) {
+<span class="nc bnc" id="L1254" title="All 2 branches missed.">    if (currencySymbol == null) {</span>
+<span class="nc" id="L1255">      throw new IllegalArgumentException(&quot;currencySymbol shouldn't be null.&quot;);</span>
+    }
+<span class="nc bnc" id="L1257" title="All 2 branches missed.">    if (format == null) {</span>
+<span class="nc" id="L1258">      throw new IllegalArgumentException(&quot;format shouldn't be null.&quot;);</span>
+    }
+<span class="nc" id="L1260">    splitRepeatedCells();</span>
+<span class="nc" id="L1261">    String type = mCellElement.getOfficeValueTypeAttribute();</span>
+<span class="nc" id="L1262">    OfficeValueTypeAttribute.Value typeValue = null;</span>
+<span class="nc" id="L1263">    msFormatString = format;</span>
+<span class="nc bnc" id="L1264" title="All 2 branches missed.">    if (type != null) {</span>
+<span class="nc" id="L1265">      typeValue = OfficeValueTypeAttribute.Value.enumValueOf(type);</span>
+    }
+
+<span class="nc bnc" id="L1268" title="All 2 branches missed.">    if (typeValue != OfficeValueTypeAttribute.Value.CURRENCY) {</span>
+<span class="nc" id="L1269">      throw new IllegalArgumentException();</span>
+    }
+
+<span class="nc" id="L1272">    OdfNumberCurrencyStyle currencyStyle =</span>
+        new OdfNumberCurrencyStyle(
+<span class="nc" id="L1274">            (OdfFileDom) mCellElement.getOwnerDocument(),</span>
+            currencySymbol,
+            format,
+<span class="nc" id="L1277">            getUniqueCurrencyStyleName());</span>
+<span class="nc" id="L1278">    mCellElement.getOrCreateAutomaticStyles().appendChild(currencyStyle);</span>
+<span class="nc" id="L1279">    setDataDisplayStyleName(currencyStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L1280">    Double value = getCurrencyValue();</span>
+
+    // set display text
+<span class="nc bnc" id="L1283" title="All 2 branches missed.">    if (value != null) {</span>
+<span class="nc" id="L1284">      setDisplayText(formatCurrency(currencyStyle, value.doubleValue()));</span>
+    }
+<span class="nc" id="L1286">  }</span>
+
+  // This method doesn't handle style:map element.
+  private String formatCurrency(OdfNumberCurrencyStyle currencyStyle, double value) {
+<span class="nc" id="L1290">    String valuestr = &quot;&quot;;</span>
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">    for (Node m : new DomNodeList(currencyStyle.getChildNodes())) {</span>
+<span class="nc bnc" id="L1292" title="All 2 branches missed.">      if (m instanceof NumberCurrencySymbolElement) {</span>
+<span class="nc" id="L1293">        valuestr += m.getTextContent();</span>
+<span class="nc bnc" id="L1294" title="All 2 branches missed.">      } else if (m instanceof NumberNumberElement) {</span>
+<span class="nc" id="L1295">        String numberformat = currencyStyle.getNumberFormat();</span>
+<span class="nc" id="L1296">        valuestr += (new DecimalFormat(numberformat)).format(value);</span>
+<span class="nc bnc" id="L1297" title="All 2 branches missed.">      } else if (m instanceof NumberTextElement) {</span>
+<span class="nc" id="L1298">        String textcontent = m.getTextContent();</span>
+<span class="nc bnc" id="L1299" title="All 4 branches missed.">        if (textcontent == null || textcontent.length() == 0) {</span>
+<span class="nc" id="L1300">          textcontent = &quot; &quot;;</span>
+        }
+<span class="nc" id="L1302">        valuestr += textcontent;</span>
+      }
+<span class="nc" id="L1304">    }</span>
+<span class="nc" id="L1305">    return valuestr;</span>
+  }
+
+  /**
+   * Set the format string of the cell.
+   *
+   * &lt;p&gt;This function only works for float, date, time and percentage, otherwise an {@link
+   * java.lang.IllegalArgumentException} will be thrown.
+   *
+   * &lt;p&gt;For value type float and percentage, the &lt;code&gt;formatStr&lt;/code&gt; must follow the encoding
+   * rule of {@link java.text.DecimalFormat &lt;code&gt;java.text.DecimalFormat&lt;/code&gt;}. For value type
+   * date and time, the &lt;code&gt;formatStr&lt;/code&gt; must follow the encoding rule of {@link
+   * java.text.SimpleDateFormat &lt;code&gt;java.text.SimpleDateFormat&lt;/code&gt;}.
+   *
+   * &lt;p&gt;Refer to {@link org.odftoolkit.odfdom.doc.table.OdfTableCell#setCurrencyFormat
+   * &lt;code&gt;setCurrencyFormat&lt;/code&gt;} to set the format of currency.
+   *
+   * &lt;p&gt;If the cell value type is not set, the method will try to give it a value type, according to
+   * common ordination. The adapt order is: percentage-&gt; time-&gt; date-&gt; float.
+   *
+   * &lt;blockquote&gt;
+   *
+   * &lt;table border=0 cellspacing=3 cellpadding=0 summary=&quot;Chart showing ValueType, Distinguish Symbol
+   * and Distinguish Priority.&quot;&gt;
+   *     &lt;tr bgcolor=&quot;#ccccff&quot;&gt;
+   *          &lt;th align=left&gt;ValueType
+   *          &lt;th align=left&gt;Distinguish Symbol
+   *          &lt;th align=left&gt;Distinguish Priority
+   *     &lt;tr valign=top&gt;
+   *          &lt;td&gt;percentage
+   *          &lt;td&gt;%
+   *          &lt;td&gt;1
+   *     &lt;tr valign=top&gt;
+   *          &lt;td&gt;time
+   *          &lt;td&gt;H, k, m, s, S
+   *          &lt;td&gt;2
+   *     &lt;tr valign=top&gt;
+   *          &lt;td&gt;date
+   *          &lt;td&gt;y, M, w, W, D, d, F, E, K, h
+   *          &lt;td&gt;3
+   *     &lt;tr valign=top&gt;
+   *          &lt;td&gt;float
+   *          &lt;td&gt;#, 0
+   *          &lt;td&gt;4
+   * &lt;/table&gt;
+   *
+   * &lt;/blockquote&gt;
+   *
+   * The adapt result may be inaccurate, so you'd better set value type before call this method. If
+   * adaptive failed, an {@link java.lang.UnsupportedOperationException} will be thrown.
+   *
+   * &lt;p&gt;
+   *
+   * @param formatStr the cell need be formatted as this specified format string.
+   * @throws IllegalArgumentException if &lt;code&gt;formatStr&lt;/code&gt; is null or the cell value type is
+   *     supported.
+   * @throws UnsupportedOperationException if the adaptive failed, when cell value type is not set.
+   * @see java.text.SimpleDateFormat
+   * @see java.text.DecimalFormat
+   */
+  public void setFormatString(String formatStr) {
+<span class="nc bnc" id="L1366" title="All 2 branches missed.">    if (formatStr == null) {</span>
+<span class="nc" id="L1367">      throw new IllegalArgumentException(&quot;formatStr shouldn't be null.&quot;);</span>
+    }
+<span class="nc" id="L1369">    String type = getValueType();</span>
+<span class="nc bnc" id="L1370" title="All 2 branches missed.">    if (type == null) {</span>
+<span class="nc bnc" id="L1371" title="All 2 branches missed.">      if (formatStr.contains(&quot;%&quot;)) {</span>
+<span class="nc" id="L1372">        setValueType(&quot;percentage&quot;);</span>
+<span class="nc bnc" id="L1373" title="All 2 branches missed.">      } else if (formatStr.contains(&quot;H&quot;)</span>
+<span class="nc bnc" id="L1374" title="All 2 branches missed.">          || formatStr.contains(&quot;k&quot;)</span>
+<span class="nc bnc" id="L1375" title="All 2 branches missed.">          || formatStr.contains(&quot;m&quot;)</span>
+<span class="nc bnc" id="L1376" title="All 2 branches missed.">          || formatStr.contains(&quot;s&quot;)</span>
+<span class="nc bnc" id="L1377" title="All 2 branches missed.">          || formatStr.contains(&quot;S&quot;)) {</span>
+<span class="nc" id="L1378">        setValueType(&quot;time&quot;);</span>
+<span class="nc bnc" id="L1379" title="All 2 branches missed.">      } else if (formatStr.contains(&quot;y&quot;)</span>
+<span class="nc bnc" id="L1380" title="All 2 branches missed.">          || formatStr.contains(&quot;M&quot;)</span>
+<span class="nc bnc" id="L1381" title="All 2 branches missed.">          || formatStr.contains(&quot;w&quot;)</span>
+<span class="nc bnc" id="L1382" title="All 2 branches missed.">          || formatStr.contains(&quot;W&quot;)</span>
+<span class="nc bnc" id="L1383" title="All 2 branches missed.">          || formatStr.contains(&quot;D&quot;)</span>
+<span class="nc bnc" id="L1384" title="All 2 branches missed.">          || formatStr.contains(&quot;d&quot;)</span>
+<span class="nc bnc" id="L1385" title="All 2 branches missed.">          || formatStr.contains(&quot;F&quot;)</span>
+<span class="nc bnc" id="L1386" title="All 2 branches missed.">          || formatStr.contains(&quot;E&quot;)</span>
+<span class="nc bnc" id="L1387" title="All 2 branches missed.">          || formatStr.contains(&quot;K&quot;)</span>
+<span class="nc bnc" id="L1388" title="All 2 branches missed.">          || formatStr.contains(&quot;h&quot;)) {</span>
+<span class="nc" id="L1389">        setValueType(&quot;date&quot;);</span>
+<span class="nc bnc" id="L1390" title="All 4 branches missed.">      } else if (formatStr.contains(&quot;#&quot;) || formatStr.contains(&quot;0&quot;)) {</span>
+<span class="nc" id="L1391">        setValueType(&quot;float&quot;);</span>
+      } else {
+<span class="nc" id="L1393">        throw new UnsupportedOperationException(</span>
+            &quot;format string: &quot; + formatStr + &quot; can't be adapted to a possible value type.&quot;);
+      }
+<span class="nc" id="L1396">      type = getValueType();</span>
+    }
+<span class="nc" id="L1398">    setCellFormatString(formatStr, type);</span>
+<span class="nc" id="L1399">  }</span>
+
+  private void setCellFormatString(String formatStr, String type) {
+<span class="nc" id="L1402">    OfficeValueTypeAttribute.Value typeValue = null;</span>
+<span class="nc" id="L1403">    msFormatString = formatStr;</span>
+<span class="nc" id="L1404">    splitRepeatedCells();</span>
+<span class="nc" id="L1405">    typeValue = OfficeValueTypeAttribute.Value.enumValueOf(type);</span>
+<span class="nc bnc" id="L1406" title="All 2 branches missed.">    if (typeValue == OfficeValueTypeAttribute.Value.FLOAT) {</span>
+<span class="nc" id="L1407">      OdfNumberStyle numberStyle =</span>
+          new OdfNumberStyle(
+<span class="nc" id="L1409">              (OdfFileDom) mCellElement.getOwnerDocument(), formatStr, getUniqueNumberStyleName());</span>
+<span class="nc" id="L1410">      mCellElement.getOrCreateAutomaticStyles().appendChild(numberStyle);</span>
+<span class="nc" id="L1411">      setDataDisplayStyleName(numberStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L1412">      Double value = getDoubleValue();</span>
+<span class="nc bnc" id="L1413" title="All 2 branches missed.">      if (value != null) {</span>
+<span class="nc" id="L1414">        setDisplayText((new DecimalFormat(formatStr)).format(value.doubleValue()));</span>
+      }
+<span class="nc bnc" id="L1416" title="All 2 branches missed.">    } else if (typeValue == OfficeValueTypeAttribute.Value.DATE) {</span>
+<span class="nc" id="L1417">      OdfNumberDateStyle dateStyle =</span>
+          new OdfNumberDateStyle(
+<span class="nc" id="L1419">              (OdfFileDom) mCellElement.getOwnerDocument(),</span>
+              formatStr,
+<span class="nc" id="L1421">              getUniqueDateStyleName(),</span>
+              null);
+<span class="nc" id="L1423">      mCellElement.getOrCreateAutomaticStyles().appendChild(dateStyle);</span>
+<span class="nc" id="L1424">      setDataDisplayStyleName(dateStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L1425">      String dateStr = mCellElement.getOfficeDateValueAttribute();</span>
+<span class="nc bnc" id="L1426" title="All 2 branches missed.">      if (dateStr != null) {</span>
+<span class="nc" id="L1427">        Calendar date = getDateValue();</span>
+<span class="nc" id="L1428">        setDisplayText((new SimpleDateFormat(formatStr)).format(date.getTime()));</span>
+      }
+<span class="nc bnc" id="L1430" title="All 2 branches missed.">    } else if (typeValue == OfficeValueTypeAttribute.Value.TIME) {</span>
+<span class="nc" id="L1431">      OdfNumberTimeStyle timeStyle =</span>
+          new OdfNumberTimeStyle(
+<span class="nc" id="L1433">              (OdfFileDom) mCellElement.getOwnerDocument(), formatStr, getUniqueDateStyleName());</span>
+<span class="nc" id="L1434">      mCellElement.getOrCreateAutomaticStyles().appendChild(timeStyle);</span>
+<span class="nc" id="L1435">      setDataDisplayStyleName(timeStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L1436">      String timeStr = mCellElement.getOfficeTimeValueAttribute();</span>
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">      if (timeStr != null) {</span>
+<span class="nc" id="L1438">        Calendar time = getTimeValue();</span>
+<span class="nc" id="L1439">        setDisplayText((new SimpleDateFormat(formatStr)).format(time.getTime()));</span>
+      }
+<span class="nc bnc" id="L1441" title="All 2 branches missed.">    } else if (typeValue == OfficeValueTypeAttribute.Value.PERCENTAGE) {</span>
+<span class="nc" id="L1442">      OdfNumberPercentageStyle dateStyle =</span>
+          new OdfNumberPercentageStyle(
+<span class="nc" id="L1444">              (OdfFileDom) mCellElement.getOwnerDocument(),</span>
+              formatStr,
+<span class="nc" id="L1446">              getUniquePercentageStyleName());</span>
+<span class="nc" id="L1447">      mCellElement.getOrCreateAutomaticStyles().appendChild(dateStyle);</span>
+<span class="nc" id="L1448">      setDataDisplayStyleName(dateStyle.getStyleNameAttribute());</span>
+<span class="nc" id="L1449">      Double value = getPercentageValue();</span>
+<span class="nc bnc" id="L1450" title="All 2 branches missed.">      if (value != null) {</span>
+<span class="nc" id="L1451">        setDisplayText((new DecimalFormat(formatStr)).format(value.doubleValue()));</span>
+      }
+<span class="nc" id="L1453">    } else {</span>
+<span class="nc" id="L1454">      throw new IllegalArgumentException(&quot;This function doesn't support &quot; + typeValue + &quot; cell.&quot;);</span>
+    }
+<span class="nc" id="L1456">  }</span>
+
+  private void setDataDisplayStyleName(String name) {
+<span class="nc" id="L1459">    OdfStyleBase styleElement = getCellStyleElementForWrite();</span>
+<span class="nc bnc" id="L1460" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L1461">      styleElement.setOdfAttributeValue(</span>
+<span class="nc" id="L1462">          OdfName.newName(OdfDocumentNamespace.STYLE, &quot;data-style-name&quot;), name);</span>
+    }
+<span class="nc" id="L1464">  }</span>
+
+  protected OdfStyle getCellStyleElement() {
+<span class="fc" id="L1467">    String styleName = mCellElement.getStyleName();</span>
+<span class="pc bpc" id="L1468" title="2 of 4 branches missed.">    if (styleName == null || (styleName.equals(&quot;&quot;))) { // search in row</span>
+<span class="nc" id="L1469">      OdfTableRow aRow = getTableRow();</span>
+<span class="nc" id="L1470">      styleName = aRow.getOdfElement().getTableDefaultCellStyleNameAttribute();</span>
+    }
+<span class="pc bpc" id="L1472" title="2 of 4 branches missed.">    if (styleName == null || (styleName.equals(&quot;&quot;))) { // search in column</span>
+<span class="nc" id="L1473">      OdfTableColumn aColumn = getTableColumn();</span>
+<span class="nc" id="L1474">      styleName = aColumn.getOdfElement().getTableDefaultCellStyleNameAttribute();</span>
+    }
+<span class="pc bpc" id="L1476" title="2 of 4 branches missed.">    if (styleName == null || (styleName.equals(&quot;&quot;))) {</span>
+<span class="nc" id="L1477">      return null;</span>
+    }
+
+<span class="fc" id="L1480">    OdfStyle styleElement =</span>
+        mCellElement
+<span class="fc" id="L1482">            .getOrCreateAutomaticStyles()</span>
+<span class="fc" id="L1483">            .getStyle(styleName, mCellElement.getStyleFamily());</span>
+
+<span class="pc bpc" id="L1485" title="1 of 2 branches missed.">    if (styleElement == null) {</span>
+<span class="nc" id="L1486">      styleElement = mDocument.getDocumentStyles().getStyle(styleName, OdfStyleFamily.TableCell);</span>
+    }
+
+<span class="pc bpc" id="L1489" title="1 of 2 branches missed.">    if (styleElement == null) {</span>
+<span class="nc" id="L1490">      styleElement = mCellElement.getDocumentStyle();</span>
+    }
+
+<span class="pc bpc" id="L1493" title="1 of 2 branches missed.">    if (styleElement == null) {</span>
+<span class="nc" id="L1494">      OdfStyle newStyle =</span>
+<span class="nc" id="L1495">          mCellElement.getOrCreateAutomaticStyles().newStyle(OdfStyleFamily.TableCell);</span>
+<span class="nc" id="L1496">      String newname = newStyle.getStyleNameAttribute();</span>
+<span class="nc" id="L1497">      mCellElement.setStyleName(newname);</span>
+<span class="nc" id="L1498">      newStyle.addStyleUser(mCellElement);</span>
+<span class="nc" id="L1499">      return newStyle;</span>
+    }
+
+<span class="fc" id="L1502">    return styleElement;</span>
+  }
+
+  protected OdfStyle getCellStyleElementForWrite() {
+<span class="fc" id="L1506">    boolean copy = false;</span>
+<span class="fc" id="L1507">    String styleName = mCellElement.getStyleName();</span>
+<span class="pc bpc" id="L1508" title="1 of 4 branches missed.">    if (styleName == null || (styleName.equals(&quot;&quot;))) { // search in row</span>
+<span class="fc" id="L1509">      OdfTableRow aRow = getTableRow();</span>
+<span class="fc" id="L1510">      styleName = aRow.getOdfElement().getTableDefaultCellStyleNameAttribute();</span>
+<span class="fc" id="L1511">      copy = true;</span>
+    }
+<span class="pc bpc" id="L1513" title="1 of 4 branches missed.">    if (styleName == null || (styleName.equals(&quot;&quot;))) { // search in column</span>
+<span class="fc" id="L1514">      OdfTableColumn aColumn = getTableColumn();</span>
+<span class="fc" id="L1515">      styleName = aColumn.getOdfElement().getTableDefaultCellStyleNameAttribute();</span>
+<span class="fc" id="L1516">      copy = true;</span>
+    }
+<span class="pc bpc" id="L1518" title="1 of 4 branches missed.">    if (styleName == null || (styleName.equals(&quot;&quot;))) {</span>
+<span class="fc" id="L1519">      return null;</span>
+    }
+
+<span class="fc" id="L1522">    OdfOfficeAutomaticStyles styles = mCellElement.getOrCreateAutomaticStyles();</span>
+<span class="fc" id="L1523">    OdfStyle styleElement = styles.getStyle(styleName, mCellElement.getStyleFamily());</span>
+
+<span class="pc bpc" id="L1525" title="1 of 2 branches missed.">    if (styleElement == null) {</span>
+<span class="nc" id="L1526">      styleElement = mDocument.getDocumentStyles().getStyle(styleName, OdfStyleFamily.TableCell);</span>
+    }
+
+<span class="pc bpc" id="L1529" title="1 of 2 branches missed.">    if (styleElement == null) {</span>
+<span class="nc" id="L1530">      styleElement = mCellElement.getDocumentStyle();</span>
+    }
+
+<span class="pc bpc" id="L1533" title="1 of 4 branches missed.">    if (styleElement.getStyleUserCount() &gt; 1 || copy) // if this style are used by many users,</span>
+    // should create a new one.
+    {
+<span class="fc" id="L1536">      OdfStyle newStyle =</span>
+<span class="fc" id="L1537">          mCellElement.getOrCreateAutomaticStyles().newStyle(OdfStyleFamily.TableCell);</span>
+<span class="fc" id="L1538">      newStyle.setProperties(styleElement.getStylePropertiesDeep());</span>
+      // copy attributes
+<span class="fc" id="L1540">      NamedNodeMap attributes = styleElement.getAttributes();</span>
+<span class="fc bfc" id="L1541" title="All 2 branches covered.">      for (int i = 0; i &lt; attributes.getLength(); i++) {</span>
+<span class="fc" id="L1542">        Node attr = attributes.item(i);</span>
+<span class="fc bfc" id="L1543" title="All 2 branches covered.">        if (!attr.getNodeName().equals(&quot;style:name&quot;)) {</span>
+<span class="fc" id="L1544">          newStyle.setAttributeNS(attr.getNamespaceURI(), attr.getNodeName(), attr.getNodeValue());</span>
+        }
+      } // end of copying attributes
+      // mCellElement.getOrCreateAutomaticStyles().appendChild(newStyle);
+<span class="fc" id="L1548">      String newname = newStyle.getStyleNameAttribute();</span>
+<span class="fc" id="L1549">      mCellElement.setStyleName(newname);</span>
+<span class="fc" id="L1550">      return newStyle;</span>
+    }
+<span class="fc" id="L1552">    return styleElement;</span>
+  }
+
+  private String getDataDisplayStyleName() {
+<span class="nc" id="L1556">    String datadisplayStylename = null;</span>
+<span class="nc" id="L1557">    OdfStyleBase styleElement = getCellStyleElement();</span>
+<span class="nc bnc" id="L1558" title="All 2 branches missed.">    if (styleElement != null) {</span>
+<span class="nc" id="L1559">      datadisplayStylename =</span>
+<span class="nc" id="L1560">          styleElement.getOdfAttributeValue(</span>
+<span class="nc" id="L1561">              OdfName.newName(OdfDocumentNamespace.STYLE, &quot;data-style-name&quot;));</span>
+    }
+
+<span class="nc" id="L1564">    return datadisplayStylename;</span>
+  }
+
+  private String getUniqueNumberStyleName() {
+    String unique_name;
+<span class="nc" id="L1569">    OdfOfficeAutomaticStyles styles = mCellElement.getOrCreateAutomaticStyles();</span>
+    do {
+<span class="nc" id="L1571">      unique_name = String.format(&quot;n%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+<span class="nc bnc" id="L1572" title="All 2 branches missed.">    } while (styles.getNumberStyle(unique_name) != null);</span>
+<span class="nc" id="L1573">    return unique_name;</span>
+  }
+
+  private String getUniqueDateStyleName() {
+    String unique_name;
+<span class="nc" id="L1578">    OdfOfficeAutomaticStyles styles = mCellElement.getOrCreateAutomaticStyles();</span>
+    do {
+<span class="nc" id="L1580">      unique_name = String.format(&quot;d%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+<span class="nc bnc" id="L1581" title="All 2 branches missed.">    } while (styles.getDateStyle(unique_name) != null);</span>
+<span class="nc" id="L1582">    return unique_name;</span>
+  }
+
+  private String getUniquePercentageStyleName() {
+    String unique_name;
+<span class="nc" id="L1587">    OdfOfficeAutomaticStyles styles = mCellElement.getOrCreateAutomaticStyles();</span>
+    do {
+<span class="nc" id="L1589">      unique_name = String.format(&quot;p%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+<span class="nc bnc" id="L1590" title="All 2 branches missed.">    } while (styles.getPercentageStyle(unique_name) != null);</span>
+<span class="nc" id="L1591">    return unique_name;</span>
+  }
+
+  //    private String getUniqueCellStyleName() {
+  //    	String unique_name;
+  //		OdfOfficeAutomaticStyles styles = mCellElement.getOrCreateAutomaticStyles();
+  //	    do {
+  //			unique_name = String.format(&quot;a%06x&quot;, (int) (Math.random() * 0xffffff));
+  //		} while (styles.getStyle(unique_name, OdfStyleFamily.TableCell) != null);
+  //    	return unique_name;
+  //    }
+  private String getUniqueCurrencyStyleName() {
+    String unique_name;
+<span class="nc" id="L1604">    OdfOfficeAutomaticStyles styles = mCellElement.getOrCreateAutomaticStyles();</span>
+    do {
+<span class="nc" id="L1606">      unique_name = String.format(&quot;c%06x&quot;, (int) (Math.random() * 0xffffff));</span>
+<span class="nc bnc" id="L1607" title="All 2 branches missed.">    } while (styles.getCurrencyStyle(unique_name) != null);</span>
+<span class="nc" id="L1608">    return unique_name;</span>
+  }
+
+  /**
+   * Get the format string of the cell.
+   *
+   * @return the format string of the cell
+   */
+  public String getFormatString() {
+<span class="nc" id="L1617">    String type = mCellElement.getOfficeValueTypeAttribute();</span>
+<span class="nc" id="L1618">    OfficeValueTypeAttribute.Value typeValue = null;</span>
+<span class="nc bnc" id="L1619" title="All 2 branches missed.">    if (type != null) {</span>
+<span class="nc" id="L1620">      typeValue = OfficeValueTypeAttribute.Value.enumValueOf(type);</span>
+    }
+
+<span class="nc bnc" id="L1623" title="All 2 branches missed.">    if (typeValue == OfficeValueTypeAttribute.Value.FLOAT) {</span>
+<span class="nc" id="L1624">      String name = getDataDisplayStyleName();</span>
+<span class="nc" id="L1625">      OdfNumberStyle style = mCellElement.getOrCreateAutomaticStyles().getNumberStyle(name);</span>
+<span class="nc bnc" id="L1626" title="All 2 branches missed.">      if (style == null) {</span>
+<span class="nc" id="L1627">        style = mDocument.getDocumentStyles().getNumberStyle(name);</span>
+      }
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">      if (style != null) {</span>
+<span class="nc" id="L1630">        return style.getFormat(true);</span>
+      }
+<span class="nc bnc" id="L1632" title="All 2 branches missed.">    } else if (typeValue == OfficeValueTypeAttribute.Value.DATE) {</span>
+<span class="nc" id="L1633">      String name = getDataDisplayStyleName();</span>
+<span class="nc" id="L1634">      OdfNumberDateStyle style = mCellElement.getOrCreateAutomaticStyles().getDateStyle(name);</span>
+<span class="nc bnc" id="L1635" title="All 2 branches missed.">      if (style == null) {</span>
+<span class="nc" id="L1636">        style = mDocument.getDocumentStyles().getDateStyle(name);</span>
+      }
+<span class="nc bnc" id="L1638" title="All 2 branches missed.">      if (style != null) {</span>
+<span class="nc" id="L1639">        return style.getFormat(true);</span>
+      }
+<span class="nc bnc" id="L1641" title="All 2 branches missed.">    } else if (typeValue == OfficeValueTypeAttribute.Value.CURRENCY) {</span>
+<span class="nc" id="L1642">      String name = getCurrencyDisplayStyleName();</span>
+<span class="nc" id="L1643">      OdfNumberCurrencyStyle dataStyle =</span>
+<span class="nc" id="L1644">          mCellElement.getOrCreateAutomaticStyles().getCurrencyStyle(name);</span>
+<span class="nc bnc" id="L1645" title="All 2 branches missed.">      if (dataStyle == null) {</span>
+<span class="nc" id="L1646">        dataStyle = mDocument.getDocumentStyles().getCurrencyStyle(name);</span>
+      }
+<span class="nc bnc" id="L1648" title="All 2 branches missed.">      if (dataStyle != null) {</span>
+<span class="nc" id="L1649">        return dataStyle.getFormat(true);</span>
+      }
+<span class="nc bnc" id="L1651" title="All 2 branches missed.">    } else if (typeValue == OfficeValueTypeAttribute.Value.PERCENTAGE) {</span>
+<span class="nc" id="L1652">      String name = getDataDisplayStyleName();</span>
+<span class="nc" id="L1653">      OdfNumberPercentageStyle style =</span>
+<span class="nc" id="L1654">          mCellElement.getOrCreateAutomaticStyles().getPercentageStyle(name);</span>
+<span class="nc bnc" id="L1655" title="All 2 branches missed.">      if (style == null) {</span>
+<span class="nc" id="L1656">        style = mDocument.getDocumentStyles().getPercentageStyle(name);</span>
+      }
+<span class="nc bnc" id="L1658" title="All 2 branches missed.">      if (style != null) {</span>
+<span class="nc" id="L1659">        return style.getFormat(true);</span>
+      }
+    }
+<span class="nc" id="L1662">    return null;</span>
+  }
+
+  private String getCurrencyDisplayStyleName() {
+<span class="nc" id="L1666">    String name = getDataDisplayStyleName();</span>
+<span class="nc" id="L1667">    OdfNumberCurrencyStyle dataStyle =</span>
+<span class="nc" id="L1668">        mCellElement.getOrCreateAutomaticStyles().getCurrencyStyle(name);</span>
+<span class="nc bnc" id="L1669" title="All 2 branches missed.">    if (dataStyle == null) {</span>
+<span class="nc" id="L1670">      dataStyle = mDocument.getDocumentStyles().getCurrencyStyle(name);</span>
+    }
+
+<span class="nc bnc" id="L1673" title="All 2 branches missed.">    if (dataStyle != null) {</span>
+<span class="nc" id="L1674">      return dataStyle.getConditionStyleName(getCurrencyValue());</span>
+    }
+<span class="nc" id="L1676">    return null;</span>
+  }
+
+  /** Remove all the text content of cell. */
+  public void removeTextContent() {
+<span class="nc" id="L1681">    splitRepeatedCells();</span>
+    // delete text:p child element
+<span class="nc" id="L1683">    Node node = mCellElement.getFirstChild();</span>
+<span class="nc bnc" id="L1684" title="All 2 branches missed.">    while (node != null) {</span>
+<span class="nc" id="L1685">      Node nextNode = node.getNextSibling();</span>
+<span class="nc bnc" id="L1686" title="All 6 branches missed.">      if (node instanceof TextPElement</span>
+          || node instanceof TextHElement
+          || node instanceof TextListElement) {
+<span class="nc" id="L1689">        mCellElement.removeChild(node);</span>
+      }
+<span class="nc" id="L1691">      node = nextNode;</span>
+<span class="nc" id="L1692">    }</span>
+<span class="nc" id="L1693">  }</span>
+
+  /** Remove all the content of the cell. */
+  public void removeContent() {
+<span class="fc" id="L1697">    splitRepeatedCells();</span>
+<span class="fc" id="L1698">    Node node = mCellElement.getFirstChild();</span>
+<span class="fc bfc" id="L1699" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc" id="L1700">      Node nextNode = node.getNextSibling();</span>
+<span class="fc" id="L1701">      mCellElement.removeChild(node);</span>
+<span class="fc" id="L1702">      node = nextNode;</span>
+<span class="fc" id="L1703">    }</span>
+<span class="fc" id="L1704">  }</span>
+
+  /**
+   * Append the content of another cell.
+   *
+   * @param fromCell another cell whose content will be appended to this cell
+   */
+  void appendContentFrom(OdfTableCell fromCell) {
+<span class="fc" id="L1712">    splitRepeatedCells();</span>
+<span class="fc" id="L1713">    OdfWhitespaceProcessor textProcess = new OdfWhitespaceProcessor();</span>
+<span class="fc" id="L1714">    TableTableCellElementBase cell = fromCell.getOdfElement();</span>
+<span class="fc" id="L1715">    Node node = cell.getFirstChild();</span>
+<span class="fc bfc" id="L1716" title="All 2 branches covered.">    while (node != null) {</span>
+<span class="fc bfc" id="L1717" title="All 2 branches covered.">      if (node instanceof OdfTextParagraph) {</span>
+<span class="fc bfc" id="L1718" title="All 2 branches covered.">        if (!textProcess.getText(node).equals(&quot;&quot;)) {</span>
+<span class="fc" id="L1719">          mCellElement.appendChild(node.cloneNode(true));</span>
+        }
+      } else {
+<span class="fc" id="L1722">        mCellElement.appendChild(node.cloneNode(true));</span>
+      }
+<span class="fc" id="L1724">      node = node.getNextSibling();</span>
+    }
+<span class="fc" id="L1726">  }</span>
+
+  /**
+   * *************************************** Moved from OdfTable
+   *
+   * &lt;p&gt;*****************************************
+   */
+  /**
+   * This method is invoked by insertCellBefore and insertRowBefore When it is needed to clone a
+   * cell and the cell is a cover cell, for some instance, we need to find the cell who covers this
+   * cell. So this method is to get the cell who covers this cell
+   */
+  OdfTableCell getCoverCell() {
+<span class="fc" id="L1739">    int startRowi = getRowIndex();</span>
+<span class="fc" id="L1740">    int startColumni = getColumnIndex();</span>
+
+<span class="pc bpc" id="L1742" title="1 of 2 branches missed.">    for (int i = startRowi; i &gt;= 0; i--) {</span>
+<span class="fc" id="L1743">      OdfTableRow aRow = mOwnerTable.getRowByIndex(i);</span>
+<span class="fc bfc" id="L1744" title="All 2 branches covered.">      for (int j = startColumni; j &gt;= 0; j--) {</span>
+<span class="fc bfc" id="L1745" title="All 4 branches covered.">        if (i == startRowi &amp;&amp; j == startColumni) {</span>
+<span class="fc" id="L1746">          continue;</span>
+        }
+<span class="fc" id="L1748">        OdfTableCell cell = aRow.getCellByIndex(j);</span>
+<span class="fc bfc" id="L1749" title="All 2 branches covered.">        if (cell.getOdfElement() instanceof TableTableCellElement) {</span>
+<span class="fc" id="L1750">          TableTableCellElement cellEle = (TableTableCellElement) cell.getOdfElement();</span>
+<span class="fc bfc" id="L1751" title="All 2 branches covered.">          if ((cellEle.getTableNumberColumnsSpannedAttribute() + j &gt; startColumni)</span>
+<span class="pc bpc" id="L1752" title="1 of 2 branches missed.">              &amp;&amp; (cellEle.getTableNumberRowsSpannedAttribute() + i &gt; startRowi)) {</span>
+<span class="fc" id="L1753">            return mOwnerTable.getCellInstance(cellEle, 0, 0);</span>
+          }
+        }
+      }
+    }
+<span class="nc" id="L1758">    return null;</span>
+  }
+
+  /**
+   * This method is invoked by getCoverCell. It's to get the cell in a same row who covers this
+   * cell.
+   *
+   * @return the cell in a same row who covers this cell
+   *     &lt;p&gt;Null if there is no cell who covers this cell
+   */
+  OdfTableCell getCoverCellInSameRow() {
+<span class="fc" id="L1769">    int startRowi = getRowIndex();</span>
+<span class="fc" id="L1770">    int startColumni = getColumnIndex();</span>
+
+<span class="fc bfc" id="L1772" title="All 2 branches covered.">    for (int j = startColumni - 1; j &gt;= 0; j--) {</span>
+<span class="fc" id="L1773">      OdfTableCell cell = mOwnerTable.getCellByPosition(j, startRowi);</span>
+<span class="fc bfc" id="L1774" title="All 2 branches covered.">      if (cell.getOdfElement() instanceof TableCoveredTableCellElement) {</span>
+<span class="fc" id="L1775">        continue;</span>
+      }
+
+<span class="fc" id="L1778">      int oldSpanN = cell.getColumnSpannedNumber();</span>
+<span class="pc bpc" id="L1779" title="1 of 2 branches missed.">      if (oldSpanN + j &gt; startColumni) {</span>
+        // cell.setColumnSpannedNumber(oldSpanN-1);
+<span class="fc" id="L1781">        return cell;</span>
+      }
+<span class="nc" id="L1783">      return null;</span>
+    }
+<span class="fc" id="L1785">    return null;</span>
+  }
+
+  /** This method is invoked by getCoverCell */
+  OdfTableCell getCoverCellInSameColumn() {
+<span class="nc" id="L1790">    int startRowi = getRowIndex();</span>
+<span class="nc" id="L1791">    int startColumni = getColumnIndex();</span>
+
+<span class="nc bnc" id="L1793" title="All 2 branches missed.">    for (int i = startRowi - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L1794">      OdfTableCell cell = mOwnerTable.getCellByPosition(startColumni, i);</span>
+<span class="nc bnc" id="L1795" title="All 2 branches missed.">      if (cell.getOdfElement() instanceof TableCoveredTableCellElement) {</span>
+<span class="nc" id="L1796">        continue;</span>
+      }
+
+<span class="nc" id="L1799">      int oldSpanN = cell.getRowSpannedNumber();</span>
+<span class="nc bnc" id="L1800" title="All 2 branches missed.">      if (oldSpanN + i &gt; startRowi) {</span>
+        // cell.setRowSpannedNumber(oldSpanN-1);
+<span class="nc" id="L1802">        return cell;</span>
+      }
+<span class="nc" id="L1804">      return null;</span>
+    }
+<span class="nc" id="L1806">    return null;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
